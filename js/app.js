@@ -1856,9 +1856,12 @@ function hitungHilal(lat, lon, customTime=null){
   set("illum", illumination.toFixed(2) + " %");
 
   // VISIBILITY
-  const score = hitungVisibilityScore(alt, elo, age);
+  const yallop = hitungVisibilitasYallop(alt, elo);
+  const odeh = hitungVisibilitasOdeh(alt, elo);
 
-  set("visibility", score + "%");
+  // tampilkan ke UI
+  set("yallop", yallop);
+  set("odeh", odeh);
 
   // STATUS IJTIMA
   const now = new Date();
