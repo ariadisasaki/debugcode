@@ -1403,6 +1403,20 @@ function getLocation(){
         setInterval(()=>{
           updateHilalAR();
         }, 1000);
+
+        // Hijri Engine
+        setInterval(()=>{
+          const state = updateHijriEngine(currentLat, currentLon);
+          
+          const bulan = [
+            "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+            "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+            "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+          ];
+          
+          document.getElementById("hijri").innerText =
+            `${state.d} ${bulan[state.m-1]} ${state.y} H`;
+        }, 1000);
       
         // 🔥 Insight + Countdown
         setInterval(()=>{
