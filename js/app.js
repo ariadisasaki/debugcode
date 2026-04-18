@@ -103,6 +103,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+let hijriState = {
+  d: 1,
+  m: 1,
+  y: 1447,
+  locked: false, // 🔥 apakah sudah diputuskan
+  source: "hisab"
+};
+const saved = localStorage.getItem("hijriState");
+if(saved){
+  hijriState = JSON.parse(saved);
+}
+
+let lastUpdateDay = null;
+
 // === ORBIT PLANET ===
 function deg2rad(d){ return d * Math.PI / 180; }
 function rad2deg(r){ return r * 180 / Math.PI; }
@@ -392,6 +406,108 @@ window.onload = () => {
     }
   }, { once:true });
 };
+
+// === HIJRI ENGINE ===
+function updateHijriEngine(lat, lon){
+
+  const now = new Date();
+  const today = now.toDateString();
+
+  const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
+  const jamNow = now.getHours() + now.getMinutes()/60;
+
+  const hisab = getHijriAuto(lat, lon);
+  const hari = hisab.d;
+
+  const data = hitungHilalCore(lat, lon);
+  const alt = Number(data.alt) || 0;
+  const elo = Number(data.elo) || 0;
+
+  const imkan = (alt >= 3 && elo >= 6.4);
+
+  // =========================
+  // 🌙 1. MODE HISAB
+  // =========================
+  if(!hijriState.locked){
+
+    hijriState = {
+      d: hisab.d,
+      m: hisab.m,
+      y: hisab.y,
+      locked: false,
+      source: "hisab"
+    };
+
+    // 🌇 MOMEN RUKYAT (KRITIS)
+    if(hari === 29 && jamNow >= maghrib){
+
+      if(imkan){
+
+        let newMonth = hisab.m + 1;
+        let newYear = hisab.y;
+
+        if(newMonth > 12){
+          newMonth = 1;
+          newYear += 1;
+        }
+
+        hijriState = {
+          d: 1,
+          m: newMonth,
+          y: newYear,
+          locked: true,
+          source: "rukyat"
+        };
+
+      } else {
+
+        hijriState = {
+          d: 30,
+          m: hisab.m,
+          y: hisab.y,
+          locked: true,
+          source: "istikmal"
+        };
+      }
+
+      lastUpdateDay = today;
+    }
+  }
+
+  // =========================
+  // 🌙 2. MODE CALENDAR (SETELAH KEPUTUSAN)
+  // =========================
+  else {
+
+    if(lastUpdateDay !== today){
+
+      hijriState.d += 1;
+
+      // rollover bulan
+      if(hijriState.d > 30){
+
+        hijriState.d = 1;
+        hijriState.m += 1;
+
+        if(hijriState.m > 12){
+          hijriState.m = 1;
+          hijriState.y += 1;
+        }
+
+        // 🔓 buka siklus baru
+        hijriState.locked = false;
+        hijriState.source = "hisab";
+      }
+
+      lastUpdateDay = today;
+    }
+  }
+
+  // 💾 simpan
+  localStorage.setItem("hijriState", JSON.stringify(hijriState));
+
+  return hijriState;
+}
 
 // === GENERATE GALAXY ===
 function generateGalaxy(){
