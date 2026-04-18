@@ -2065,7 +2065,11 @@ function hitungHilalCore(lat, lon, customTime=null){
     - Math.tan(moonDec*rad)*Math.cos(lat*rad)
   ) * deg;
 
+  // normalize
   azi = (azi + 360) % 360;
+
+  // 🔥 CONVERT KE COMPASS USNO STYLE
+  azi = (azi + 180) % 360;
 
   // === KOREKSI ===
   alt = koreksiParallax(alt);
