@@ -115,6 +115,29 @@ if(saved){
   hijriState = JSON.parse(saved);
 }
 
+let hijriInterval = null;
+
+function startHijriEngine(lat, lon){
+
+  // 🚫 cegah dobel interval
+  if(hijriInterval) return;
+
+  hijriInterval = setInterval(()=>{
+
+    const state = updateHijriEngine(lat, lon);
+
+    const bulan = [
+      "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+      "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+      "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+    ];
+
+    document.getElementById("hijri").innerText =
+      `${state.d} ${bulan[state.m-1]} ${state.y} H`;
+
+  }, 1000);
+}
+
 let lastUpdateDay = null;
 
 // === ORBIT PLANET ===
@@ -1379,19 +1402,16 @@ function getLocation(){
         await getMagneticDeclination(lat, lon);
 
         // 🔹 Init Utama
-        hitungHilal(lat, lon); // hitung dulu
+        hitungHilal(lat, lon);
         startMaghribWatcher(lat, lon);
+        // 🌙 START HIJRI ENGINE (WAJIB)
+        startHijriEngine(lat, lon);
         
         // === INTERVAL FINAL ===
         // 🔁 Hitung hilal (berat → tiap 10 detik)
         setInterval(()=>{
           hitungHilal(currentLat, currentLon);
         }, 10000);
-        
-        // 🔁 Backup Sync
-        setInterval(()=>{
-          updateHijriRealTime(currentLat, currentLon);
-        }, 5000);
       
         // 🔁 UI Realtime
         setInterval(()=>{
@@ -1402,20 +1422,6 @@ function getLocation(){
         // 🌙 AR Realtime
         setInterval(()=>{
           updateHilalAR();
-        }, 1000);
-
-        // Hijri Engine
-        setInterval(()=>{
-          const state = updateHijriEngine(currentLat, currentLon);
-          
-          const bulan = [
-            "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
-            "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
-            "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
-          ];
-          
-          document.getElementById("hijri").innerText =
-            `${state.d} ${bulan[state.m-1]} ${state.y} H`;
         }, 1000);
       
         // 🔥 Insight + Countdown
@@ -1446,7 +1452,7 @@ function getLocation(){
 
         declinationGlobal = 0;
 
-        updateHijriRealTime(lat, lon);
+        startHijriEngine(lat, lon);
         hitungHilal(lat, lon);
         startMaghribWatcher(lat, lon);
 
@@ -1454,11 +1460,6 @@ function getLocation(){
         setInterval(()=>{
             hitungHilal(currentLat, currentLon);
         }, 10 * 1000);
-
-        // 🔁 Update hijri tiap 1 menit
-        setInterval(()=>{
-            updateHijriRealTime(currentLat, currentLon);
-        }, 60 * 1000);
 
         // 🔥 REALTIME UI (WAJIB FALLBACK)
         setInterval(()=>{
