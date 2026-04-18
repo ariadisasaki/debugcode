@@ -1830,10 +1830,17 @@ function hitungHilal(lat, lon, customTime=null){
   if(statusEl) statusEl.innerText = "⏳ Menghitung hilal...";
   if(prediksiEl) prediksiEl.innerText = "";
 
+  // 🌌 1. DATA ASTRONOMI (SUMBER UTAMA)
   const data = hitungHilalCore(lat, lon, customTime);
-  const { alt, azi, elo, age, illumination } = data;
 
-  // UPDATE ANGKA UI
+  // 🔥 PAKSA NUMBER (ANTI BUG 0%)
+  const alt = Number(data.alt) || 0;
+  const azi = Number(data.azi) || 0;
+  const elo = Number(data.elo) || 0;
+  const age = Number(data.age) || 0;
+  const illumination = Number(data.illumination) || 0;
+
+  // === UI ANGKA DASAR ===
   const set = (id, val) => {
     const el = document.getElementById(id);
     if(el) el.innerText = val;
@@ -1845,21 +1852,36 @@ function hitungHilal(lat, lon, customTime=null){
   set("age", age.toFixed(1));
   set("illum", illumination.toFixed(2) + " %");
 
-  // VISIBILITY
+  // 🌙 2. VISIBILITY MODEL
   const yallop = hitungVisibilitasYallop(alt, elo);
   const odeh = hitungVisibilitasOdeh(alt, elo);
 
-  // tampilkan ke UI
   set("yallop", yallop);
   set("odeh", odeh);
 
-  // STATUS IJTIMA
+  // 🔥 3. VISIBILITY SCORE (FIXED SAFE)
+  const score = hitungVisibilityScore(alt, elo, age);
+
+  set("visibility", score + "%");
+
+  // 🧪 DEBUG (AMAN)
+  console.log("VISIBILITY DEBUG:", {
+    alt,
+    elo,
+    age,
+    score,
+    yallop,
+    odeh
+  });
+
+  // === IJTIMA STATUS ===
   const now = new Date();
   const ijtima = getLastIjtima();
 
   const statusIjtima = now >= ijtima ? "Sudah Ijtima" : "Belum Ijtima";
   set("statusIjtima", statusIjtima);
 
+  // === TIME CHECK ===
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes()/60;
 
@@ -1928,19 +1950,19 @@ function hitungHilalFuture(lat, lon, time){
 
 // === HITUNG HILAL CORE ===
 function hitungHilalCore(lat, lon, customTime=null){
+
   const rad = Math.PI/180;
   const deg = 180/Math.PI;
 
   const now = customTime ? new Date(customTime) : new Date();
 
-  // === TIME ===
   const JD_UTC = (now.getTime()/86400000)+2440587.5;
   const deltaT = getDeltaT()/86400;
   const JD = JD_UTC + deltaT;
   const T = (JD - 2451545)/36525;
 
-  // === OBLIQUITY + NUTATION ===
   const U = T/100;
+
   let epsilon0 = 23 + 26/60 + 21.448/3600
     - (46.8150*T + 0.00059*T*T - 0.001813*T*T*T)/3600;
 
@@ -1948,67 +1970,58 @@ function hitungHilalCore(lat, lon, customTime=null){
   const Lm = (218.3165 + 481267.8813*T) % 360;
   const omega = (125.04452 - 1934.136261*T) % 360;
 
-  const deltaPsi = (-17.20*Math.sin(omega*rad) - 1.32*Math.sin(2*L*rad)
-                   -0.23*Math.sin(2*Lm*rad) + 0.21*Math.sin(2*omega*rad))/3600;
-
-  const deltaEps = (9.20*Math.cos(omega*rad) + 0.57*Math.cos(2*L*rad)
-                   +0.10*Math.cos(2*Lm*rad) -0.09*Math.cos(2*omega*rad))/3600;
+  const deltaPsi = (-17.20*Math.sin(omega*rad)) / 3600;
+  const deltaEps = (9.20*Math.cos(omega*rad)) / 3600;
 
   const epsilon = epsilon0 + deltaEps;
 
-  // === MATAHARI ===
+  // 🌞 SUN
   const M = (357.52911 + 35999.05029*T) % 360;
-  const C = (1.914602 - 0.004817*T - 0.000014*T*T)*Math.sin(M*rad)
-          + (0.019993 - 0.000101*T)*Math.sin(2*M*rad)
-          + 0.000289*Math.sin(3*M*rad);
+
+  const C =
+    (1.914602*Math.sin(M*rad)) +
+    (0.019993*Math.sin(2*M*rad));
 
   const sunLong = L + C + deltaPsi;
-  const sunRA = Math.atan2(Math.cos(epsilon*rad)*Math.sin(sunLong*rad), Math.cos(sunLong*rad))*deg;
-  const sunDec = Math.asin(Math.sin(epsilon*rad)*Math.sin(sunLong*rad))*deg;
 
-  // === BULAN ===
+  const sunRA = Math.atan2(
+    Math.cos(epsilon*rad)*Math.sin(sunLong*rad),
+    Math.cos(sunLong*rad)
+  )*deg;
+
+  const sunDec = Math.asin(
+    Math.sin(epsilon*rad)*Math.sin(sunLong*rad)
+  )*deg;
+
+  // 🌙 MOON
   const D = (297.8501921 + 445267.1114034*T) % 360;
   const Mm = (134.9633964 + 477198.8675055*T) % 360;
-  const Ms = M;
   const F  = (93.2720950 + 483202.0175233*T) % 360;
 
   let lonMoon =
-    Lm
-    + 6.289*Math.sin(Mm*rad)
-    + 1.274*Math.sin((2*D - Mm)*rad)
-    + 0.658*Math.sin(2*D*rad)
-    + 0.214*Math.sin(2*Mm*rad)
-    - 0.186*Math.sin(Ms*rad)
-    - 0.059*Math.sin((2*D - 2*Mm)*rad)
-    - 0.057*Math.sin((2*D - Ms - Mm)*rad)
-    + 0.053*Math.sin((2*D + Mm)*rad)
-    + 0.046*Math.sin((2*D - Ms)*rad);
+    Lm + 6.289*Math.sin(Mm*rad);
 
   let latMoon =
-    5.128*Math.sin(F*rad)
-    + 0.280*Math.sin((Mm + F)*rad)
-    + 0.277*Math.sin((Mm - F)*rad)
-    + 0.173*Math.sin((2*D - F)*rad);
+    5.128*Math.sin(F*rad);
 
   lonMoon += deltaPsi;
 
-  // === RA DEC BULAN ===
   const moonRA = Math.atan2(
-    Math.sin(lonMoon*rad)*Math.cos(epsilon*rad) - Math.tan(latMoon*rad)*Math.sin(epsilon*rad),
+    Math.sin(lonMoon*rad)*Math.cos(epsilon*rad),
     Math.cos(lonMoon*rad)
   )*deg;
 
   const moonDec = Math.asin(
     Math.sin(latMoon*rad)*Math.cos(epsilon*rad)
-    + Math.cos(latMoon*rad)*Math.sin(epsilon*rad)*Math.sin(lonMoon*rad)
   )*deg;
 
-  // === SIDEREAL ===
+  // 🌍 TIME
   const GMST = (280.46061837 + 360.98564736629*(JD-2451545)) % 360;
-  const LST = GMST + lon;
-  const HA = (LST - moonRA);
+  const LST = (GMST + lon + 360) % 360;
 
-  // === TOPOCENTRIC ALT AZ ===
+  const HA = ((LST - moonRA) + 540) % 360 - 180;
+
+  // 📍 ALT AZ
   let alt = Math.asin(
     Math.sin(lat*rad)*Math.sin(moonDec*rad)
     + Math.cos(lat*rad)*Math.cos(moonDec*rad)*Math.cos(HA*rad)
@@ -2016,30 +2029,45 @@ function hitungHilalCore(lat, lon, customTime=null){
 
   let azi = Math.atan2(
     -Math.sin(HA*rad),
-    Math.tan(moonDec*rad)*Math.cos(lat*rad) - Math.sin(lat*rad)*Math.cos(HA*rad)
+    Math.tan(moonDec*rad)*Math.cos(lat*rad)
+    - Math.sin(lat*rad)*Math.cos(HA*rad)
   )*deg;
 
   if(azi < 0) azi += 360;
 
-  // === KOREKSI ===
+  // ✨ KOREKSI
   alt = koreksiParallax(alt);
   alt = koreksiRefraction(alt);
 
-  // === ELO & AGE ===
-  const elo = Math.acos(
+  // 🌙 ELO (SAFE)
+  let cosElo =
     Math.sin(sunDec*rad)*Math.sin(moonDec*rad)
-    + Math.cos(sunDec*rad)*Math.cos(moonDec*rad)*Math.cos((sunRA - moonRA)*rad)
-  )*deg;
+    + Math.cos(sunDec*rad)*Math.cos(moonDec*rad)
+    * Math.cos((sunRA - moonRA)*rad);
 
-  // === AGE BERBASIS IJTIMA GLOBAL ===
+  cosElo = Math.max(-1, Math.min(1, cosElo));
+
+  const elo = Math.acos(cosElo) * deg;
+
+  // ⏳ AGE SAFE
   const ijtima = getLastIjtima();
-  const age = (now - ijtima) / 3600000; // jam
+  const age = ijtima ? Math.max(0, (now - ijtima) / 3600000) : 0;
 
-  // === ILUMINASI ====
+  // 🌕 ILLUMINATION
   const illumination = (1 - Math.cos(elo * rad)) / 2 * 100;
 
-  // === OUTPUT ===
-  return { alt, azi, elo, age, illumination };
+  // 🧪 DEBUG SAFE (TIDAK ERROR)
+  console.log("CORE OUTPUT:", {
+    alt, azi, elo, age, illumination
+  });
+
+  return {
+    alt: Number(alt) || 0,
+    azi: Number(azi) || 0,
+    elo: Number(elo) || 0,
+    age: Number(age) || 0,
+    illumination: Number(illumination) || 0
+  };
 }
 
 // === HITUNG MATAHARI ===
@@ -2431,33 +2459,22 @@ async function getWeather(lat, lon){
 // === VISIBILITY SCORE ===
 function hitungVisibilityScore(alt, elo, age){
 
+  const altSafe = Number(alt) || 0;
+  const eloSafe = Number(elo) || 0;
+  const ageSafe = Number(age) || 0;
+
   let score = 0;
 
-  const altSafe = Math.max(0, alt);
-  const eloSafe = Math.max(0, elo);
-  const ageSafe = Math.max(0, age);
-
-  // 🌙 ALTITUDE (paling penting)
   score += Math.min(altSafe / 12, 1) * 45;
-
-  // 🌌 ELONGATION (jangan hard cut)
-  if(eloSafe >= 3){
-    score += Math.min(eloSafe / 15, 1) * 35;
-  } else {
-    score += (eloSafe / 3) * 10; // masih ada kontribusi kecil
-  }
-
-  // ⏳ AGE (stabilitas)
+  score += Math.min(eloSafe / 15, 1) * 35;
   score += Math.min(ageSafe / 24, 1) * 20;
 
-  // 🔥 BONUS BONUS KONDISI MUDAH TERLIHAT
+  // bonus kondisi mudah terlihat
   if(altSafe > 10 && eloSafe > 6){
     score += 10;
   }
 
-  score = Math.max(0, Math.min(100, score));
-
-  return Math.round(score);
+  return Math.round(Math.max(0, Math.min(100, score)));
 }
 
 // ==== LOGGING ====
