@@ -1956,81 +1956,141 @@ function hitungHilalCore(lat, lon, customTime=null){
 
   const now = customTime ? new Date(customTime) : new Date();
 
+  // === TIME ===
   const JD_UTC = (now.getTime()/86400000)+2440587.5;
   const deltaT = getDeltaT()/86400;
   const JD = JD_UTC + deltaT;
   const T = (JD - 2451545)/36525;
 
-  // =========================
-  // SUN (ringkas tetap sama)
-  // =========================
+  // === OBLIQUITY + NUTATION ===
+  let epsilon0 = 23 + 26/60 + 21.448/3600
+    - (46.8150*T + 0.00059*T*T - 0.001813*T*T*T)/3600;
+
   const L = (280.4665 + 36000.7698*T) % 360;
+  const Lm = (218.3165 + 481267.8813*T) % 360;
+  const omega = (125.04452 - 1934.136261*T) % 360;
+
+  const deltaPsi =
+    (-17.20*Math.sin(omega*rad)
+    -1.32*Math.sin(2*L*rad)
+    -0.23*Math.sin(2*Lm*rad)
+    +0.21*Math.sin(2*omega*rad))/3600;
+
+  const deltaEps =
+    (9.20*Math.cos(omega*rad)
+    +0.57*Math.cos(2*L*rad)
+    +0.10*Math.cos(2*Lm*rad)
+    -0.09*Math.cos(2*omega*rad))/3600;
+
+  const epsilon = epsilon0 + deltaEps;
+
+  // === SUN ===
   const M = (357.52911 + 35999.05029*T) % 360;
 
-  const sunLong = L + 1.9*Math.sin(M*rad);
+  const C =
+    (1.914602 - 0.004817*T)*Math.sin(M*rad)
+    + 0.019993*Math.sin(2*M*rad);
+
+  const sunLong = L + C + deltaPsi;
 
   const sunRA = Math.atan2(
-    Math.cos(sunLong*rad),
-    Math.sin(sunLong*rad)
+    Math.cos(epsilon*rad)*Math.sin(sunLong*rad),
+    Math.cos(sunLong*rad)
   ) * deg;
 
-  const sunDec = Math.asin(Math.sin(sunLong*rad)) * deg;
+  const sunDec = Math.asin(
+    Math.sin(epsilon*rad)*Math.sin(sunLong*rad)
+  ) * deg;
+
+  // === MOON ===
+  const D = (297.8501921 + 445267.1114034*T) % 360;
+  const Mm = (134.9633964 + 477198.8675055*T) % 360;
+  const Ms = M;
+  const F  = (93.2720950 + 483202.0175233*T) % 360;
+
+  let lonMoon =
+    Lm
+    + 6.289*Math.sin(Mm*rad)
+    + 1.274*Math.sin((2*D - Mm)*rad)
+    + 0.658*Math.sin(2*D*rad)
+    + 0.214*Math.sin(2*Mm*rad)
+    - 0.186*Math.sin(Ms*rad)
+    - 0.059*Math.sin((2*D - 2*Mm)*rad)
+    - 0.057*Math.sin((2*D - Ms - Mm)*rad)
+    + 0.053*Math.sin((2*D + Mm)*rad)
+    + 0.046*Math.sin((2*D - Ms)*rad);
+
+  let latMoon =
+    5.128*Math.sin(F*rad)
+    + 0.280*Math.sin((Mm + F)*rad)
+    + 0.277*Math.sin((Mm - F)*rad)
+    + 0.173*Math.sin((2*D - F)*rad);
+
+  lonMoon += deltaPsi;
+
+  // === MOON RA/DEC ===
+  const moonRA = Math.atan2(
+    Math.sin(lonMoon*rad)*Math.cos(epsilon*rad)
+    - Math.tan(latMoon*rad)*Math.sin(epsilon*rad),
+    Math.cos(lonMoon*rad)
+  ) * deg;
+
+  const moonDec = Math.asin(
+    Math.sin(latMoon*rad)*Math.cos(epsilon*rad)
+    + Math.cos(latMoon*rad)*Math.sin(epsilon*rad)*Math.sin(lonMoon*rad)
+  ) * deg;
 
   // =========================
-  // MOON (simplified tetap)
-  // =========================
-  const Lm = (218.3165 + 481267.8813*T) % 360;
-
-  const moonRA = Lm;   // simplified (tetap struktur kamu)
-  const moonDec = 5.1; // placeholder stabil (jika kamu pakai full model tetap boleh)
-
-  // =========================
-  // TIME / SIDEREAL FIX
+  // 🔥 FIX IMPORTANT (USNO STABILITY)
   // =========================
 
   const GMST = (280.46061837 + 360.98564736629*(JD - 2451545)) % 360;
 
-  // 🔥 FIX 1: NORMALISASI LST
+  // normalize LST
   const LST = (GMST + lon + 360) % 360;
 
-  // 🔥 FIX 2: HA STABIL -180..180
+  // HA stable (-180..180)
   const HA = ((LST - moonRA) + 540) % 360 - 180;
 
-  // =========================
-  // ALTITUDE
-  // =========================
-
+  // === ALT ===
   let alt = Math.asin(
     Math.sin(lat*rad)*Math.sin(moonDec*rad)
     + Math.cos(lat*rad)*Math.cos(moonDec*rad)*Math.cos(HA*rad)
   ) * deg;
 
-  // =========================
-  // 🔥 AZIMUTH FIX (USNO STYLE)
-  // =========================
-
+  // === AZIMUTH (FIXED USNO STYLE) ===
   let azi = Math.atan2(
     Math.sin(HA*rad),
     Math.cos(HA*rad)*Math.sin(lat*rad)
     - Math.tan(moonDec*rad)*Math.cos(lat*rad)
   ) * deg;
 
-  // normalize 0–360
   azi = (azi + 360) % 360;
+
+  // === KOREKSI ===
+  alt = koreksiParallax(alt);
+  alt = koreksiRefraction(alt);
+
+  // === ELO (SAFE CLAMP) ===
+  let cosElo =
+    Math.sin(sunDec*rad)*Math.sin(moonDec*rad)
+    + Math.cos(sunDec*rad)*Math.cos(moonDec*rad)
+    * Math.cos((sunRA - moonRA)*rad);
+
+  cosElo = Math.max(-1, Math.min(1, cosElo));
+
+  const elo = Math.acos(cosElo) * deg;
+
+  // === AGE SAFE ===
+  const ijtima = getLastIjtima();
+  const age = ijtima ? Math.max(0, (now - ijtima) / 3600000) : 0;
+
+  // === ILLUMINATION ===
+  const illumination = (1 - Math.cos(elo * rad)) / 2 * 100;
 
   // =========================
   // OUTPUT SAFE
   // =========================
-
-  const elo = 5; // placeholder jika kamu pakai model penuh tetap ganti
-  const age = Math.max(0, (now - getLastIjtima()) / 3600000);
-
-  const illumination = 50; // placeholder stabil
-
-  console.log("CORE FIX OUTPUT:", {
-    alt, azi, elo, age, illumination
-  });
-
   return {
     alt: Number(alt) || 0,
     azi: Number(azi) || 0,
