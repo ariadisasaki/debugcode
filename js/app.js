@@ -2431,20 +2431,29 @@ async function getWeather(lat, lon){
 // === VISIBILITY SCORE ===
 function hitungVisibilityScore(alt, elo, age){
 
-  // ❗ jika sudah jelas mustahil
-  if(alt < 0 || elo < 3){
-    return 0;
-  }
-
   let score = 0;
 
   const altSafe = Math.max(0, alt);
   const eloSafe = Math.max(0, elo);
   const ageSafe = Math.max(0, age);
 
-  score += Math.min(altSafe/10,1)*40;
-  score += Math.min(eloSafe/15,1)*30;
-  score += Math.min(ageSafe/24,1)*30;
+  // 🌙 ALTITUDE (paling penting)
+  score += Math.min(altSafe / 12, 1) * 45;
+
+  // 🌌 ELONGATION (jangan hard cut)
+  if(eloSafe >= 3){
+    score += Math.min(eloSafe / 15, 1) * 35;
+  } else {
+    score += (eloSafe / 3) * 10; // masih ada kontribusi kecil
+  }
+
+  // ⏳ AGE (stabilitas)
+  score += Math.min(ageSafe / 24, 1) * 20;
+
+  // 🔥 BONUS BONUS KONDISI MUDAH TERLIHAT
+  if(altSafe > 10 && eloSafe > 6){
+    score += 10;
+  }
 
   score = Math.max(0, Math.min(100, score));
 
