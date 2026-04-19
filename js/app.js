@@ -2871,14 +2871,17 @@ function getHijriAuto(lat, lon){
     0
   );
 
-  // =========================
-  // 🌙 HITUNG POSISI BULAN
-  // =========================
-  const hilal = hitungHilalCore(lat, lon, waktuCek);
+  // 🌙 HITUNG HILAL DI MAGHRIB
+  const hilal = hitungHilalCore(lat, lon, tanggalCek);
 
-  // =========================
-  // 🔥 HISAB MURNI (WUJUDUL HILAL)
-  // =========================
+  // 🔍 DEBUG
+  console.log("CEK HILAL:", {
+    alt: hilal.alt,
+    elo: hilal.elo,
+    waktu: tanggalCek
+  });
+
+  // 🔥 HISAB MURNI
   const startOffset = (hilal.alt > 0) ? 1 : 2;
 
   // =========================
