@@ -370,10 +370,6 @@ function updateHijriRealTime(lat, lon){
   result = getHijriHybrid(lat, lon);
   }
 
-  if(!result){
-    result = getHijriAuto(lat, lon);
-  }
-
   const bulan = [
     "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
     "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
