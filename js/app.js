@@ -2792,7 +2792,7 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
 }
 
 // === DAPATKAN HIJRI ====
-function getHijriAuto(lat, lon){
+function getHijriAstronomical(lat, lon, customTime=null){
 
   if(!lat || !lon){
     return { d: 1, m: 1, y: 1447 }; // fallback aman
@@ -2862,8 +2862,8 @@ function getHijriHybrid(lat, lon){
 
   resetHybridDaily();
 
-  const hisab = getHijriAuto(lat, lon);
-
+  const hisab = getHijriAstronomical(lat, lon);
+  
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes()/60;
 
