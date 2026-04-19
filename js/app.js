@@ -362,11 +362,12 @@ function updateHijriRealTime(lat, lon){
 
   let result;
 
-  if(modeHijri){
-    result = getHijriAuto(lat, lon);
-    statusHilal = "-";
-  } else {
-    result = getHijriHybrid(lat, lon);
+  if(modeHijri === "hisab"){
+  result = getHijriAstronomical(lat, lon);
+  }
+  
+  if(modeHijri === "hybrid"){
+  result = getHijriHybrid(lat, lon);
   }
 
   if(!result){
