@@ -2344,12 +2344,13 @@ function calibrateWithSun(){
 }
 
 // === HITUNG MAGHRIB ===
-function hitungMaghrib(lat, lon){
+function hitungMaghrib(lat, lon, dateObj = new Date()){
 
-  const now = new Date();
-
-  // 🔥 pakai tanggal saja (fix)
-  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const date = new Date(
+    dateObj.getFullYear(),
+    dateObj.getMonth(),
+    dateObj.getDate()
+  );
 
   const JD = (date.getTime()/86400000)+2440587.5;
   const T = (JD-2451545)/36525;
@@ -2367,34 +2368,16 @@ function hitungMaghrib(lat, lon){
 
   const delta = Math.asin(Math.sin(epsilon*rad)*Math.sin(lambda*rad));
 
-  const y = Math.tan((epsilon/2)*rad)**2;
-
-  const EoT = 4 * deg * (
-    y*Math.sin(2*L0*rad)
-    - 2*0.0167*Math.sin(M*rad)
-    + 4*0.0167*y*Math.sin(M*rad)*Math.cos(2*L0*rad)
-    - 0.5*y*y*Math.sin(4*L0*rad)
-    - 1.25*0.0167*0.0167*Math.sin(2*M*rad)
-  );
-
   const h0 = -0.833 * rad;
 
   const cosH = (Math.sin(h0) - Math.sin(lat*rad)*Math.sin(delta)) /
                (Math.cos(lat*rad)*Math.cos(delta));
 
-  let H;
-  
-  if(cosH < -1){
-    H = 180; // matahari tidak terbenam (polar case)
-  }else if(cosH > 1){
-    H = 0; // matahari tidak terbit
-  }else{
-    H = Math.acos(cosH)*deg;
-  }
+  let H = Math.acos(cosH)*deg;
 
-  const timezone = -now.getTimezoneOffset()/60;
+  const timezone = -dateObj.getTimezoneOffset()/60;
 
-  const solarNoon = 12 + timezone - (lon/15) - (EoT/60);
+  const solarNoon = 12 + timezone - (lon/15);
 
   const maghrib = solarNoon + (H/15);
 
