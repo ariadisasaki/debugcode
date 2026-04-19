@@ -314,7 +314,7 @@ if (document.readyState === "loading") {
 }
 
 // === UPDATE HIJRI REALTIME ===
-function updateHijriRealTime(lat, lon){
+function updateHijriRealTime(lat, lon, mode){
 
   let result;
 
