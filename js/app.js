@@ -2649,21 +2649,17 @@ function getHijriAstronomical(lat, lon, customTime = null) {
   const now = customTime ? new Date(customTime) : new Date();
 
   // =========================
-  // 🌑 ANCHOR: IJTIMA TERAKHIR
+  // 🌙 EPOCH HIJRI (FIXED)
   // =========================
-  const ijtima = getLastIjtima();
+  const HIJRI_EPOCH = new Date(Date.UTC(622, 6, 16)); 
+  // 16 Juli 622 M (start Hijri era)
 
-  if (!ijtima) {
-    return { d: 1, m: 1, y: 1447 };
-  }
+  const SYNODIC_MONTH = 29.530588853;
 
   // =========================
-  // 🌕 KONSTANTA ASTRONOMI
+  // 🌍 SELISIH HARI DARI EPOCH
   // =========================
-  const SYNODIC_MONTH = 29.530588853; // hari
-
-  // selisih waktu dari ijtima (dalam hari)
-  const diffMs = now - ijtima;
+  const diffMs = now - HIJRI_EPOCH;
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
   if (diffDays < 0) {
@@ -2671,17 +2667,18 @@ function getHijriAstronomical(lat, lon, customTime = null) {
   }
 
   // =========================
-  // 🌙 HITUNG POSISI BULAN
+  // 🌙 KONVERSI KE HIJRI
   // =========================
   const totalMonths = Math.floor(diffDays / SYNODIC_MONTH);
-  const dayInMonth = Math.floor(diffDays % SYNODIC_MONTH) + 1;
 
+  let y = 1 + Math.floor(totalMonths / 12);
   let m = (totalMonths % 12) + 1;
-  let y = 1447 + Math.floor(totalMonths / 12);
+
+  const dayInMonth = Math.floor(diffDays % SYNODIC_MONTH) + 1;
   let d = dayInMonth;
 
   // =========================
-  // 🧼 NORMALISASI (ANTI ERROR)
+  // 🧼 NORMALISASI
   // =========================
   if (d < 1) d = 1;
   if (d > 30) d = 30;
