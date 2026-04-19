@@ -117,7 +117,7 @@ if(saved){
 
 // let hijriInterval = null;
 
-// function startHijriEngine(lat, lon){
+/* function startHijriEngine(lat, lon){
 
   // 🚫 cegah dobel interval
   if(hijriInterval) return;
@@ -136,7 +136,7 @@ if(saved){
       `${state.d} ${bulan[state.m-1]} ${state.y} H`;
 
   }, 1000);
-}
+} */
 
 let lastUpdateDay = null;
 
@@ -431,7 +431,7 @@ window.onload = () => {
 };
 
 // === HIJRI ENGINE ===
-// function updateHijriEngine(lat, lon){
+/* function updateHijriEngine(lat, lon){
 
   const now = new Date();
   const today = now.toDateString();
@@ -530,7 +530,7 @@ window.onload = () => {
   localStorage.setItem("hijriState", JSON.stringify(hijriState));
 
   return hijriState;
-}
+} */
 
 // === GENERATE GALAXY ===
 function generateGalaxy(){
