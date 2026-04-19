@@ -115,9 +115,9 @@ if(saved){
   hijriState = JSON.parse(saved);
 }
 
-let hijriInterval = null;
+// let hijriInterval = null;
 
-function startHijriEngine(lat, lon){
+// function startHijriEngine(lat, lon){
 
   // 🚫 cegah dobel interval
   if(hijriInterval) return;
@@ -431,7 +431,7 @@ window.onload = () => {
 };
 
 // === HIJRI ENGINE ===
-function updateHijriEngine(lat, lon){
+// function updateHijriEngine(lat, lon){
 
   const now = new Date();
   const today = now.toDateString();
@@ -1764,33 +1764,64 @@ function getCountdownMaghrib(now, maghrib){
 
 // === RENDER UI ====
 function renderUI(){
-  let lat = currentLat || -8.6522;
-  let lon = currentLon || 116.5293;
 
-  // 🔥 CEK DATA SUDAH ADA BELUM
-  if(!hilalDataFull || hilalDataFull.age === 0){
-    document.getElementById('insight').innerHTML = "⏳ Mengambil data hilal...";
-  } else {
-    const now = new Date();
-    const maghribData = hitungMaghrib(currentLat, currentLon);
-    const maghrib = maghribData ? maghribData.decimal : 18;
-    
-    const insight = getHijriInsight(hilalDataFull, maghrib, now);
-    document.getElementById('insight').innerHTML = insight;
-  }
+  const lat = currentLat || -8.6522;
+  const lon = currentLon || 116.5293;
 
   const now = new Date();
-  const maghribData = hitungMaghrib(currentLat, currentLon);
+
+  // =========================
+  // 🌙 HIJRI (SUMBER UTAMA)
+  // =========================
+  const result = getHijriFinal(lat, lon);
+
+  const bulan = [
+    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+  ];
+
+  const text = `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
+
+  const hijriEl = document.getElementById("hijri");
+  const statusEl = document.getElementById("statusHilal");
+
+  if(hijriEl) hijriEl.innerText = text;
+  if(statusEl) statusEl.innerText = statusHilal;
+
+  console.log("RENDER HIJRI:", text);
+
+  // =========================
+  // 🌇 MAGHRIB DATA
+  // =========================
+  const maghribData = hitungMaghrib(lat, lon);
   const maghrib = maghribData ? maghribData.decimal : 18;
 
-  const insight = getHijriInsight(hilalDataFull, maghrib, now);
-  document.getElementById('insight').innerHTML = insight;
+  // =========================
+  // 📊 INSIGHT (HANYA SEKALI)
+  // =========================
+  if(!hilalDataFull || hilalDataFull.age === 0){
+    const el = document.getElementById('insight');
+    if(el) el.innerHTML = "⏳ Mengambil data hilal...";
+  } else {
+    const insight = getHijriInsight(hilalDataFull, maghrib, now);
+    const el = document.getElementById('insight');
+    if(el) el.innerHTML = insight;
+  }
 
+  // =========================
+  // ⏳ COUNTDOWN MAGHRIB
+  // =========================
   const countdown = getCountdownMaghrib(now, maghrib);
-  document.getElementById('countdownMaghrib').innerText = countdown;
+  const cdEl = document.getElementById('countdownMaghrib');
+  if(cdEl) cdEl.innerText = countdown;
 
-  const progress = getProgressToMaghrib(now, currentLat, currentLon);
-  document.getElementById('progressBar').style.width = progress + "%";
+  // =========================
+  // 📈 PROGRESS BAR
+  // =========================
+  const progress = getProgressToMaghrib(now, lat, lon);
+  const bar = document.getElementById('progressBar');
+  if(bar) bar.style.width = progress + "%";
 }
 
 // === PRELOAD HIJRI ===
