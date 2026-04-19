@@ -2648,44 +2648,43 @@ function getHijriAstronomical(lat, lon){
 
   const now = new Date();
 
-  // 🔵 Julian Day
-  const jd = now.getTime() / 86400000 + 2440587.5;
+  const ijtima = getLastIjtima();
 
-  // 🔵 ANCHOR FIX (INI KUNCI STABILITAS)
-  // 1 Muharram 1445 H = 19 Juli 2023 (aproksimasi civil baseline)
-  const ANCHOR_JD = 2460140.5;
+  const maghrib = hitungMaghrib(lat, lon, ijtima)?.decimal ?? 18;
 
-  let diffDays = Math.floor(jd - ANCHOR_JD);
+  const maghribDate = new Date(ijtima);
+  maghribDate.setHours(
+    Math.floor(maghrib),
+    Math.floor((maghrib % 1) * 60),
+    0,
+    0
+  );
 
-  // 🔵 siklus bulan hijriah (alternating 30/29)
-  let monthLengths = [30,29,30,29,30,29,30,29,30,29,30,29];
+  const hilal = hitungHilalCore(lat, lon, maghribDate);
 
-  let year = 1445;
-  let month = 1;
+  const imkan =
+    hilal.alt >= 3 &&
+    hilal.elo >= 6.4;
 
-  while(diffDays >= 354){
-    diffDays -= 354;
-    year++;
+  const isAfterMaghrib = now >= maghribDate;
+
+  let startDate = new Date(maghribDate);
+
+  if (!isAfterMaghrib || !imkan) {
+    startDate.setDate(startDate.getDate() + 1);
   }
 
-  for(let i=0; i<12; i++){
-    let len = monthLengths[i];
+  startDate.setHours(0, 0, 0, 0);
 
-    if(diffDays >= len){
-      diffDays -= len;
-      month++;
-    } else {
-      break;
-    }
-  }
+  const diffMs = now - startDate;
+  let d = Math.floor(diffMs / 86400000) + 1;
 
-  let day = diffDays + 1;
+  if (d < 1) d = 1;
+  if (d > 30) d = 30;
 
-  return {
-    d: day,
-    m: month,
-    y: year
-  };
+  const { m, y } = getHijriMonthYear(startDate);
+
+  return { d, m, y };
 }
 
 // === DAPATKAN HYBRID ===
