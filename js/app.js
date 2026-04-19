@@ -2892,58 +2892,74 @@ function getHijriHybrid(lat, lon){
 
   const now = new Date();
 
-  resetHybridDaily();
+  // =========================
+  // 🌑 IJTIMA
+  // =========================
+  const ijtima = getLastIjtima();
 
-  const hisab = getHijriAuto(lat, lon);
+  // =========================
+  // 🌇 MAGHRIB
+  // =========================
+  const maghribTime = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
 
-  const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
-  const jamNow = now.getHours() + now.getMinutes()/60;
+  const maghribDate = new Date(now);
+  maghribDate.setHours(
+    Math.floor(maghribTime),
+    Math.floor((maghribTime % 1) * 60),
+    0,
+    0
+  );
 
-  const todayKey = now.toDateString();
+  // =========================
+  // 🌙 HILAL (ASTRONOMICAL CORE)
+  // =========================
+  const moon = hitungHilalCore(lat, lon, maghribDate);
 
-  // 🔥 SEBELUM MAGHRIB → HISAB PURE
-  if(jamNow < maghrib){
-    statusHilal = "Belum rukyat";
-    return hisab;
+  const altitude = moon.alt;
+  const elongation = moon.elo;
+
+  const ageHours = (maghribDate - ijtima) / 36e5;
+
+  // =========================
+  // 🔬 MODEL ILMIAH VISIBILITAS
+  // =========================
+  const visible =
+    ageHours >= 18 &&
+    elongation >= 8 &&
+    altitude >= 2;
+
+  // =========================
+  // 📆 START BULAN
+  // =========================
+  let startDate = new Date(maghribDate);
+
+  if (!visible) {
+    startDate.setDate(startDate.getDate() + 1);
   }
 
-  // 🔥 CACHE AMAN
-  const last = localStorage.getItem("hybridKey");
-  if(last === todayKey){
-    const cache = localStorage.getItem("hybridData");
-    if(cache){
-      const parsed = JSON.parse(cache);
-      statusHilal = localStorage.getItem("hilalStatus") || "-";
-      return parsed;
-    }
-  }
+  startDate.setHours(0, 0, 0, 0);
 
-  let d = hisab.d;
-  let m = hisab.m;
-  let y = hisab.y;
+  // =========================
+  // 📅 HITUNG HARI
+  // =========================
+  let d = Math.floor((now - startDate) / 86400000) + 1;
 
-  // 🔥 RUKYAT HANYA MALAM 29
-  if(hisab.d === 29){
+  if (d < 1) d = 1;
+  if (d > 30) d = 30;
 
-    const data = hitungHilalCore(lat, lon);
-    const { alt, elo } = data;
+  // =========================
+  // 🌙 BULAN & TAHUN
+  // =========================
+  const { m, y } = getHijriMonthYear(startDate);
 
-    const imkan = (alt >= 3 && elo >= 6.4);
+  // =========================
+  // 📌 STATUS
+  // =========================
+  statusHilal = visible
+    ? "Imkan rukyat (secara astronomi mungkin terlihat)"
+    : "Belum memenuhi kriteria visibilitas (istikmal)";
 
-    if(imkan){
-      statusHilal = "Hilal terlihat → Besok 1 bulan baru";
-    } else {
-      statusHilal = "Istikmal → Besok 30 hari";
-    }
-  }
-
-  const result = { d, m, y };
-
-  localStorage.setItem("hybridData", JSON.stringify(result));
-  localStorage.setItem("hybridKey", todayKey);
-  localStorage.setItem("hilalStatus", statusHilal);
-
-  return result;
+  return { d, m, y };
 }
 
 // === RESET HYBRID ===
