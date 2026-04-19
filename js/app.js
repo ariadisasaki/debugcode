@@ -2644,45 +2644,45 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
 }
 
 // === DAPATKAN HIJRI ====
-function getHijriAstronomical(lat, lon, customTime = null) {
+function getHijriAstronomical(lat, lon){
 
-  const now = customTime ? new Date(customTime) : new Date();
-
-  const SYNODIC_MONTH = 29.530588853;
-
-  // =========================
-  // 🌙 ANCHOR REAL KALENDER
-  // =========================
-  const anchorDate = new Date("2026-04-18T00:00:00Z");
-  const anchorHijri = { d: 1, m: 11, y: 1447 };
-
-  const diffDays = (now - anchorDate) / (1000 * 60 * 60 * 24);
-
-  const lunarCycles = diffDays / SYNODIC_MONTH;
-
-  const dayOffset = Math.floor((lunarCycles % 1) * SYNODIC_MONTH);
-  const monthOffset = Math.floor(lunarCycles);
-
-  let d = anchorHijri.d + dayOffset;
-  let m = anchorHijri.m + monthOffset;
-  let y = anchorHijri.y;
-
-  // =========================
-  // 🧼 NORMALISASI
-  // =========================
-  while (d > 30) {
-    d -= 30;
-    m++;
+  if(lat == null || lon == null){
+    return { d: 1, m: 1, y: 1447 };
   }
 
-  while (m > 12) {
-    m -= 12;
-    y++;
-  }
+  const now = new Date();
 
-  if (d < 1) d = 1;
+  // 🔵 Julian Day
+  const jd = now.getTime() / 86400000 + 2440587.5;
 
-  return { d, m, y };
+  // 🔵 Islamic epoch (15 July 622 CE)
+  const ISLAMIC_EPOCH = 1948439.5;
+
+  // 🔵 hari sejak epoch
+  const days = Math.floor(jd - ISLAMIC_EPOCH);
+
+  // 🔵 hitung siklus hijri (tanpa rukyat, tanpa koreksi lokal)
+  const year = Math.floor(days / 354.367);
+
+  let dayOfYear = days - Math.floor(year * 354.367);
+
+  let month = Math.floor(dayOfYear / 29.530588853); // lunar synodic average
+  let day = Math.floor(dayOfYear - month * 29.530588853) + 1;
+
+  month = (month % 12) + 1;
+
+  // normalisasi hari
+  if(day <= 0) day = 1;
+  if(day > 30) day = 30;
+
+  // base year adjustment (kalibrasi ke real hijri reference kamu)
+  const BASE_YEAR = 1447; // kamu bisa lock ini dari referensi observasi
+
+  return {
+    d: day,
+    m: month,
+    y: BASE_YEAR + year
+  };
 }
 
 // === DAPATKAN HYBRID ===
