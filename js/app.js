@@ -2805,16 +2805,52 @@ function getLunationNumber(date){
 // === KONVERSI BULAN DAN TAHUN HIJRIAH ===
 function getHijriMonthYear(ijtima){
 
-  const k = getLunationNumber(ijtima);
+  // ambil ijtima sekarang
+  const kNow = getLunationNumber(ijtima);
 
-  // siklus 12 bulan hijriah
-  let m = ((k % 12) + 12) % 12 + 1;
+  // ambil ijtima saat ini sebagai referensi
+  const now = new Date();
+  const kCurrent = getLunationNumber(now);
 
-  // konversi ke tahun hijriah (aproksimasi astronomi)
-  let y = Math.floor((k + 1048) / 12); 
-  // 1048 = offset agar mendekati era Hijriah modern
+  // selisih bulan dari sekarang
+  const delta = kNow - kCurrent;
+
+  // ambil bulan & tahun sekarang dari sistem (sekali saja sebagai anchor)
+  const base = getHijriFromSystem();
+
+  let m = base.m + delta;
+  let y = base.y;
+
+  // normalisasi bulan
+  while(m > 12){
+    m -= 12;
+    y += 1;
+  }
+
+  while(m < 1){
+    m += 12;
+    y -= 1;
+  }
 
   return { m, y };
+}
+
+// === ANCHOR SYSTEM ===
+function getHijriFromSystem(){
+
+  const formatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric"
+  });
+
+  const parts = formatter.formatToParts(new Date());
+
+  return {
+    d: parseInt(parts.find(p => p.type==="day").value),
+    m: parseInt(parts.find(p => p.type==="month").value),
+    y: parseInt(parts.find(p => p.type==="year").value)
+  };
 }
 
 // === DAPATKAN HIJRI (HISAB MURNI) ===
