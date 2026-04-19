@@ -2854,6 +2854,8 @@ function getHijriAuto(lat, lon){
 
 // === DAPATKAN HYBRID ===
 let statusHilal = "-";
+// === DAPATKAN HYBRID ===
+let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
 
