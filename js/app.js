@@ -1823,56 +1823,40 @@ function renderUI(){
   const bar = document.getElementById('progressBar');
   if(bar) bar.style.width = progress + "%";
 
-  // =========================
-// 🌑 IJTIMA DATA
-// =========================
-
+  // === IJTIMA UI ===
 const lastIjtima = getLastIjtima();
 const nextIjtima = getNextIjtima();
 
+// format aman
+function formatIjtima(d){
+  if(!d || isNaN(d)) return "-";
+  return d.toLocaleString("id-ID");
+}
+
+// inject ke UI
 const elLast = document.getElementById("ijtimaLast");
 const elNext = document.getElementById("ijtimaNext");
-const elCountdown = document.getElementById("countdownIjtima");
+const elCd   = document.getElementById("countdownIjtima");
 
-function formatDate(d){
-  return new Date(d).toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-}
+console.log("🧪 ELEMEN:", elLast, elNext, elCd);
 
-// tampilkan ijtima terakhir
-if(elLast){
-  elLast.innerText = lastIjtima ? formatDate(lastIjtima) : "-";
-}
+if(elLast) elLast.innerText = formatIjtima(lastIjtima);
+if(elNext) elNext.innerText = formatIjtima(nextIjtima);
 
-// tampilkan ijtima berikutnya
-if(elNext){
-  elNext.innerText = nextIjtima ? formatDate(nextIjtima) : "-";
-}
-
-// countdown ke ijtima berikutnya
-if(elCountdown && nextIjtima){
-
+// countdown
+if(elCd){
   const now = new Date();
-  const diff = (new Date(nextIjtima) - now) / 1000;
+  const diff = nextIjtima - now;
 
-  if(diff > 0){
-
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = Math.floor(diff % 60);
-
-    elCountdown.innerText = `${h}j ${m}m ${s}d`;
-
+  if(diff <= 0){
+    elCd.innerText = "Sedang terjadi";
   } else {
-    elCountdown.innerText = "Sedang berlangsung";
-  }
+    const d = Math.floor(diff / (1000*60*60*24));
+    const h = Math.floor((diff / (1000*60*60)) % 24);
+    const m = Math.floor((diff / (1000*60)) % 60);
 
+    elCd.innerText = `${d}h ${h}j ${m}m`;
+  }
 }
 }
 
