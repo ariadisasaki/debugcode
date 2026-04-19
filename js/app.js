@@ -115,9 +115,9 @@ if(saved){
   hijriState = JSON.parse(saved);
 }
 
-// let hijriInterval = null;
+let hijriInterval = null;
 
-/* function startHijriEngine(lat, lon){
+function startHijriEngine(lat, lon){
 
   // 🚫 cegah dobel interval
   if(hijriInterval) return;
@@ -136,7 +136,7 @@ if(saved){
       `${state.d} ${bulan[state.m-1]} ${state.y} H`;
 
   }, 1000);
-} */
+}
 
 let lastUpdateDay = null;
 
