@@ -314,25 +314,24 @@ if (document.readyState === "loading") {
 // === UPDATE HIJRI REALTIME ===
 function updateHijriRealTime(lat, lon){
 
-  const safe = (id, val) => {
-    const el = document.getElementById(id);
-    if(el) el.innerText = val;
-  };
+  let result = null;
 
-  if(!lat || !lon){
-    lat = -8.6522;
-    lon = 116.5293;
+  const mode = modeHijri || "hisab";
+
+  if(mode === "hisab"){
+    result = getHijriAstronomical(lat, lon);
+  } else if(mode === "hybrid"){
+    result = getHijriHybrid(lat, lon);
+  } else {
+    result = getHijriAstronomical(lat, lon);
   }
 
-  let result;
+  if(!result){
+    console.error("ENGINE FAILED → fallback");
+    result = getHijriAstronomical(lat, lon);
+  }
 
-  if(modeHijri === "hisab"){
-  result = getHijriAstronomical(lat, lon);
-  }
-  
-  if(modeHijri === "hybrid"){
-  result = getHijriHybrid(lat, lon);
-  }
+  console.log("RESULT SAFE:", result);
 
   const bulan = [
     "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
@@ -342,10 +341,7 @@ function updateHijriRealTime(lat, lon){
 
   const text = `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
 
-  safe("hijri", text);
-  safe("statusHilal", statusHilal);
-
-  console.log("Hijri updated:", result.d, result.m, result.y);
+  document.getElementById("hijri").innerText = text;
 }
   
 // === INIT ===
