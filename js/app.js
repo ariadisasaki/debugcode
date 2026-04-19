@@ -117,7 +117,7 @@ if(saved){
 
 let hijriInterval = null;
 
-function startHijriEngine(lat, lon){
+/* function startHijriEngine(lat, lon){
 
   // 🚫 cegah dobel interval
   if(hijriInterval) return;
@@ -136,7 +136,7 @@ function startHijriEngine(lat, lon){
       `${state.d} ${bulan[state.m-1]} ${state.y} H`;
 
   }, 1000);
-}
+} */
 
 let lastUpdateDay = null;
 
