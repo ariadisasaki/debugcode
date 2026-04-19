@@ -117,7 +117,7 @@ if(saved){
 
 let hijriInterval = null;
 
-/* function startHijriEngine(lat, lon){
+function startHijriEngine(lat, lon){
 
   // 🚫 cegah dobel interval
   if(hijriInterval) return;
@@ -136,7 +136,7 @@ let hijriInterval = null;
       `${state.d} ${bulan[state.m-1]} ${state.y} H`;
 
   }, 1000);
-} */
+}
 
 let lastUpdateDay = null;
 
@@ -431,7 +431,7 @@ window.onload = () => {
 };
 
 // === HIJRI ENGINE ===
-/* function updateHijriEngine(lat, lon){
+function updateHijriEngine(lat, lon){
 
   const now = new Date();
   const today = now.toDateString();
@@ -530,7 +530,7 @@ window.onload = () => {
   localStorage.setItem("hijriState", JSON.stringify(hijriState));
 
   return hijriState;
-} */
+}
 
 // === GENERATE GALAXY ===
 function generateGalaxy(){
@@ -1404,6 +1404,8 @@ function getLocation(){
         // 🔹 Init Utama
         hitungHilal(lat, lon);
         startMaghribWatcher(lat, lon);
+        // 🌙 START HIJRI ENGINE (WAJIB)
+        startHijriEngine(lat, lon);
         
         // === INTERVAL FINAL ===
         // 🔁 Hitung hilal (berat → tiap 10 detik)
@@ -1450,6 +1452,7 @@ function getLocation(){
 
         declinationGlobal = 0;
 
+        startHijriEngine(lat, lon);
         hitungHilal(lat, lon);
         startMaghribWatcher(lat, lon);
 
@@ -1761,64 +1764,33 @@ function getCountdownMaghrib(now, maghrib){
 
 // === RENDER UI ====
 function renderUI(){
+  let lat = currentLat || -8.6522;
+  let lon = currentLon || 116.5293;
 
-  const lat = currentLat || -8.6522;
-  const lon = currentLon || 116.5293;
-
-  const now = new Date();
-
-  // =========================
-  // 🌙 HIJRI (SUMBER UTAMA)
-  // =========================
-  const result = getHijriFinal(lat, lon);
-
-  const bulan = [
-    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
-    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
-    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
-  ];
-
-  const text = `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
-
-  const hijriEl = document.getElementById("hijri");
-  const statusEl = document.getElementById("statusHilal");
-
-  if(hijriEl) hijriEl.innerText = text;
-  if(statusEl) statusEl.innerText = statusHilal;
-
-  console.log("RENDER HIJRI:", text);
-
-  // =========================
-  // 🌇 MAGHRIB DATA
-  // =========================
-  const maghribData = hitungMaghrib(lat, lon);
-  const maghrib = maghribData ? maghribData.decimal : 18;
-
-  // =========================
-  // 📊 INSIGHT (HANYA SEKALI)
-  // =========================
+  // 🔥 CEK DATA SUDAH ADA BELUM
   if(!hilalDataFull || hilalDataFull.age === 0){
-    const el = document.getElementById('insight');
-    if(el) el.innerHTML = "⏳ Mengambil data hilal...";
+    document.getElementById('insight').innerHTML = "⏳ Mengambil data hilal...";
   } else {
+    const now = new Date();
+    const maghribData = hitungMaghrib(currentLat, currentLon);
+    const maghrib = maghribData ? maghribData.decimal : 18;
+    
     const insight = getHijriInsight(hilalDataFull, maghrib, now);
-    const el = document.getElementById('insight');
-    if(el) el.innerHTML = insight;
+    document.getElementById('insight').innerHTML = insight;
   }
 
-  // =========================
-  // ⏳ COUNTDOWN MAGHRIB
-  // =========================
-  const countdown = getCountdownMaghrib(now, maghrib);
-  const cdEl = document.getElementById('countdownMaghrib');
-  if(cdEl) cdEl.innerText = countdown;
+  const now = new Date();
+  const maghribData = hitungMaghrib(currentLat, currentLon);
+  const maghrib = maghribData ? maghribData.decimal : 18;
 
-  // =========================
-  // 📈 PROGRESS BAR
-  // =========================
-  const progress = getProgressToMaghrib(now, lat, lon);
-  const bar = document.getElementById('progressBar');
-  if(bar) bar.style.width = progress + "%";
+  const insight = getHijriInsight(hilalDataFull, maghrib, now);
+  document.getElementById('insight').innerHTML = insight;
+
+  const countdown = getCountdownMaghrib(now, maghrib);
+  document.getElementById('countdownMaghrib').innerText = countdown;
+
+  const progress = getProgressToMaghrib(now, currentLat, currentLon);
+  document.getElementById('progressBar').style.width = progress + "%";
 }
 
 // === PRELOAD HIJRI ===
@@ -2372,13 +2344,12 @@ function calibrateWithSun(){
 }
 
 // === HITUNG MAGHRIB ===
-function hitungMaghrib(lat, lon, dateObj = new Date()){
+function hitungMaghrib(lat, lon){
 
-  const date = new Date(
-    dateObj.getFullYear(),
-    dateObj.getMonth(),
-    dateObj.getDate()
-  );
+  const now = new Date();
+
+  // 🔥 pakai tanggal saja (fix)
+  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const JD = (date.getTime()/86400000)+2440587.5;
   const T = (JD-2451545)/36525;
@@ -2396,16 +2367,34 @@ function hitungMaghrib(lat, lon, dateObj = new Date()){
 
   const delta = Math.asin(Math.sin(epsilon*rad)*Math.sin(lambda*rad));
 
+  const y = Math.tan((epsilon/2)*rad)**2;
+
+  const EoT = 4 * deg * (
+    y*Math.sin(2*L0*rad)
+    - 2*0.0167*Math.sin(M*rad)
+    + 4*0.0167*y*Math.sin(M*rad)*Math.cos(2*L0*rad)
+    - 0.5*y*y*Math.sin(4*L0*rad)
+    - 1.25*0.0167*0.0167*Math.sin(2*M*rad)
+  );
+
   const h0 = -0.833 * rad;
 
   const cosH = (Math.sin(h0) - Math.sin(lat*rad)*Math.sin(delta)) /
                (Math.cos(lat*rad)*Math.cos(delta));
 
-  let H = Math.acos(cosH)*deg;
+  let H;
+  
+  if(cosH < -1){
+    H = 180; // matahari tidak terbenam (polar case)
+  }else if(cosH > 1){
+    H = 0; // matahari tidak terbit
+  }else{
+    H = Math.acos(cosH)*deg;
+  }
 
-  const timezone = -dateObj.getTimezoneOffset()/60;
+  const timezone = -now.getTimezoneOffset()/60;
 
-  const solarNoon = 12 + timezone - (lon/15);
+  const solarNoon = 12 + timezone - (lon/15) - (EoT/60);
 
   const maghrib = solarNoon + (H/15);
 
@@ -2802,113 +2791,64 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
   return count;
 }
 
-// === BULAN SINODIK ===
-function getLunationNumber(date){
-  const JD = date.getTime()/86400000 + 2440587.5;
-  return Math.floor((JD - 2451550.09765) / 29.530588853);
-}
+// === DAPATKAN HIJRI ====
+function getHijriAuto(lat, lon){
 
-// === KONVERSI BULAN DAN TAHUN HIJRIAH ===
-function getHijriMonthYear(ijtima){
-
-  const kNow = getLunationNumber(new Date());
-  const kIjtima = getLunationNumber(ijtima);
-
-  const delta = kIjtima - kNow;
-
-  const base = getHijriFromSystem();
-
-  let m = base.m + delta;
-  let y = base.y;
-
-  while(m > 12){
-    m -= 12;
-    y += 1;
+  if(!lat || !lon){
+    return { d: 1, m: 1, y: 1447 }; // fallback aman
   }
 
-  while(m < 1){
-    m += 12;
-    y -= 1;
+  const now = new Date();
+
+  const maghribData = hitungMaghrib(lat, lon);
+
+  const maghrib = (maghribData && !isNaN(maghribData.decimal))
+    ? maghribData.decimal
+    : 18;
+
+  const jamNow = now.getHours()
+                + now.getMinutes()/60
+                + now.getSeconds()/3600;
+
+  let shiftDate = new Date(now);
+
+  // 🔥 LOGIKA INTI (fix)
+  if(jamNow < maghrib){
+    shiftDate.setDate(shiftDate.getDate() - 1);
   }
 
-  return { m, y };
-}
-
-// === ANCHOR SYSTEM ===
-function getHijriFromSystem(){
-
-  const formatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic", {
+  const formatter = new Intl.DateTimeFormat("id-ID-u-ca-islamic", {
     day: "numeric",
     month: "numeric",
     year: "numeric"
   });
 
-  const parts = formatter.formatToParts(new Date());
+  const parts = formatter.formatToParts(shiftDate);
 
-  return {
-    d: parseInt(parts.find(p => p.type==="day").value),
-    m: parseInt(parts.find(p => p.type==="month").value),
-    y: parseInt(parts.find(p => p.type==="year").value)
-  };
-}
+  let d, m, y;
 
-// === DAPATKAN HIJRI (HISAB MURNI) ===
-function getHijriAuto(lat, lon){
+  parts.forEach(p => {
+    if(p.type === "day") d = parseInt(p.value);
+    if(p.type === "month") m = parseInt(p.value);
+    if(p.type === "year") y = parseInt(p.value);
+  });
 
-  const now = new Date();
+  // 🔥 OFFSET USER
+  const offset = parseInt(localStorage.getItem("hijriOffset") || 0);
 
-  // 🌑 ijtima terakhir
-  const ijtima = getLastIjtima();
+  d += offset;
 
-  // =========================
-  // 🌙 HITUNG MAGHRIB DI HARI IJTIMA
-  // =========================
-  const maghrib = hitungMaghrib(lat, lon, ijtima)?.decimal ?? 18;
-
-  const maghribDate = new Date(ijtima);
-  maghribDate.setHours(
-    Math.floor(maghrib),
-    Math.floor((maghrib % 1) * 60),
-    0,
-    0
-  );
-
-  // =========================
-  // 🌙 CEK HILAL SAAT MAGHRIB
-  // =========================
-  const hilal = hitungHilalCore(lat, lon, maghribDate);
-  const imkan = hilal.alt > 0;
-
-  // =========================
-  // 📆 TENTUKAN START BULAN HIJRI
-  // =========================
-  let startDate = new Date(maghribDate);
-
-  // jika ijtima lewat maghrib atau hilal tidak mungkin terlihat
-  if (ijtima > maghribDate || !imkan) {
-    startDate.setDate(startDate.getDate() + 1);
+  while(d > 30){
+    d -= 30;
+    m++;
+    if(m > 12){ m = 1; y++; }
   }
 
-  // normalisasi jam ke 00:00 (biar stabil hitung hari)
-  startDate.setHours(0, 0, 0, 0);
-
-  // =========================
-  // 📆 HITUNG SELISIH HARI
-  // =========================
-  const diffMs = now - startDate;
-  let d = Math.floor(diffMs / 86400000) + 1;
-
-  // =========================
-  // 🔁 NORMALISASI
-  // =========================
-  if (d < 1) d = 1;
-  if (d > 30) d = 30;
-
-  // =========================
-  // 🌙 BULAN & TAHUN (FIX PENTING)
-  // pakai startDate, bukan ijtima
-  // =========================
-  const { m, y } = getHijriMonthYear(startDate);
+  while(d < 1){
+    d += 30;
+    m--;
+    if(m < 1){ m = 12; y--; }
+  }
 
   return { d, m, y };
 }
@@ -2920,74 +2860,58 @@ function getHijriHybrid(lat, lon){
 
   const now = new Date();
 
-  // =========================
-  // 🌑 IJTIMA
-  // =========================
-  const ijtima = getLastIjtima();
+  resetHybridDaily();
 
-  // =========================
-  // 🌇 MAGHRIB
-  // =========================
-  const maghribTime = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
+  const hisab = getHijriAuto(lat, lon);
 
-  const maghribDate = new Date(now);
-  maghribDate.setHours(
-    Math.floor(maghribTime),
-    Math.floor((maghribTime % 1) * 60),
-    0,
-    0
-  );
+  const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
+  const jamNow = now.getHours() + now.getMinutes()/60;
 
-  // =========================
-  // 🌙 HILAL (ASTRONOMICAL CORE)
-  // =========================
-  const moon = hitungHilalCore(lat, lon, maghribDate);
+  const todayKey = now.toDateString();
 
-  const altitude = moon.alt;
-  const elongation = moon.elo;
-
-  const ageHours = (maghribDate - ijtima) / 36e5;
-
-  // =========================
-  // 🔬 MODEL ILMIAH VISIBILITAS
-  // =========================
-  const visible =
-    ageHours >= 18 &&
-    elongation >= 8 &&
-    altitude >= 2;
-
-  // =========================
-  // 📆 START BULAN
-  // =========================
-  let startDate = new Date(maghribDate);
-
-  if (!visible) {
-    startDate.setDate(startDate.getDate() + 1);
+  // 🔥 SEBELUM MAGHRIB → HISAB PURE
+  if(jamNow < maghrib){
+    statusHilal = "Belum rukyat";
+    return hisab;
   }
 
-  startDate.setHours(0, 0, 0, 0);
+  // 🔥 CACHE AMAN
+  const last = localStorage.getItem("hybridKey");
+  if(last === todayKey){
+    const cache = localStorage.getItem("hybridData");
+    if(cache){
+      const parsed = JSON.parse(cache);
+      statusHilal = localStorage.getItem("hilalStatus") || "-";
+      return parsed;
+    }
+  }
 
-  // =========================
-  // 📅 HITUNG HARI
-  // =========================
-  let d = Math.floor((now - startDate) / 86400000) + 1;
+  let d = hisab.d;
+  let m = hisab.m;
+  let y = hisab.y;
 
-  if (d < 1) d = 1;
-  if (d > 30) d = 30;
+  // 🔥 RUKYAT HANYA MALAM 29
+  if(hisab.d === 29){
 
-  // =========================
-  // 🌙 BULAN & TAHUN
-  // =========================
-  const { m, y } = getHijriMonthYear(startDate);
+    const data = hitungHilalCore(lat, lon);
+    const { alt, elo } = data;
 
-  // =========================
-  // 📌 STATUS
-  // =========================
-  statusHilal = visible
-    ? "Imkan rukyat (secara astronomi mungkin terlihat)"
-    : "Belum memenuhi kriteria visibilitas (istikmal)";
+    const imkan = (alt >= 3 && elo >= 6.4);
 
-  return { d, m, y };
+    if(imkan){
+      statusHilal = "Hilal terlihat → Besok 1 bulan baru";
+    } else {
+      statusHilal = "Istikmal → Besok 30 hari";
+    }
+  }
+
+  const result = { d, m, y };
+
+  localStorage.setItem("hybridData", JSON.stringify(result));
+  localStorage.setItem("hybridKey", todayKey);
+  localStorage.setItem("hilalStatus", statusHilal);
+
+  return result;
 }
 
 // === RESET HYBRID ===
