@@ -2651,34 +2651,40 @@ function getHijriAstronomical(lat, lon){
   // 🔵 Julian Day
   const jd = now.getTime() / 86400000 + 2440587.5;
 
-  // 🔵 Konstanta epoch hijri
-  const ISLAMIC_EPOCH = 1948439.5;
+  // 🔵 ANCHOR FIX (INI KUNCI STABILITAS)
+  // 1 Muharram 1445 H = 19 Juli 2023 (aproksimasi civil baseline)
+  const ANCHOR_JD = 2460140.5;
 
-  // 🔵 hari sejak epoch
-  const days = Math.floor(jd - ISLAMIC_EPOCH);
+  let diffDays = Math.floor(jd - ANCHOR_JD);
 
-  // 🔵 konversi aman (tanpa drift liar)
-  const year = Math.floor(days / 354.36667);
+  // 🔵 siklus bulan hijriah (alternating 30/29)
+  let monthLengths = [30,29,30,29,30,29,30,29,30,29,30,29];
 
-  let dayOfYear = days - Math.floor(year * 354.36667);
+  let year = 1445;
+  let month = 1;
 
-  let month = Math.floor(dayOfYear / 29.530588853);
+  while(diffDays >= 354){
+    diffDays -= 354;
+    year++;
+  }
 
-  let day = Math.floor(dayOfYear - month * 29.530588853) + 1;
+  for(let i=0; i<12; i++){
+    let len = monthLengths[i];
 
-  // 🔵 normalisasi aman
-  month = (month % 12) + 1;
+    if(diffDays >= len){
+      diffDays -= len;
+      month++;
+    } else {
+      break;
+    }
+  }
 
-  if(day < 1) day = 1;
-  if(day > 30) day = 30;
-
-  // 🔵 FIX PENTING: jangan tambah BASE_YEAR lagi
-  const H_YEAR = 1445 + year; // fixed anchor, bukan akumulasi liar
+  let day = diffDays + 1;
 
   return {
     d: day,
     m: month,
-    y: H_YEAR
+    y: year
   };
 }
 
