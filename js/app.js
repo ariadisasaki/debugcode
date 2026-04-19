@@ -1822,42 +1822,6 @@ function renderUI(){
   const progress = getProgressToMaghrib(now, lat, lon);
   const bar = document.getElementById('progressBar');
   if(bar) bar.style.width = progress + "%";
-
-  // === IJTIMA UI ===
-const lastIjtima = getLastIjtima();
-const nextIjtima = getNextIjtima();
-
-// format aman
-function formatIjtima(d){
-  if(!d || isNaN(d)) return "-";
-  return d.toLocaleString("id-ID");
-}
-
-// inject ke UI
-const elLast = document.getElementById("ijtimaLast");
-const elNext = document.getElementById("ijtimaNext");
-const elCd   = document.getElementById("countdownIjtima");
-
-console.log("🧪 ELEMEN:", elLast, elNext, elCd);
-
-if(elLast) elLast.innerText = formatIjtima(lastIjtima);
-if(elNext) elNext.innerText = formatIjtima(nextIjtima);
-
-// countdown
-if(elCd){
-  const now = new Date();
-  const diff = nextIjtima - now;
-
-  if(diff <= 0){
-    elCd.innerText = "Sedang terjadi";
-  } else {
-    const d = Math.floor(diff / (1000*60*60*24));
-    const h = Math.floor((diff / (1000*60*60)) % 24);
-    const m = Math.floor((diff / (1000*60)) % 60);
-
-    elCd.innerText = `${d}h ${h}j ${m}m`;
-  }
-}
 }
 
 // === PRELOAD HIJRI ===
