@@ -1863,7 +1863,7 @@ function hitungHilal(lat, lon, customTime=null){
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes()/60;
 
-  const hisab = getHijriAuto(lat, lon);
+  const hisab = getHijriAstronomical(lat, lon);
   const hari = hisab.d;
 
   const imkan = (alt >= 3 && elo >= 6.4);
