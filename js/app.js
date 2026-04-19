@@ -2810,7 +2810,6 @@ function getHijriMonthYear(ijtima){
   let m = base.m + delta;
   let y = base.y;
 
-  // normalisasi bulan
   while(m > 12){
     m -= 12;
     y += 1;
@@ -2851,19 +2850,19 @@ function getHijriAuto(lat, lon){
   const ijtima = getLastIjtima();
 
   // =========================
-  // 🌙 TENTUKAN HARI RUKYAT
+  // 🌙 TENTUKAN HARI AWAL BULAN
   // =========================
   const waktuCek = new Date(ijtima);
 
   const maghribIjtima = hitungMaghrib(lat, lon, ijtima)?.decimal ?? 18;
   const jamIjtima = ijtima.getHours() + ijtima.getMinutes()/60;
 
-  // jika ijtima setelah maghrib → rukyat besok
+  // jika ijtima setelah maghrib → geser ke besok
   if(jamIjtima > maghribIjtima){
     waktuCek.setDate(waktuCek.getDate() + 1);
   }
 
-  // maghrib pada hari rukyat
+  // set ke maghrib hari tersebut
   const maghribCek = hitungMaghrib(lat, lon, waktuCek)?.decimal ?? 18;
 
   waktuCek.setHours(
@@ -2873,14 +2872,14 @@ function getHijriAuto(lat, lon){
   );
 
   // =========================
-  // 🌙 HITUNG HILAL
+  // 🌙 HITUNG POSISI BULAN
   // =========================
   const hilal = hitungHilalCore(lat, lon, waktuCek);
 
-  const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
-
-  // offset awal bulan
-  const startOffset = imkan ? 1 : 2;
+  // =========================
+  // 🔥 HISAB MURNI (WUJUDUL HILAL)
+  // =========================
+  const startOffset = (hilal.alt > 0) ? 1 : 2;
 
   // =========================
   // 📆 HITUNG TANGGAL
@@ -2899,7 +2898,7 @@ function getHijriAuto(lat, lon){
     d -= 1;
   }
 
-  // normalisasi
+  // normalisasi tanggal
   if(d < 1) d = 1;
   if(d > 30) d = 30;
 
