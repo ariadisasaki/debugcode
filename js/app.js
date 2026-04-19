@@ -2646,42 +2646,39 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
 // === DAPATKAN HIJRI ====
 function getHijriAstronomical(lat, lon){
 
-  if(lat == null || lon == null){
-    return { d: 1, m: 1, y: 1447 };
-  }
-
   const now = new Date();
 
   // 🔵 Julian Day
   const jd = now.getTime() / 86400000 + 2440587.5;
 
-  // 🔵 Islamic epoch (15 July 622 CE)
+  // 🔵 Konstanta epoch hijri
   const ISLAMIC_EPOCH = 1948439.5;
 
   // 🔵 hari sejak epoch
   const days = Math.floor(jd - ISLAMIC_EPOCH);
 
-  // 🔵 hitung siklus hijri (tanpa rukyat, tanpa koreksi lokal)
-  const year = Math.floor(days / 354.367);
+  // 🔵 konversi aman (tanpa drift liar)
+  const year = Math.floor(days / 354.36667);
 
-  let dayOfYear = days - Math.floor(year * 354.367);
+  let dayOfYear = days - Math.floor(year * 354.36667);
 
-  let month = Math.floor(dayOfYear / 29.530588853); // lunar synodic average
+  let month = Math.floor(dayOfYear / 29.530588853);
+
   let day = Math.floor(dayOfYear - month * 29.530588853) + 1;
 
+  // 🔵 normalisasi aman
   month = (month % 12) + 1;
 
-  // normalisasi hari
-  if(day <= 0) day = 1;
+  if(day < 1) day = 1;
   if(day > 30) day = 30;
 
-  // base year adjustment (kalibrasi ke real hijri reference kamu)
-  const BASE_YEAR = 1447; // kamu bisa lock ini dari referensi observasi
+  // 🔵 FIX PENTING: jangan tambah BASE_YEAR lagi
+  const H_YEAR = 1445 + year; // fixed anchor, bukan akumulasi liar
 
   return {
     d: day,
     m: month,
-    y: BASE_YEAR + year
+    y: H_YEAR
   };
 }
 
