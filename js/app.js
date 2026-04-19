@@ -2871,14 +2871,14 @@ function getHijriAuto(lat, lon){
     0
   );
 
-  // 🌙 HITUNG HILAL DI MAGHRIB
-  const hilal = hitungHilalCore(lat, lon, tanggalCek);
+  // 🌙 HITUNG HILAL DI MAGHRIB (FIX DI SINI)
+  const hilal = hitungHilalCore(lat, lon, waktuCek);
 
   // 🔍 DEBUG
   console.log("CEK HILAL:", {
     alt: hilal.alt,
     elo: hilal.elo,
-    waktu: tanggalCek
+    waktu: waktuCek
   });
 
   // 🔥 HISAB MURNI
@@ -2901,7 +2901,7 @@ function getHijriAuto(lat, lon){
     d -= 1;
   }
 
-  // normalisasi tanggal
+  // normalisasi
   if(d < 1) d = 1;
   if(d > 30) d = 30;
 
