@@ -1822,6 +1822,58 @@ function renderUI(){
   const progress = getProgressToMaghrib(now, lat, lon);
   const bar = document.getElementById('progressBar');
   if(bar) bar.style.width = progress + "%";
+
+  // =========================
+// 🌑 IJTIMA DATA
+// =========================
+
+const lastIjtima = getLastIjtima();
+const nextIjtima = getNextIjtima();
+
+const elLast = document.getElementById("ijtimaLast");
+const elNext = document.getElementById("ijtimaNext");
+const elCountdown = document.getElementById("countdownIjtima");
+
+function formatDate(d){
+  return new Date(d).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+// tampilkan ijtima terakhir
+if(elLast){
+  elLast.innerText = lastIjtima ? formatDate(lastIjtima) : "-";
+}
+
+// tampilkan ijtima berikutnya
+if(elNext){
+  elNext.innerText = nextIjtima ? formatDate(nextIjtima) : "-";
+}
+
+// countdown ke ijtima berikutnya
+if(elCountdown && nextIjtima){
+
+  const now = new Date();
+  const diff = (new Date(nextIjtima) - now) / 1000;
+
+  if(diff > 0){
+
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = Math.floor(diff % 60);
+
+    elCountdown.innerText = `${h}j ${m}m ${s}d`;
+
+  } else {
+    elCountdown.innerText = "Sedang berlangsung";
+  }
+
+}
 }
 
 // === PRELOAD HIJRI ===
