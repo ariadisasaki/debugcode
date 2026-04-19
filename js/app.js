@@ -2758,7 +2758,22 @@ function resetHybridDaily(){
     sudahCekHariIni = false; // 🔥 reset trigger
     localStorage.setItem("hybridLastCheck", today);
   }
+}
 
+// === HIJRI MOONT YEAR ===
+function getHijriMonthYear(date){
+
+  const jd = date.getTime() / 86400000 + 2440587.5;
+  const ISLAMIC_EPOCH = 1948439.5;
+
+  const days = Math.floor(jd - ISLAMIC_EPOCH);
+
+  const year = Math.floor(days / 354.36667);
+
+  return {
+    m: ((Math.floor(days / 29.530588853) % 12) + 1),
+    y: 1445 + year
+  };
 }
 
 // === WAKTU MAGHRIB ===
