@@ -2644,63 +2644,47 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
 }
 
 // === DAPATKAN HIJRI ====
-function getHijriAstronomical(lat, lon, customTime=null){
+function getHijriAstronomical(lat, lon, customTime = null) {
 
-  if(!lat || !lon){
-    return { d: 1, m: 1, y: 1447 }; // fallback aman
+  const now = customTime ? new Date(customTime) : new Date();
+
+  // =========================
+  // 🌑 ANCHOR: IJTIMA TERAKHIR
+  // =========================
+  const ijtima = getLastIjtima();
+
+  if (!ijtima) {
+    return { d: 1, m: 1, y: 1447 };
   }
 
-  const now = new Date();
+  // =========================
+  // 🌕 KONSTANTA ASTRONOMI
+  // =========================
+  const SYNODIC_MONTH = 29.530588853; // hari
 
-  const maghribData = hitungMaghrib(lat, lon);
+  // selisih waktu dari ijtima (dalam hari)
+  const diffMs = now - ijtima;
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-  const maghrib = (maghribData && !isNaN(maghribData.decimal))
-    ? maghribData.decimal
-    : 18;
-
-  const jamNow = now.getHours()
-                + now.getMinutes()/60
-                + now.getSeconds()/3600;
-
-  let shiftDate = new Date(now);
-
-  // 🔥 LOGIKA INTI (fix)
-  if(jamNow < maghrib){
-    shiftDate.setDate(shiftDate.getDate() - 1);
+  if (diffDays < 0) {
+    return { d: 1, m: 1, y: 1447 };
   }
 
-  const formatter = new Intl.DateTimeFormat("id-ID-u-ca-islamic", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric"
-  });
+  // =========================
+  // 🌙 HITUNG POSISI BULAN
+  // =========================
+  const totalMonths = Math.floor(diffDays / SYNODIC_MONTH);
+  const dayInMonth = Math.floor(diffDays % SYNODIC_MONTH) + 1;
 
-  const parts = formatter.formatToParts(shiftDate);
+  let m = (totalMonths % 12) + 1;
+  let y = 1447 + Math.floor(totalMonths / 12);
+  let d = dayInMonth;
 
-  let d, m, y;
-
-  parts.forEach(p => {
-    if(p.type === "day") d = parseInt(p.value);
-    if(p.type === "month") m = parseInt(p.value);
-    if(p.type === "year") y = parseInt(p.value);
-  });
-
-  // 🔥 OFFSET USER
-  const offset = parseInt(localStorage.getItem("hijriOffset") || 0);
-
-  d += offset;
-
-  while(d > 30){
-    d -= 30;
-    m++;
-    if(m > 12){ m = 1; y++; }
-  }
-
-  while(d < 1){
-    d += 30;
-    m--;
-    if(m < 1){ m = 12; y--; }
-  }
+  // =========================
+  // 🧼 NORMALISASI (ANTI ERROR)
+  // =========================
+  if (d < 1) d = 1;
+  if (d > 30) d = 30;
 
   return { d, m, y };
 }
