@@ -2648,40 +2648,39 @@ function getHijriAstronomical(lat, lon, customTime = null) {
 
   const now = customTime ? new Date(customTime) : new Date();
 
-  // =========================
-  // 🌙 EPOCH HIJRI (FIXED)
-  // =========================
-  const HIJRI_EPOCH = new Date(Date.UTC(622, 6, 16)); 
-  // 16 Juli 622 M (start Hijri era)
-
   const SYNODIC_MONTH = 29.530588853;
 
   // =========================
-  // 🌍 SELISIH HARI DARI EPOCH
+  // 🌙 ANCHOR REAL KALENDER
   // =========================
-  const diffMs = now - HIJRI_EPOCH;
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const anchorDate = new Date("2026-04-18T00:00:00Z");
+  const anchorHijri = { d: 1, m: 11, y: 1447 };
 
-  if (diffDays < 0) {
-    return { d: 1, m: 1, y: 1447 };
-  }
+  const diffDays = (now - anchorDate) / (1000 * 60 * 60 * 24);
 
-  // =========================
-  // 🌙 KONVERSI KE HIJRI
-  // =========================
-  const totalMonths = Math.floor(diffDays / SYNODIC_MONTH);
+  const lunarCycles = diffDays / SYNODIC_MONTH;
 
-  let y = 1 + Math.floor(totalMonths / 12);
-  let m = (totalMonths % 12) + 1;
+  const dayOffset = Math.floor((lunarCycles % 1) * SYNODIC_MONTH);
+  const monthOffset = Math.floor(lunarCycles);
 
-  const dayInMonth = Math.floor(diffDays % SYNODIC_MONTH) + 1;
-  let d = dayInMonth;
+  let d = anchorHijri.d + dayOffset;
+  let m = anchorHijri.m + monthOffset;
+  let y = anchorHijri.y;
 
   // =========================
   // 🧼 NORMALISASI
   // =========================
+  while (d > 30) {
+    d -= 30;
+    m++;
+  }
+
+  while (m > 12) {
+    m -= 12;
+    y++;
+  }
+
   if (d < 1) d = 1;
-  if (d > 30) d = 30;
 
   return { d, m, y };
 }
