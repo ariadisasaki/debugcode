@@ -2833,75 +2833,54 @@ function getHijriAuto(lat, lon){
   const ijtima = getLastIjtima();
 
   // =========================
-// 🌙 CARI MAGHRIB SETELAH IJTIMA
-// =========================
+  // 🌙 HITUNG MAGHRIB DI HARI IJTIMA
+  // =========================
+  const maghrib = hitungMaghrib(lat, lon, ijtima)?.decimal ?? 18;
 
-let startDate = new Date(ijtima);
-
-// ambil maghrib di hari ijtima
-let maghrib = hitungMaghrib(lat, lon, startDate)?.decimal ?? 18;
-
-let maghribDate = new Date(startDate);
-maghribDate.setHours(
-  Math.floor(maghrib),
-  Math.floor((maghrib % 1)*60),
-  0
-);
-
-// ⚠️ kalau ijtima terjadi SETELAH maghrib → pakai besok
-if(ijtima > maghribDate){
-  maghribDate.setDate(maghribDate.getDate() + 1);
-}
-
-// =========================
-// 🌙 CEK HILAL DI MAGHRIB ITU
-// =========================
-
-const hilal = hitungHilalCore(lat, lon, maghribDate);
-
-const imkan = (hilal.alt > 0);
-
-// =========================
-// 📆 AWAL BULAN
-// =========================
-
-if(!imkan){
-  maghribDate.setDate(maghribDate.getDate() + 1);
-}
-
-// inilah START bulan Hijri
-startDate = maghribDate;
-
-// =========================
-// 📆 HITUNG HARI
-// =========================
-
-let selisihHari = (new Date() - startDate)/86400000;
-let d = Math.floor(selisihHari) + 1;
+  const maghribDate = new Date(ijtima);
+  maghribDate.setHours(
+    Math.floor(maghrib),
+    Math.floor((maghrib % 1) * 60),
+    0,
+    0
+  );
 
   // =========================
-  // 🌇 KOREKSI MAGHRIB HARI INI
+  // 🌙 CEK HILAL SAAT MAGHRIB
   // =========================
+  const hilal = hitungHilalCore(lat, lon, maghribDate);
+  const imkan = hilal.alt > 0;
 
-  const maghribNow = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
-  const jamNow = now.getHours() + now.getMinutes()/60;
+  // =========================
+  // 📆 TENTUKAN START BULAN HIJRI
+  // =========================
+  let startDate = new Date(maghribDate);
 
-  if(jamNow < maghribNow){
-    d -= 1;
+  // jika ijtima lewat maghrib atau hilal tidak mungkin terlihat
+  if (ijtima > maghribDate || !imkan) {
+    startDate.setDate(startDate.getDate() + 1);
   }
+
+  // normalisasi jam ke 00:00 (biar stabil hitung hari)
+  startDate.setHours(0, 0, 0, 0);
+
+  // =========================
+  // 📆 HITUNG SELISIH HARI
+  // =========================
+  const diffMs = now - startDate;
+  let d = Math.floor(diffMs / 86400000) + 1;
 
   // =========================
   // 🔁 NORMALISASI
   // =========================
-
-  if(d < 1) d = 1;
-  if(d > 30) d = 30;
+  if (d < 1) d = 1;
+  if (d > 30) d = 30;
 
   // =========================
-  // 🌙 BULAN & TAHUN
+  // 🌙 BULAN & TAHUN (FIX PENTING)
+  // pakai startDate, bukan ijtima
   // =========================
-
-  const { m, y } = getHijriMonthYear(ijtima);
+  const { m, y } = getHijriMonthYear(startDate);
 
   return { d, m, y };
 }
