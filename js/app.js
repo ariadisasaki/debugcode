@@ -33,6 +33,8 @@ let hilalDataFull = {
   age: 0,
   illumination: 0
 };
+const SYNODIC_MONTH = 29.530588;
+const DAY_MS = 86400000;
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -314,24 +316,20 @@ if (document.readyState === "loading") {
 // === UPDATE HIJRI REALTIME ===
 function updateHijriRealTime(lat, lon){
 
-  let result = null;
-
-  const mode = modeHijri || "hisab";
+  let result;
 
   if(mode === "hisab"){
     result = getHijriAstronomical(lat, lon);
-  } else if(mode === "hybrid"){
+  }
+
+  if(mode === "hybrid"){
     result = getHijriHybrid(lat, lon);
-  } else {
-    result = getHijriAstronomical(lat, lon);
   }
 
   if(!result){
-    console.error("ENGINE FAILED → fallback");
-    result = getHijriAstronomical(lat, lon);
+    console.error("Hijri result kosong");
+    return;
   }
-
-  console.log("RESULT SAFE:", result);
 
   const bulan = [
     "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
@@ -339,9 +337,13 @@ function updateHijriRealTime(lat, lon){
     "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
   ];
 
-  const text = `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
+  document.getElementById("hijri").innerText =
+    `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
 
-  document.getElementById("hijri").innerText = text;
+  document.getElementById("statusHilal").innerText =
+    result.source;
+
+  console.log("HIJRI:", result);
 }
   
 // === INIT ===
@@ -2643,48 +2645,66 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
   return count;
 }
 
+// === HIJRI EPOCH ===
+function getHijriEpoch(){
+  const ijtima = getLastIjtima();
+
+  if(!ijtima){
+    console.error("Ijtima tidak ditemukan");
+    return new Date();
+  }
+
+  const epoch = new Date(ijtima);
+  epoch.setHours(0,0,0,0);
+
+  return epoch;
+}
+
+// === BASELINE BULAN BERIKUTNYA ===
+function nextMonth(current){
+
+  let m = current.m + 1;
+  let y = current.y;
+
+  if(m > 12){
+    m = 1;
+    y++;
+  }
+
+  return {
+    d: 1,
+    m,
+    y,
+    source: "hybrid"
+  };
+}
+
 // === DAPATKAN HIJRI ====
 function getHijriAstronomical(lat, lon){
 
   const now = new Date();
+  const epoch = getHijriEpoch();
 
-  const ijtima = getLastIjtima();
+  const today = new Date(now);
+  today.setHours(0,0,0,0);
 
-  const maghrib = hitungMaghrib(lat, lon, ijtima)?.decimal ?? 18;
+  const diffDays = (today - epoch) / DAY_MS;
 
-  const maghribDate = new Date(ijtima);
-  maghribDate.setHours(
-    Math.floor(maghrib),
-    Math.floor((maghrib % 1) * 60),
-    0,
-    0
-  );
+  let d = Math.floor(diffDays % SYNODIC_MONTH) + 1;
 
-  const hilal = hitungHilalCore(lat, lon, maghribDate);
+  if(d < 1) d = 1;
+  if(d > 30) d = 30;
 
-  const imkan =
-    hilal.alt >= 3 &&
-    hilal.elo >= 6.4;
+  // bulan & tahun stabil (sementara sederhana)
+  let baseMonth = 11; // Zulkaidah (sesuaikan ijtima kamu)
+  let baseYear = 1447;
 
-  const isAfterMaghrib = now >= maghribDate;
+  const cycle = Math.floor(diffDays / SYNODIC_MONTH);
 
-  let startDate = new Date(maghribDate);
+  let m = ((baseMonth - 1 + cycle) % 12) + 1;
+  let y = baseYear + Math.floor((baseMonth - 1 + cycle) / 12);
 
-  if (!isAfterMaghrib || !imkan) {
-    startDate.setDate(startDate.getDate() + 1);
-  }
-
-  startDate.setHours(0, 0, 0, 0);
-
-  const diffMs = now - startDate;
-  let d = Math.floor(diffMs / 86400000) + 1;
-
-  if (d < 1) d = 1;
-  if (d > 30) d = 30;
-
-  const { m, y } = getHijriMonthYear(startDate);
-
-  return { d, m, y };
+  return { d, m, y, source: "hisab" };
 }
 
 // === DAPATKAN HYBRID ===
@@ -2692,58 +2712,33 @@ let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
 
+  const hisab = getHijriAstronomical(lat, lon);
   const now = new Date();
 
-  resetHybridDaily();
-
-  const hisab = getHijriAstronomical(lat, lon);
-  
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes()/60;
 
-  const todayKey = now.toDateString();
+  const hilal = hitungHilalCore(lat, lon);
+  const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  // 🔥 SEBELUM MAGHRIB → HISAB PURE
+  let result = { ...hisab, source: "hybrid" };
+
+  // sebelum maghrib → tidak ada keputusan
   if(jamNow < maghrib){
-    statusHilal = "Belum rukyat";
-    return hisab;
+    return result;
   }
 
-  // 🔥 CACHE AMAN
-  const last = localStorage.getItem("hybridKey");
-  if(last === todayKey){
-    const cache = localStorage.getItem("hybridData");
-    if(cache){
-      const parsed = JSON.parse(cache);
-      statusHilal = localStorage.getItem("hilalStatus") || "-";
-      return parsed;
-    }
-  }
-
-  let d = hisab.d;
-  let m = hisab.m;
-  let y = hisab.y;
-
-  // 🔥 RUKYAT HANYA MALAM 29
+  // malam 29 → evaluasi
   if(hisab.d === 29){
 
-    const data = hitungHilalCore(lat, lon);
-    const { alt, elo } = data;
-
-    const imkan = (alt >= 3 && elo >= 6.4);
-
     if(imkan){
-      statusHilal = "Hilal terlihat → Besok 1 bulan baru";
+      result = nextMonth(hisab);
+      result.note = "rukyat valid";
     } else {
-      statusHilal = "Istikmal → Besok 30 hari";
+      result.d = 30;
+      result.note = "istikmal";
     }
   }
-
-  const result = { d, m, y };
-
-  localStorage.setItem("hybridData", JSON.stringify(result));
-  localStorage.setItem("hybridKey", todayKey);
-  localStorage.setItem("hilalStatus", statusHilal);
 
   return result;
 }
