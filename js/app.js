@@ -2833,50 +2833,35 @@ function getHijriAuto(lat, lon){
   const ijtima = getLastIjtima();
 
   // =========================
-  // 🌙 TENTUKAN HARI AWAL BULAN
+  // 🌙 CEK HILAL SAAT MAGHRIB IJTIMA
   // =========================
-  const waktuCek = new Date(ijtima);
 
-  const maghribIjtima = hitungMaghrib(lat, lon, ijtima)?.decimal ?? 18;
-  const jamIjtima = ijtima.getHours() + ijtima.getMinutes()/60;
+  const cekDate = new Date(ijtima);
 
-  // jika ijtima setelah maghrib → geser ke besok
-  if(jamIjtima > maghribIjtima){
-    waktuCek.setDate(waktuCek.getDate() + 1);
-  }
+  const maghribIjtima = hitungMaghrib(lat, lon, cekDate)?.decimal ?? 18;
 
-  // set ke maghrib hari tersebut
-  const maghribCek = hitungMaghrib(lat, lon, waktuCek)?.decimal ?? 18;
-
-  waktuCek.setHours(
-    Math.floor(maghribCek),
-    Math.floor((maghribCek % 1) * 60),
+  cekDate.setHours(
+    Math.floor(maghribIjtima),
+    Math.floor((maghribIjtima % 1)*60),
     0
   );
 
-  // 🌙 HITUNG HILAL DI MAGHRIB (FIX DI SINI)
-  const hilal = hitungHilalCore(lat, lon, waktuCek);
+  const hilal = hitungHilalCore(lat, lon, cekDate);
 
-  // 🔍 DEBUG
-  console.log("CEK HILAL:", {
-    alt: hilal.alt,
-    elo: hilal.elo,
-    waktu: waktuCek
-  });
-
-  // 🔥 HISAB MURNI
-  const startOffset = (hilal.alt > 0) ? 1 : 2;
+  const imkan = (hilal.alt > 0);
 
   // =========================
-  // 📆 HITUNG TANGGAL
+  // 📆 HITUNG HARI
   // =========================
-  let hariSejakIjtima = (now - ijtima) / 86400000;
 
-  let d = Math.floor(hariSejakIjtima - startOffset) + 1;
+  let selisihHari = (now - ijtima) / 86400000;
+
+  let d = Math.floor(selisihHari) + (imkan ? 1 : 2);
 
   // =========================
-  // 🌇 BATAS HARI = MAGHRIB
+  // 🌇 KOREKSI MAGHRIB HARI INI
   // =========================
+
   const maghribNow = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes()/60;
 
@@ -2884,13 +2869,17 @@ function getHijriAuto(lat, lon){
     d -= 1;
   }
 
-  // normalisasi
+  // =========================
+  // 🔁 NORMALISASI
+  // =========================
+
   if(d < 1) d = 1;
   if(d > 30) d = 30;
 
   // =========================
-  // 🌙 BULAN & TAHUN OTOMATIS
+  // 🌙 BULAN & TAHUN
   // =========================
+
   const { m, y } = getHijriMonthYear(ijtima);
 
   return { d, m, y };
