@@ -2793,29 +2793,18 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
 
 // === BULAN SINODIK ===
 function getLunationNumber(date){
-
   const JD = date.getTime()/86400000 + 2440587.5;
-
-  // epoch lunasi (Meeus)
-  const k = Math.floor((JD - 2451550.09765) / 29.530588853);
-
-  return k;
+  return Math.floor((JD - 2451550.09765) / 29.530588853);
 }
 
 // === KONVERSI BULAN DAN TAHUN HIJRIAH ===
 function getHijriMonthYear(ijtima){
 
-  // ambil ijtima sekarang
-  const kNow = getLunationNumber(ijtima);
+  const kNow = getLunationNumber(new Date());
+  const kIjtima = getLunationNumber(ijtima);
 
-  // ambil ijtima saat ini sebagai referensi
-  const now = new Date();
-  const kCurrent = getLunationNumber(now);
+  const delta = kIjtima - kNow;
 
-  // selisih bulan dari sekarang
-  const delta = kNow - kCurrent;
-
-  // ambil bulan & tahun sekarang dari sistem (sekali saja sebagai anchor)
   const base = getHijriFromSystem();
 
   let m = base.m + delta;
@@ -2858,43 +2847,55 @@ function getHijriAuto(lat, lon){
 
   const now = new Date();
 
-  // 🌑 ijtima terdekat sebelum sekarang
+  // 🌑 ijtima terakhir
   const ijtima = getLastIjtima();
 
-  // 🌇 maghrib lokal
-  const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
-  const jamNow = now.getHours() + now.getMinutes()/60;
-
-  // ⏳ umur sejak ijtima (hari)
-  let hariSejakIjtima = (now - ijtima) / 86400000;
-
   // =========================
-  // 🌙 evaluasi hilal saat maghrib setelah ijtima
+  // 🌙 TENTUKAN HARI RUKYAT
   // =========================
   const waktuCek = new Date(ijtima);
+
+  const maghribIjtima = hitungMaghrib(lat, lon, ijtima)?.decimal ?? 18;
+  const jamIjtima = ijtima.getHours() + ijtima.getMinutes()/60;
+
+  // jika ijtima setelah maghrib → rukyat besok
+  if(jamIjtima > maghribIjtima){
+    waktuCek.setDate(waktuCek.getDate() + 1);
+  }
+
+  // maghrib pada hari rukyat
+  const maghribCek = hitungMaghrib(lat, lon, waktuCek)?.decimal ?? 18;
+
   waktuCek.setHours(
-    Math.floor(maghrib),
-    Math.floor((maghrib % 1) * 60),
+    Math.floor(maghribCek),
+    Math.floor((maghribCek % 1) * 60),
     0
   );
 
+  // =========================
+  // 🌙 HITUNG HILAL
+  // =========================
   const hilal = hitungHilalCore(lat, lon, waktuCek);
 
-  // kriteria imkan rukyat sederhana
   const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  // =========================
-  // 📅 offset awal bulan
-  // =========================
-  let startOffset = imkan ? 1 : 2;
+  // offset awal bulan
+  const startOffset = imkan ? 1 : 2;
 
   // =========================
-  // 📆 tanggal hijriah
+  // 📆 HITUNG TANGGAL
   // =========================
+  let hariSejakIjtima = (now - ijtima) / 86400000;
+
   let d = Math.floor(hariSejakIjtima - startOffset) + 1;
 
-  // koreksi sebelum maghrib
-  if(jamNow < maghrib){
+  // =========================
+  // 🌇 BATAS HARI = MAGHRIB
+  // =========================
+  const maghribNow = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
+  const jamNow = now.getHours() + now.getMinutes()/60;
+
+  if(jamNow < maghribNow){
     d -= 1;
   }
 
@@ -2903,7 +2904,7 @@ function getHijriAuto(lat, lon){
   if(d > 30) d = 30;
 
   // =========================
-  // 🌙 bulan & tahun otomatis
+  // 🌙 BULAN & TAHUN OTOMATIS
   // =========================
   const { m, y } = getHijriMonthYear(ijtima);
 
