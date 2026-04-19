@@ -1259,9 +1259,7 @@ function getLocation(){
         // 🔹 Init Utama
         hitungHilal(lat, lon);
         startMaghribWatcher(lat, lon);
-        // 🌙 START HIJRI ENGINE (WAJIB)
-        startHijriEngine(lat, lon);
-        
+      
         // === INTERVAL FINAL ===
         // 🔁 Hitung hilal (berat → tiap 10 detik)
         setInterval(()=>{
@@ -1307,7 +1305,6 @@ function getLocation(){
 
         declinationGlobal = 0;
 
-        startHijriEngine(lat, lon);
         hitungHilal(lat, lon);
         startMaghribWatcher(lat, lon);
 
