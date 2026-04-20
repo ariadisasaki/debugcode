@@ -1270,6 +1270,15 @@ function getLocation(){
         const lat = p.coords.latitude;
         const lon = p.coords.longitude;
 
+        // 🔍 DEBUG SEKALI
+        const hisab = getHijriAstronomical(lat, lon);
+        const hybrid = getHijriHybrid(lat, lon);
+      
+        console.log("PERBANDINGAN FINAL:", {
+          hisab: hisab?.d,
+          hybrid: hybrid?.d
+        });
+
         // ✅ Simpan ke global
         currentLat = lat;
         currentLon = lon;
@@ -1297,6 +1306,10 @@ function getLocation(){
         }catch{
             lokasiEl.innerText = "Lokasi tidak tersedia";
         }
+      
+        setInterval(() => {
+          updateHijriRealTime(lat, lon, "hybrid");
+        }, 1000);                                           
 
         // 🔹 Declination
         await getMagneticDeclination(lat, lon);
