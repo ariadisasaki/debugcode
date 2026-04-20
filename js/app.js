@@ -2698,25 +2698,27 @@ function nextMonth(current){
 function getHijriAstronomical(lat, lon){
 
   const now = new Date();
-
   const SYNODIC = 29.530588853;
 
-  // 🌑 referensi ijtima
+  // 🌑 ijtima terakhir
   const ijtima = getLastIjtima();
-  const jdNow = now.getTime() / 86400000 + 2440587.5;
-  const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
+
+  const msNow = now.getTime();
+  const msIjtima = ijtima.getTime();
 
   // =========================
-  // 📆 AGE BULAN (SAINTIFIK)
+  // 📆 AGE BULAN (LEBIH STABIL)
   // =========================
-  const ageDays = jdNow - jdIjtima;
+  const ageDays = (msNow - msIjtima) / 86400000;
+
+  // 🔥 FIX UTAMA: hindari modulo loncat
+  let d = Math.floor(ageDays) + 1;
+
+  // =========================
+  // 🌙 BULAN & TAHUN (BERDASARKAN SIKLUS)
+  // =========================
   const cycle = Math.floor(ageDays / SYNODIC);
 
-  const d = Math.floor(ageDays % SYNODIC) + 1;
-
-  // =========================
-  // 🌙 BASE CALIBRATION (FIXED EPOCH)
-  // =========================
   const BASE_YEAR = 1447;
   const BASE_MONTH = 11; // Zulkaidah
 
@@ -2726,10 +2728,19 @@ function getHijriAstronomical(lat, lon){
   // =========================
   // 🔒 NORMALISASI
   // =========================
-  const safeD = Math.max(1, Math.min(30, d));
+  if (d > 30) d = 30;
+  if (d < 1) d = 1;
+
+  // 🔥 DEBUG
+  console.log("DEBUG HISAB:", {
+    ageDays,
+    day: d,
+    month: m,
+    year: y
+  });
 
   return {
-    d: safeD,
+    d,
     m,
     y,
     age: ageDays * 24,
@@ -2742,10 +2753,11 @@ let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
 
+  const hisab = getHijriAstronomical(lat, lon);
+
   // 🔥 DEBUG 1
   console.log("HISAB MASUK HYBRID:", hisab);
 
-  const hisab = getHijriAstronomical(lat, lon);
   const now = new Date();
 
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
@@ -2758,27 +2770,40 @@ function getHijriHybrid(lat, lon){
   console.log("DATA HILAL:", {
     alt: hilal.alt,
     elo: hilal.elo,
-    imkan: imkan
+    imkan
   });
 
   let result = { ...hisab, source: "hybrid" };
 
-  // sebelum maghrib → tidak ada keputusan
-  if(jamNow < maghrib){
+  // =========================
+  // 🌇 SEBELUM MAGHRIB → TIDAK BERUBAH
+  // =========================
+  if (jamNow < maghrib){
+    console.log("BELUM MAGHRIB → PAKAI HISAB");
     return result;
   }
 
-  // malam 29 → evaluasi
-  if(hisab.d === 29){
+  // =========================
+  // 🌙 MALAM 29 → KEPUTUSAN
+  // =========================
+  if (hisab.d === 29){
 
-    if(imkan){
+    console.log("EVALUASI MALAM 29");
+
+    if (imkan){
+      console.log("IMKAN TERPENUHI → BULAN BARU");
       result = nextMonth(hisab);
       result.note = "rukyat valid";
     } else {
+      console.log("ISTIKMAL → 30");
       result.d = 30;
       result.note = "istikmal";
     }
   }
+
+  // 🔥 DEBUG FINAL
+  console.log("HASIL AKHIR HYBRID:", result);
+
   return result;
 }
 
