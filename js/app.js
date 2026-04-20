@@ -2683,28 +2683,43 @@ function nextMonth(current){
 function getHijriAstronomical(lat, lon){
 
   const now = new Date();
-  const epoch = getHijriEpoch();
 
-  const today = new Date(now);
-  today.setHours(0,0,0,0);
+  const SYNODIC = 29.530588853;
 
-  const diffDays = (today - epoch) / DAY_MS;
+  // 🌑 referensi ijtima
+  const ijtima = getLastIjtima();
+  const jdNow = now.getTime() / 86400000 + 2440587.5;
+  const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
 
-  let d = Math.floor(diffDays % SYNODIC_MONTH) + 1;
+  // =========================
+  // 📆 AGE BULAN (SAINTIFIK)
+  // =========================
+  const ageDays = jdNow - jdIjtima;
+  const cycle = Math.floor(ageDays / SYNODIC);
 
-  if(d < 1) d = 1;
-  if(d > 30) d = 30;
+  const d = Math.floor(ageDays % SYNODIC) + 1;
 
-  // bulan & tahun stabil (sementara sederhana)
-  let baseMonth = 11; // Zulkaidah (sesuaikan ijtima kamu)
-  let baseYear = 1447;
+  // =========================
+  // 🌙 BASE CALIBRATION (FIXED EPOCH)
+  // =========================
+  const BASE_YEAR = 1447;
+  const BASE_MONTH = 11; // Zulkaidah
 
-  const cycle = Math.floor(diffDays / SYNODIC_MONTH);
+  let m = ((BASE_MONTH - 1 + cycle) % 12) + 1;
+  let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
 
-  let m = ((baseMonth - 1 + cycle) % 12) + 1;
-  let y = baseYear + Math.floor((baseMonth - 1 + cycle) / 12);
+  // =========================
+  // 🔒 NORMALISASI
+  // =========================
+  const safeD = Math.max(1, Math.min(30, d));
 
-  return { d, m, y, source: "hisab" };
+  return {
+    d: safeD,
+    m,
+    y,
+    age: ageDays * 24,
+    source: "hisab-astronomical"
+  };
 }
 
 // === DAPATKAN HYBRID ===
