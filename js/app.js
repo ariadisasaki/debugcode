@@ -2769,21 +2769,27 @@ let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
 
-  const hisab = getHijriAstronomical(lat, lon);
-
-  // 🔥 DEBUG 1
-  console.log("HISAB MASUK HYBRID:", hisab);
-
   const now = new Date();
+  const hisab = getHijriAstronomical(lat, lon);
 
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes()/60;
 
+  // 🌑 ijtima terakhir
+  const ijtima = getLastIjtima();
+
+  // cek apakah ijtima sebelum maghrib
+  const ijtimaLocalHour = ijtima.getHours() + ijtima.getMinutes()/60;
+
+  const ijtimaBeforeMaghrib = ijtimaLocalHour < maghrib;
+
+  // 🌙 data hilal saat maghrib
   const hilal = hitungHilalCore(lat, lon);
   const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  // 🔥 DEBUG 2
-  console.log("DATA HILAL:", {
+  console.log("HYBRID CHECK:", {
+    hisab: hisab.d,
+    ijtimaBeforeMaghrib,
     alt: hilal.alt,
     elo: hilal.elo,
     imkan
@@ -2792,33 +2798,15 @@ function getHijriHybrid(lat, lon){
   let result = { ...hisab, source: "hybrid" };
 
   // =========================
-  // 🌇 SEBELUM MAGHRIB → TIDAK BERUBAH
+  // 🌙 PENENTUAN AWAL BULAN
   // =========================
-  if (jamNow < maghrib){
-    console.log("BELUM MAGHRIB → PAKAI HISAB");
-    return result;
+  if (jamNow >= maghrib && ijtimaBeforeMaghrib && imkan) {
+
+    // langsung lompat ke bulan baru
+    result = nextMonth(hisab);
+    result.d = 1;
+    result.note = "imkan rukyat (awal bulan)";
   }
-
-  // =========================
-  // 🌙 MALAM 29 → KEPUTUSAN
-  // =========================
-  if (hisab.d === 29){
-
-    console.log("EVALUASI MALAM 29");
-
-    if (imkan){
-      console.log("IMKAN TERPENUHI → BULAN BARU");
-      result = nextMonth(hisab);
-      result.note = "rukyat valid";
-    } else {
-      console.log("ISTIKMAL → 30");
-      result.d = 30;
-      result.note = "istikmal";
-    }
-  }
-
-  // 🔥 DEBUG FINAL
-  console.log("HASIL AKHIR HYBRID:", result);
 
   return result;
 }
