@@ -2772,33 +2772,36 @@ function getHijriHybrid(lat, lon){
   const now = new Date();
   const hisab = getHijriAstronomical(lat, lon);
 
-  const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
-  const jamNow = now.getHours() + now.getMinutes()/60;
+  // =========================
+  // 🌇 MAGHRIB KEMARIN
+  // =========================
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
 
-  // 🌑 ijtima terakhir
-  const ijtima = getLastIjtima();
+  const maghribYesterday = hitungMaghrib(lat, lon, yesterday)?.decimal ?? 18;
 
-  // 🌇 buat waktu maghrib dalam Date
-  const maghribDate = new Date(now);
-  maghribDate.setHours(
-    Math.floor(maghrib),
-    Math.floor((maghrib % 1) * 60),
+  const maghribDateYesterday = new Date(yesterday);
+  maghribDateYesterday.setHours(
+    Math.floor(maghribYesterday),
+    Math.floor((maghribYesterday % 1) * 60),
     0,
     0
   );
 
-  const ijtimaBeforeMaghrib = ijtima < maghribDate;
+  // =========================
+  // 🌑 IJTIMA
+  // =========================
+  const ijtima = getLastIjtima();
+  const ijtimaValid = ijtima < maghribDateYesterday;
 
-  // 🌙 data hilal saat maghrib
-  const hilal = hitungHilalCore(lat, lon);
+  // =========================
+  // 🌙 HILAL KEMARIN
+  // =========================
+  const hilal = hitungHilalCore(lat, lon, maghribDateYesterday);
   const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  // update status UI
-  statusHilal = imkan ? "Imkan Rukyat" : "Tidak Memenuhi";
-
-  console.log("HYBRID CHECK:", {
-    hisab: hisab.d,
-    ijtimaBeforeMaghrib,
+  console.log("CEK AWAL BULAN (KEMARIN):", {
+    ijtimaValid,
     alt: hilal.alt,
     elo: hilal.elo,
     imkan
@@ -2807,13 +2810,16 @@ function getHijriHybrid(lat, lon){
   let result = { ...hisab, source: "hybrid" };
 
   // =========================
-  // 🌙 PENENTUAN AWAL BULAN
+  // 🌙 JIKA KEMARIN AWAL BULAN
   // =========================
-  if (jamNow >= maghrib && ijtimaBeforeMaghrib && imkan) {
+  if (ijtimaValid && imkan) {
 
-    result = nextMonth(hisab);
-    result.d = 1;
-    result.note = "imkan rukyat (awal bulan)";
+    // hari ini = hari ke-(hisab - 1)
+    result.d = hisab.d - 1;
+
+    if (result.d < 1) result.d = 30;
+
+    result.note = "awal bulan sudah terjadi kemarin";
   }
 
   return result;
