@@ -2741,6 +2741,7 @@ function nextMonth(current){
 
 // === DAPATKAN HIJRI ===
 function getHijriAstronomical(lat, lon){
+  console.log("🔥 HISAB BARU AKTIF");
 
   const now = new Date();
   const SYNODIC = 29.530588853;
@@ -2796,7 +2797,8 @@ function getHijriAstronomical(lat, lon){
 let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
-
+  console.log("🔥 HYBRID BARU AKTIF");
+  
   const now = new Date();
   const hisab = getHijriAstronomical(lat, lon);
 
