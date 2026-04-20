@@ -318,7 +318,6 @@ function updateHijriRealTime(lat, lon, mode = "hisab") {
 
   let result;
 
-  // fallback safety
   const currentMode = typeof mode !== "undefined" ? mode : "hisab";
 
   if (currentMode === "hisab") {
@@ -337,6 +336,10 @@ function updateHijriRealTime(lat, lon, mode = "hisab") {
     console.error("Hijri result kosong atau engine tidak tersedia");
     return;
   }
+
+  // 🔥 DEBUG DI SINI
+  console.log("RESULT DARI ENGINE:", result);
+  console.log("FINAL UI DAY:", result.d);
 
   const bulan = [
     "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
@@ -2739,6 +2742,9 @@ let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
 
+  // 🔥 DEBUG 1
+  console.log("HISAB MASUK HYBRID:", hisab);
+
   const hisab = getHijriAstronomical(lat, lon);
   const now = new Date();
 
@@ -2747,6 +2753,13 @@ function getHijriHybrid(lat, lon){
 
   const hilal = hitungHilalCore(lat, lon);
   const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
+
+  // 🔥 DEBUG 2
+  console.log("DATA HILAL:", {
+    alt: hilal.alt,
+    elo: hilal.elo,
+    imkan: imkan
+  });
 
   let result = { ...hisab, source: "hybrid" };
 
@@ -2766,7 +2779,6 @@ function getHijriHybrid(lat, lon){
       result.note = "istikmal";
     }
   }
-
   return result;
 }
 
