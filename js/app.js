@@ -314,20 +314,27 @@ if (document.readyState === "loading") {
 }
 
 // === UPDATE HIJRI REALTIME ===
-function updateHijriRealTime(lat, lon, mode){
+function updateHijriRealTime(lat, lon, mode = "hisab") {
 
   let result;
 
-  if(mode === "hisab"){
-    result = getHijriAstronomical(lat, lon);
+  // fallback safety
+  const currentMode = typeof mode !== "undefined" ? mode : "hisab";
+
+  if (currentMode === "hisab") {
+    result = typeof getHijriAstronomical === "function"
+      ? getHijriAstronomical(lat, lon)
+      : null;
   }
 
-  if(mode === "hybrid"){
-    result = getHijriHybrid(lat, lon);
+  if (currentMode === "hybrid") {
+    result = typeof getHijriHybrid === "function"
+      ? getHijriHybrid(lat, lon)
+      : null;
   }
 
-  if(!result){
-    console.error("Hijri result kosong");
+  if (!result) {
+    console.error("Hijri result kosong atau engine tidak tersedia");
     return;
   }
 
@@ -337,11 +344,16 @@ function updateHijriRealTime(lat, lon, mode){
     "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
   ];
 
-  document.getElementById("hijri").innerText =
-    `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
+  const hijriEl = document.getElementById("hijri");
+  const statusEl = document.getElementById("statusHilal");
 
-  document.getElementById("statusHilal").innerText =
-    result.source;
+  if (hijriEl) {
+    hijriEl.innerText = `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
+  }
+
+  if (statusEl) {
+    statusEl.innerText = result.source || "-";
+  }
 
   console.log("HIJRI:", result);
 }
