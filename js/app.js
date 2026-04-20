@@ -2656,7 +2656,6 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
 
     current.setDate(current.getDate() + 1);
   }
-
   return count;
 }
 
@@ -2694,28 +2693,47 @@ function nextMonth(current){
   };
 }
 
-// === DAPATKAN HIJRI ====
+// === DAPATKAN HIJRI ===
 function getHijriAstronomical(lat, lon){
 
   const now = new Date();
   const SYNODIC = 29.530588853;
 
-  // 🌑 ijtima terakhir
+  // 🌑 Ambil ijtima terakhir
   const ijtima = getLastIjtima();
 
-  const msNow = now.getTime();
-  const msIjtima = ijtima.getTime();
+  const jdNow = now.getTime() / 86400000 + 2440587.5;
+  const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
 
   // =========================
-  // 📆 AGE BULAN (LEBIH STABIL)
+  // 📆 UMUR BULAN
   // =========================
-  const ageDays = (msNow - msIjtima) / 86400000;
-
-  // 🔥 FIX UTAMA: hindari modulo loncat
-  let d = Math.floor(ageDays) + 1;
+  const ageDays = jdNow - jdIjtima;
 
   // =========================
-  // 🌙 BULAN & TAHUN (BERDASARKAN SIKLUS)
+  // 📅 HITUNG TANGGAL
+  // =========================
+  let d = Math.floor(ageDays % SYNODIC) + 1;
+
+  // =========================
+  // 🌇 KOREKSI MAGHRIB (KRUSIAL)
+  // =========================
+  const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
+  const jamNow = now.getHours() + now.getMinutes() / 60;
+
+  // sebelum maghrib → masih hari sebelumnya
+  if (jamNow < maghrib) {
+    d -= 1;
+  }
+
+  // =========================
+  // 🔒 NORMALISASI HARI
+  // =========================
+  if (d < 1) d = 30;
+  if (d > 30) d = 30;
+
+  // =========================
+  // 📆 BULAN & TAHUN
   // =========================
   const cycle = Math.floor(ageDays / SYNODIC);
 
@@ -2726,17 +2744,15 @@ function getHijriAstronomical(lat, lon){
   let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
 
   // =========================
-  // 🔒 NORMALISASI
+  // 🔍 DEBUG
   // =========================
-  if (d > 30) d = 30;
-  if (d < 1) d = 1;
-
-  // 🔥 DEBUG
   console.log("DEBUG HISAB:", {
     ageDays,
     day: d,
     month: m,
-    year: y
+    year: y,
+    jamNow,
+    maghrib
   });
 
   return {
