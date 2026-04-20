@@ -1360,7 +1360,7 @@ function getLocation(){
         currentLon = lon;
 
         document.getElementById('loc').innerText = `${lat}, ${lon}`;
-        document.getElementById('lokasi').innerText = "GPS anda belum diaktifkan";
+        document.getElementById('lokasi').innerText = "Aplikasi ini berbasis lokasi, aktifkan dulu GPS anda agar aplikasi ini menjadi lebih akurat";
 
         declinationGlobal = 0;
 
