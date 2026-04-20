@@ -313,40 +313,64 @@ if (document.readyState === "loading") {
   initHijriToggle();
 }
 
-// === UPDATE HIJRI REALTIME ===
+// === GLOBAL LOCK ===
+let lastRender = {
+  mode: null,
+  time: 0
+};
+
+// === UPDATE HIJRI REALTIME FINAL ===
 function updateHijriRealTime(lat, lon, mode = "hisab") {
 
-  let result;
+  const now = Date.now();
 
-  const currentMode = typeof mode !== "undefined" ? mode : "hisab";
+  // 🔒 anti spam render (opsional tapi sangat disarankan)
+  if (now - lastRender.time < 500) return;
 
+  let result = null;
+  const currentMode = mode || "hisab";
+
+  // =========================
+  // 🔥 PILIH ENGINE
+  // =========================
   if (currentMode === "hisab") {
-    result = typeof getHijriAstronomical === "function"
-      ? getHijriAstronomical(lat, lon)
-      : null;
+    if (typeof getHijriAstronomical === "function") {
+      result = getHijriAstronomical(lat, lon);
+    }
+  } 
+  else if (currentMode === "hybrid") {
+    if (typeof getHijriHybrid === "function") {
+      result = getHijriHybrid(lat, lon);
+    }
   }
 
-  if (currentMode === "hybrid") {
-    result = typeof getHijriHybrid === "function"
-      ? getHijriHybrid(lat, lon)
-      : null;
-  }
-
+  // =========================
+  // ❌ SAFETY
+  // =========================
   if (!result) {
-    console.error("Hijri result kosong atau engine tidak tersedia");
+    console.error("❌ Hijri result kosong atau engine tidak tersedia");
     return;
   }
 
-  // 🔥 DEBUG DI SINI
-  console.log("RESULT DARI ENGINE:", result);
-  console.log("FINAL UI DAY:", result.d);
+  // =========================
+  // 🔥 DEBUG INTI
+  // =========================
+  console.log("=== HIJRI DEBUG ===");
+  console.log("MODE:", currentMode);
+  console.log("RESULT:", result);
 
+  // =========================
+  // 📅 NAMA BULAN
+  // =========================
   const bulan = [
     "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
     "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
     "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
   ];
 
+  // =========================
+  // 🎯 RENDER UI
+  // =========================
   const hijriEl = document.getElementById("hijri");
   const statusEl = document.getElementById("statusHilal");
 
@@ -355,10 +379,14 @@ function updateHijriRealTime(lat, lon, mode = "hisab") {
   }
 
   if (statusEl) {
-    statusEl.innerText = result.source || "-";
+    statusEl.innerText = result.source || currentMode;
   }
 
-  console.log("HIJRI:", result);
+  // =========================
+  // 🔒 SIMPAN STATUS TERAKHIR
+  // =========================
+  lastRender.mode = currentMode;
+  lastRender.time = now;
 }
   
 // === INIT ===
