@@ -300,7 +300,8 @@ function initHijriToggle(){
 
   // 🔥 reset agar bisa re-evaluate
   sudahCekHariIni = false;
-
+  
+  lastRender.time = 0; // 🔥 paksa refresh
   updateHijriRealTime(currentLat, currentLon);
 
 });
