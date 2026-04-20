@@ -320,7 +320,7 @@ let lastRender = {
 };
 
 // === UPDATE HIJRI REALTIME FINAL ===
-function updateHijriRealTime(lat, lon, mode = "hisab") {
+function updateHijriRealTime(lat, lon) {
 
   const now = Date.now();
 
@@ -328,7 +328,7 @@ function updateHijriRealTime(lat, lon, mode = "hisab") {
   if (now - lastRender.time < 500) return;
 
   let result = null;
-  const currentMode = mode || "hisab";
+  const currentMode = modeHijri ? "hisab" : "hybrid";
 
   // =========================
   // 🔥 PILIH ENGINE
@@ -1308,7 +1308,7 @@ function getLocation(){
         }
       
         setInterval(() => {
-          updateHijriRealTime(lat, lon, "hybrid");
+          updateHijriRealTime(currentLat, currentLon);
         }, 1000);                                           
 
         // 🔹 Declination
