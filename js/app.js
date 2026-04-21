@@ -2750,10 +2750,10 @@ function getHijriAstronomical(lat, lon){
   let y = 30 * N + J - 30;
 
   return {
-    d,
-    m,
-    y,
-    source: "hisab"
+  d: Math.floor(d),
+  m: Math.floor(m),
+  y: Math.floor(y),
+  source: "hisab"
   };
 }
 
