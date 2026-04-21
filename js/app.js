@@ -2702,58 +2702,59 @@ function nextMonth(current){
 function getHijriAstronomical(lat, lon){
 
   const now = new Date();
+  const SYNODIC = 29.530588853;
+
+  const ijtima = getLastIjtima();
+
+  const jdNow = now.getTime() / 86400000 + 2440587.5;
+  const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
+
+  const ageDays = jdNow - jdIjtima;
 
   // =========================
-  // 🌇 MAGHRIB HARI INI
+  // 📅 HITUNG HARI (FIXED)
   // =========================
+  let d = Math.floor(ageDays);
+
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
+  const jamNow = now.getHours() + now.getMinutes()/60;
 
-  const maghribToday = new Date(now);
-  maghribToday.setHours(
-    Math.floor(maghrib),
-    Math.floor((maghrib % 1) * 60),
-    0, 0
-  );
-
-  // =========================
-  // 🔥 KUNCI: SHIFT KE HARI HIJRI
-  // =========================
-  let baseDate = new Date(now);
-
-  // sebelum maghrib = masih hari hijri kemarin
-  if (now < maghribToday) {
-    baseDate.setDate(baseDate.getDate() - 1);
+  // 🌙 setelah maghrib → masuk hari baru
+  if (jamNow >= maghrib) {
+    d += 1;
   }
 
-  // =========================
-  // 📅 JULIAN DAY
-  // =========================
-  const JD = (baseDate / 86400000) + 2440587.5;
+  // 🔒 NORMALISASI
+  if (d < 1) d = 1;
+  if (d > 30) d = 30;
 
   // =========================
-  // 🌙 KONVERSI HIJRI (TABULAR / ASTRONOMI)
+  // 📆 BULAN & TAHUN
   // =========================
-  let L = JD - 1948440 + 10632;
-  let N = Math.floor((L - 1) / 10631);
-  L = L - 10631 * N + 354;
-  let J = (Math.floor((10985 - L) / 5316)) *
-          (Math.floor((50 * L) / 17719)) +
-          (Math.floor(L / 5670)) *
-          (Math.floor((43 * L) / 15238));
-  L = L - (Math.floor((30 - J) / 15)) *
-          (Math.floor((17719 * J) / 50)) -
-          (Math.floor(J / 16)) *
-          (Math.floor((15238 * J) / 43)) + 29;
+  const cycle = Math.floor(ageDays / SYNODIC);
 
-  let m = Math.floor((24 * L) / 709);
-  let d = L - Math.floor((709 * m) / 24);
-  let y = 30 * N + J - 30;
+  const BASE_YEAR = 1447;
+  const BASE_MONTH = 11;
+
+  let m = ((BASE_MONTH - 1 + cycle) % 12) + 1;
+  let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
+
+  // 🔍 DEBUG
+  console.log("DEBUG HISAB FINAL:", {
+    ageDays,
+    d,
+    m,
+    y,
+    jamNow,
+    maghrib
+  });
 
   return {
-  d: Math.floor(d),
-  m: Math.floor(m),
-  y: Math.floor(y),
-  source: "hisab"
+    d,
+    m,
+    y,
+    age: ageDays * 24,
+    source: "hisab"
   };
 }
 
