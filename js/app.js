@@ -2818,43 +2818,77 @@ function getHijriAstronomical(lat, lon){
   const now = new Date();
   const SYNODIC = 29.530588853;
 
+  // =========================
+  // 🌑 IJTIMA TERAKHIR
+  // =========================
   const ijtima = getLastIjtima();
 
   const jdNow = now.getTime() / 86400000 + 2440587.5;
   const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
 
+  // =========================
+  // 📅 UMUR BULAN
+  // =========================
   const ageDays = jdNow - jdIjtima;
 
-  // 🔥 FIX UTAMA (ANTI LONCAT)
-  let d = Math.floor(ageDays + 0.5) % 30;
-  if(d === 0) d = 30;
+  // =========================
+  // 📆 HITUNG HARI (HISAB)
+  // =========================
+  let d = Math.floor(ageDays % SYNODIC) + 1;
 
-  // 🌇 KOREKSI MAGHRIB
-  const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
-  const jamNow = now.getHours() + now.getMinutes()/60;
+  // =========================
+  // 🌇 MAGHRIB (ANTI BUG)
+  // =========================
+  const maghribDecimal = hitungMaghrib(lat, lon)?.decimal ?? 18;
 
-  if(jamNow < maghrib){
+  const maghribTime = new Date(now);
+  maghribTime.setHours(
+    Math.floor(maghribDecimal),
+    Math.floor((maghribDecimal % 1) * 60),
+    0,
+    0
+  );
+
+  // sebelum maghrib → masih hari sebelumnya
+  if (now.getTime() < maghribTime.getTime()) {
     d -= 1;
-    if(d < 1) d = 30;
   }
 
+  // =========================
+  // 🔒 NORMALISASI
+  // =========================
+  if (d < 1) d = 30;
+  if (d > 30) d = 30;
+
+  // =========================
   // 📆 BULAN & TAHUN
+  // =========================
   const cycle = Math.floor(ageDays / SYNODIC);
 
   const BASE_YEAR = 1447;
-  const BASE_MONTH = 11;
+  const BASE_MONTH = 11; // Zulkaidah
 
   let m = ((BASE_MONTH - 1 + cycle) % 12) + 1;
   let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
 
-  console.log("DEBUG HISAB FINAL:", { ageDays, d, m, y, jamNow, maghrib });
+  // =========================
+  // 🔍 DEBUG
+  // =========================
+  console.log("DEBUG HISAB FINAL:", {
+    ageDays,
+    day: d,
+    month: m,
+    year: y,
+    now: now.toLocaleTimeString(),
+    maghrib: maghribTime.toLocaleTimeString()
+  });
 
   return {
     d,
     m,
     y,
     age: ageDays * 24,
-    source: "hisab"
+    source: "hisab-astronomical-final"
   };
 }
 
