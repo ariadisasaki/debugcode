@@ -2321,7 +2321,7 @@ function updateHijriAfterMaghrib(lat, lon){
   console.log("🌙 UPDATE MAGHRIB:", h);
 
   // 🖥️ update UI (sesuaikan ID kamu)
-  const el = document.getElementById("hijriDate");
+  const el = document.getElementById("hijri");
   if(el){
     el.innerText = `${h.d} ${h.m} ${h.y} H`;
   }
