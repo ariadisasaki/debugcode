@@ -2312,6 +2312,24 @@ function hitungMaghrib(lat, lon){
   return { decimal: maghrib };
 }
 
+// === HIJRI SETELAH MAGHRIB ===
+function updateHijriAfterMaghrib(lat, lon){
+
+  // 🔄 ambil data terbaru
+  const h = getHijriHybrid(lat, lon);
+
+  console.log("🌙 UPDATE MAGHRIB:", h);
+
+  // 🖥️ update UI (sesuaikan ID kamu)
+  const el = document.getElementById("hijriDate");
+  if(el){
+    el.innerText = `${h.d} ${h.m} ${h.y} H`;
+  }
+
+  // 💾 simpan state (opsional tapi bagus)
+  localStorage.setItem("hijriLastUpdate", JSON.stringify(h));
+}
+
 // === MAGHRIB WATCHER ===
 function startMaghribWatcher(lat, lon){
 
@@ -2334,7 +2352,8 @@ function startMaghribWatcher(lat, lon){
 
       localStorage.setItem("hilalReloadDate", todayKey);
 
-      requestHijriUpdate(); // ✅ SATU PINTU
+      // 🔥 GANTI DI SINI
+      updateHijriAfterMaghrib(lat, lon);
 
       showNotif("Maghrib", "Tanggal Hijriah diperbarui 🌙");
     }
