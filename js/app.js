@@ -2797,8 +2797,7 @@ function getHijriAstronomical(lat, lon){
 let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
-  console.log("🔥 HYBRID BARU AKTIF");
-  
+
   const now = new Date();
   const hisab = getHijriAstronomical(lat, lon);
 
@@ -2829,30 +2828,20 @@ function getHijriHybrid(lat, lon){
   const hilal = hitungHilalCore(lat, lon, maghribDateYesterday);
   const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  console.log("CEK HYBRID:", {
-    ijtimaValid,
-    alt: hilal.alt,
-    elo: hilal.elo,
-    imkan
-  });
-
+  // =========================
+  // 🔥 KEPUTUSAN
+  // =========================
   let result = { ...hisab, source: "hybrid" };
 
-  // =========================
-  // 🌙 LOGIKA AWAL BULAN
-  // =========================
   if (ijtimaValid && imkan) {
-
+    // ✅ RUKYAT BERHASIL → IKUT HISAB
+    result.note = "rukyat berhasil";
+  } else {
+    // ❌ ISTIKMAL → mundur 1 hari
     result.d = hisab.d - 1;
-
     if (result.d < 1) result.d = 30;
 
-    result.note = "awal bulan sudah terjadi kemarin";
-  }
-
-  // 🔒 PROTEKSI: jangan turun lebih dari 1 hari
-  if(result.d < hisab.d - 1){
-    result.d = hisab.d - 1;
+    result.note = "istikmal";
   }
 
   return result;
