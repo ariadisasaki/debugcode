@@ -2712,16 +2712,16 @@ function getHijriAstronomical(lat, lon){
   const ageDays = jdNow - jdIjtima;
 
   // =========================
-  // 📅 HITUNG HARI (FIXED)
+  // 📅 HITUNG HARI (FIX FINAL)
   // =========================
-  let d = Math.floor(ageDays);
+  let d = Math.floor(ageDays) + 1;
 
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes()/60;
 
-  // 🌙 setelah maghrib → masuk hari baru
-  if (jamNow >= maghrib) {
-    d += 1;
+  // sebelum maghrib → masih hari sebelumnya
+  if (jamNow < maghrib) {
+    d -= 1;
   }
 
   // 🔒 NORMALISASI
@@ -2739,7 +2739,6 @@ function getHijriAstronomical(lat, lon){
   let m = ((BASE_MONTH - 1 + cycle) % 12) + 1;
   let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
 
-  // 🔍 DEBUG
   console.log("DEBUG HISAB FINAL:", {
     ageDays,
     d,
