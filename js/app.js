@@ -2884,27 +2884,44 @@ let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
 
-  const now = new Date();
+  const hisab = getHijriAstronomical(lat, lon);
 
-  // 🔄 jalankan auto decision
-  getMonthDecision(lat, lon);
+  const ijtima = getLastIjtima();
 
-  const base = getCurrentBaseDate(lat, lon);
+  const maghribYesterday = getMaghribKemarin(lat, lon);
 
-  // fallback jika belum ada keputusan
-  if(!base){
-    const hisab = getHijriAstronomical(lat, lon);
-    return {
-      ...hisab,
-      source: "hybrid-fallback"
-    };
+  const hilal = getHilalData(lat, lon);
+
+  // =========================
+  // VALIDASI
+  // =========================
+  const ijtimaValid = ijtima < maghribYesterday;
+
+  const imkan = hilal.alt >= 3 && hilal.elong >= 6.4;
+
+  let d = hisab.d;
+
+  // =========================
+  // LOGIKA MABIMS
+  // =========================
+  if (!(ijtimaValid && imkan)) {
+    // ❗ ISTIKMAL → mundur 1 hari
+    d = hisab.d - 1;
   }
 
-  const diff = Math.floor((now - base)/86400000);
+  // =========================
+  // NORMALISASI
+  // =========================
+  if (d < 1) d = 30;
 
-  let d = diff + 1;
-
-  const hisab = getHijriAstronomical(lat, lon);
+  console.log("DEBUG FINAL HYBRID:", {
+    hisab: hisab.d,
+    hybrid: d,
+    ijtimaValid,
+    alt: hilal.alt,
+    elong: hilal.elong,
+    imkan
+  });
 
   return {
     d,
