@@ -1528,7 +1528,7 @@ const rad = Math.PI/180;
 const deg = 180/Math.PI;
 
 // ===== HIJRI INSIGHT =====
-function getHijriInsight(lat, lon, maghrib, now){
+function getHijriInsight(data, maghrib, now){
 
   const data = hitungHilalCore(lat, lon); // 🔥 FIX UTAMA
 
