@@ -48,16 +48,16 @@ setInterval(() => {
 }, 2000);
 
 // === HIJRI DEBUG ===
-const DEBUG_HIJRI = true;
+if(DEBUG_HIJRI) console.log(...)
 
-function logHijriDebug(label, data){
-  if(!DEBUG_HIJRI) return;
+let lastHijriLog = 0;
 
-  console.log(
-    `%c🌙 ${label}`,
-    "color: #00bcd4; font-weight: bold;",
-    data
-  );
+function logOnce(label, data){
+  const now = Date.now();
+  if(now - lastHijriLog < 2000) return; // 2 detik
+
+  lastHijriLog = now;
+  console.log("🌙", label, data);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
