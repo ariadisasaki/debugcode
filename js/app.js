@@ -1529,9 +1529,6 @@ const deg = 180/Math.PI;
 
 // ===== HIJRI INSIGHT =====
 function getHijriInsight(data, maghrib, now){
-
-  const data = hitungHilalCore(lat, lon); // 🔥 FIX UTAMA
-
   const { alt, azi, elo, age, illumination } = data;
 
   const jam = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
