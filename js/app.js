@@ -2948,88 +2948,75 @@ function resetHybridDaily(){
   }
 }
 
-// === HIJRI DISPLAY ===
-function updateHijriDisplay(){
+// === HIJRI DISPLAY (FINAL DEBUG VERSION) ===
+function updateHijriDisplay() {
 
-  if(!currentLat || !currentLon){
-    console.log("⛔ Lokasi belum siap");
+  console.log("🔥 updateHijriDisplay DIPANGGIL");
+
+  // =========================
+  // ⛔ GPS CHECK
+  // =========================
+  if (currentLat == null || currentLon == null) {
+    console.log("⛔ GPS belum siap", { currentLat, currentLon });
     return;
   }
 
+  console.log("📍 GPS:", currentLat, currentLon);
+  console.log("⚙️ MODE:", modeHijri ? "HISAB" : "HYBRID");
+
+  // =========================
+  // 🔥 ENGINE SELECT
+  // =========================
   const data = modeHijri
     ? getHijriAstronomical(currentLat, currentLon)
     : getHijriHybrid(currentLat, currentLon);
 
-  // 🔥 SAFETY CRITICAL
-  if(!data){
-    console.log("⛔ Hijri data NULL");
+  console.log("📦 RAW HIJRI DATA:", data);
+
+  // =========================
+  // ❌ SAFETY CHECK
+  // =========================
+  if (!data || typeof data.d === "undefined") {
+    console.log("⛔ DATA HIJRI INVALID / NULL", data);
     return;
   }
 
-  const hilal = hitungHilalCore(currentLat, currentLon);
-  const maghrib = hitungMaghrib(currentLat, currentLon)?.decimal ?? 18;
-  const ijtima = getLastIjtima();
-
   // =========================
-  // 🔥 DEBUG UTAMA (INI YANG KAMU MAU)
-  // =========================
-  console.group("🌙 HIJRI DEBUG FULL");
-
-  console.log("📍 LOCATION", {
-    lat: currentLat,
-    lon: currentLon
-  });
-
-  console.log("🧮 MODE HIJRI", modeHijri ? "HISAB" : "HYBRID");
-
-  console.log("📅 HIJRI DATA", {
-    d: data.d,
-    m: data.m,
-    y: data.y,
-    age: data.age,
-    source: data.source
-  });
-
-  console.log("🌙 HILAL CORE", {
-    alt: hilal?.alt,
-    elo: hilal?.elo,
-    azi: hilal?.azi,
-    illumination: hilal?.illumination
-  });
-
-  console.log("🌇 MAGHRIB", {
-    maghrib,
-    jamNow: new Date().getHours() + new Date().getMinutes() / 60
-  });
-
-  console.log("🌑 IJTIMA", {
-    ijtima,
-    valid: ijtima instanceof Date
-  });
-
-  console.log("📊 STATUS KESIMPULAN", {
-    imkan: hilal?.alt >= 3 && hilal?.elo >= 6.4,
-    status: (hilal?.alt >= 3 && hilal?.elo >= 6.4) ? "IMKAN RUKYAT" : "ISTIKMAL"
-  });
-
-  console.groupEnd();
-
-  // =========================
-  // 🖥️ RENDER UI
+  // 🧩 ELEMENT CHECK
   // =========================
   const el = document.getElementById("hijri");
-  if(!el){
-    console.log("⛔ Element #hijri tidak ditemukan");
+  console.log("🧩 ELEMENT #hijri:", el);
+
+  if (!el) {
+    console.log("⛔ Element #hijri tidak ditemukan di HTML");
     return;
   }
 
+  // =========================
+  // 📅 BULAN
+  // =========================
   const bulan = [
     "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
     "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
     "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
   ];
 
+  // =========================
+  // 🔥 FINAL OUTPUT CHECK
+  // =========================
+  console.log("📌 FINAL HIJRI:", {
+    hari: data.d,
+    bulan: bulan[data.m - 1],
+    tahun: data.y,
+    source: data.source
+  });
+
+  // =========================
+  // 🎯 RENDER UI
+  // =========================
   el.innerText = `${data.d} ${bulan[data.m - 1]} ${data.y} H`;
+
+  console.log("✅ UI HIJRI UPDATED");
 }
 
 // === HIJRI MOONT YEAR ===
