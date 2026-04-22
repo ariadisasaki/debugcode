@@ -2934,7 +2934,8 @@ function updateHijriDisplay(){
   const lon = currentLon;
 
   const data = hijriFinalState;
-
+  
+  console.log("🔥 updateHijriDisplay jalan");
   console.log("🟢 DISPLAY MODE:", modeHijri ? "HISAB" : "HYBRID");
   console.log("🟢 DISPLAY RESULT:", data);
 
