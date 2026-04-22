@@ -2850,12 +2850,18 @@ function getHijriHybrid(lat, lon){
   const hilal = hitungHilalCore(lat, lon, maghribDateYesterday);
   const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  console.log("CEK AWAL BULAN (KEMARIN):", {
-    ijtimaValid,
+  console.log("=== DEBUG HYBRID ===");
+  console.log("NOW:", now.toString());
+  console.log("MAGHRIB KEMARIN:", maghribDateYesterday.toString());
+  console.log("IJTIMA:", ijtima.toString());
+  console.log("IJTIMA VALID:", ijtimaValid);
+  console.log("HILAL:", {
     alt: hilal.alt,
-    elo: hilal.elo,
-    imkan
+    elo: hilal.elo
   });
+  console.log("IMKAN:", imkan);
+  console.log("HISAB:", hisab.d);
+  console.log("====================");
 
   let result = { ...hisab, source: "hybrid" };
 
@@ -2864,12 +2870,11 @@ function getHijriHybrid(lat, lon){
   // =========================
   if (ijtimaValid && imkan) {
 
-  if(now >= maghribDateYesterday){
-    // hari ini sudah masuk bulan baru
+  // jika kemarin sudah memenuhi syarat awal bulan
+  if (ijtimaValid && imkan) {
     result.d = hisab.d;
   } else {
-    // sebelum maghrib → masih hari lama
-    result.d = hisab.d;
+    result.d = hisab.d - 1;
   }
   }
   return result;
