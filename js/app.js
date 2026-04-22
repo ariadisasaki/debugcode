@@ -1343,11 +1343,7 @@ function getLocation(){
 
         }catch{
             lokasiEl.innerText = "Lokasi tidak tersedia";
-        }
-      
-        setInterval(() => {
-          updateHijriRealTime(currentLat, currentLon);
-        }, 1000);                                           
+        }                                               
 
         // 🔹 Declination
         await getMagneticDeclination(lat, lon);
