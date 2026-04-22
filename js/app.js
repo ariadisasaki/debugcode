@@ -26,6 +26,7 @@ let running = true;
 let loopId = null;
 let lastCheckDate = null;
 let sudahCekHariIni = false;
+let hijriFinalState = null;
 let hilalDataFull = {
   alt: 0,
   azi: 0,
@@ -335,9 +336,6 @@ function initHijriToggle(){
     // =========================
     if(currentLat && currentLon){
 
-      // ❌ jangan pakai updateHijriRealTime saja
-      // ✔ pakai centralized renderer
-
       updateHijriDisplay();
     }
 
@@ -434,7 +432,6 @@ window.onload = () => {
   initPlanetarium();
   generateGalaxy();
   generateClouds();
-  updateHijriRealTime(-8.6522, 116.5293);
   getLocation();
   initSensor();
   
@@ -2951,6 +2948,39 @@ function getHijriMonthYear(date){
     m: ((Math.floor(days / 29.530588853) % 12) + 1),
     y: 1445 + year
   };
+}
+
+// === RENDER HIJRI ===
+function renderHijriUI(){
+
+  if(!currentLat || !currentLon) return;
+
+  const data = getHijriFinal(currentLat, currentLon);
+
+  const bulan = [
+    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+  ];
+
+  const el = document.getElementById("hijri");
+
+  if(el){
+    el.innerText = `${data.d} ${bulan[data.m - 1]} ${data.y} H`;
+  }
+}
+
+// === HIJRI FINAL ===
+function getHijriFinal(lat, lon){
+
+  const hisab = getHijriAstronomical(lat, lon);
+  const hybrid = getHijriHybrid(lat, lon);
+
+  const result = modeHijri ? hybrid : hisab;
+
+  hijriFinalState = result; // simpan hasil final
+
+  return result;
 }
 
 // === WAKTU MAGHRIB ===
