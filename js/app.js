@@ -2895,24 +2895,28 @@ function resetHybridDaily(){
 // === HIJRI DISPLAY ===
 function updateHijriDisplay(){
 
-  let result;
+  const lat = currentLat;
+  const lon = currentLon;
 
-  if(modeHijri){
-    result = getHijriAstronomical(currentLat, currentLon);
-  } else {
-    result = getHijriHybrid(currentLat, currentLon);
+  const data = modeHijri
+    ? getHijriAstronomical(lat, lon)
+    : getHijriHybrid(lat, lon);
+
+  console.log("🟢 DISPLAY MODE:", modeHijri ? "HISAB" : "HYBRID");
+  console.log("🟢 DISPLAY RESULT:", data);
+
+  const el = document.getElementById("hijri");
+
+  if(el){
+    const bulan = [
+      "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+      "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+      "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+    ];
+
+    el.innerText = `${data.d} ${bulan[data.m-1]} ${data.y} H`;
   }
-
-  const bulan = [
-    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
-    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
-    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
-  ];
-
-  document.getElementById('hijri').innerText =
-    `${result.d} ${bulan[result.m-1]} ${result.y} H`;
 }
-
 // === HIJRI MOONT YEAR ===
 function getHijriMonthYear(date){
 
