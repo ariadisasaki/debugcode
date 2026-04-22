@@ -1343,6 +1343,9 @@ function getLocation() {
       hybrid: hybrid?.d
     });
 
+    // jalan sekali saat app start
+    runHybridEngine(currentLat, currentLon);
+
     // =========================
     // ✅ SIMPAN GLOBAL
     // =========================
@@ -1390,6 +1393,11 @@ function getLocation() {
       // =========================
       // 🔥 GLOBAL INTERVAL (HANYA SEKALI)
       // =========================
+
+      // cek tiap 1 menit
+      setInterval(() => {
+        runHybridEngine(currentLat, currentLon);
+      }, 60000);
 
       setInterval(() => {
         hitungHilal(currentLat, currentLon);
