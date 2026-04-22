@@ -2766,36 +2766,39 @@ function getHijriAstronomical(lat, lon){
   const now = new Date();
   const SYNODIC = 29.530588853;
 
-  // 🌑 Ambil ijtima terakhir
+  // 🌑 IJTIMA SAFETY CHECK
   const ijtima = getLastIjtima();
+
+  if (!ijtima || !(ijtima instanceof Date) || isNaN(ijtima.getTime())) {
+    console.error("❌ Ijtima tidak valid:", ijtima);
+
+    return {
+      d: 1,
+      m: 1,
+      y: 1447,
+      age: 0,
+      source: "error-ijtima"
+    };
+  }
 
   const jdNow = now.getTime() / 86400000 + 2440587.5;
   const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
 
-  // =========================
-  // 📆 UMUR BULAN
-  // =========================
   const ageDays = jdNow - jdIjtima;
 
   // =========================
-  // 📅 HITUNG TANGGAL
+  // 📅 HARI
   // =========================
   let d = Math.floor(ageDays) + 1;
 
-  // =========================
-  // 🌇 KOREKSI MAGHRIB (KRUSIAL)
-  // =========================
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes() / 60;
 
-  // sebelum maghrib → masih hari sebelumnya
   if (jamNow < maghrib) {
     d -= 1;
   }
 
-  // =========================
-  // 🔒 NORMALISASI HARI
-  // =========================
+  // clamp aman
   if (d < 1) d = 1;
   if (d > 30) d = 30;
 
@@ -2805,22 +2808,14 @@ function getHijriAstronomical(lat, lon){
   const cycle = Math.floor(ageDays / SYNODIC);
 
   const BASE_YEAR = 1447;
-  const BASE_MONTH = 11; // Zulkaidah
+  const BASE_MONTH = 11;
 
   let m = ((BASE_MONTH - 1 + cycle) % 12) + 1;
   let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
 
-  // =========================
-  // 🔍 DEBUG
-  // =========================
-  console.log("DEBUG HISAB:", {
-    ageDays,
-    day: d,
-    month: m,
-    year: y,
-    jamNow,
-    maghrib
-  });
+  // safety final
+  if (isNaN(m)) m = 1;
+  if (isNaN(y)) y = 1447;
 
   return {
     d,
@@ -2839,6 +2834,16 @@ function getHijriHybrid(lat, lon){
   const now = new Date();
   const hisab = getHijriAstronomical(lat, lon);
 
+  if (!hisab) {
+    return {
+      d: 1,
+      m: 1,
+      y: 1447,
+      age: 0,
+      source: "fallback-hisab-null"
+    };
+  }
+
   // =========================
   // 🌇 MAGHRIB KEMARIN
   // =========================
@@ -2856,49 +2861,35 @@ function getHijriHybrid(lat, lon){
   );
 
   // =========================
-  // 🌑 IJTIMA CHECK
+  // 🌑 IJTIMA SAFETY
   // =========================
   const ijtima = getLastIjtima();
-  const ijtimaValid = ijtima < maghribDateYesterday;
+  const ijtimaValid =
+    ijtima instanceof Date &&
+    !isNaN(ijtima.getTime()) &&
+    ijtima < maghribDateYesterday;
 
   // =========================
-  // 🌙 HILAL CHECK KEMARIN
+  // 🌙 HILAL
   // =========================
-  const hilal = hitungHilalCore(lat, lon, maghribDateYesterday);
+  const hilal = hitungHilalCore(lat, lon, maghribDateYesterday) || {};
 
-  const imkan =
-    (hilal.alt >= 3 && hilal.elo >= 6.4);
+  const alt = hilal.alt ?? 0;
+  const elo = hilal.elo ?? 0;
+
+  const imkan = (alt >= 3 && elo >= 6.4);
 
   // =========================
-  // 🕒 JAM SAAT INI
+  // 🕒 JAM
   // =========================
   const maghribToday = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes() / 60;
 
   // =========================
-  // 🔥 LOG DEBUG
+  // RESULT BASE
   // =========================
-  console.log("=== DEBUG HYBRID FINAL ===");
-  console.log("NOW:", now.toString());
-  console.log("MAGHRIB KEMARIN:", maghribDateYesterday.toString());
-  console.log("IJTIMA:", ijtima.toString());
-  console.log("IJTIMA VALID:", ijtimaValid);
-  console.log("HILAL:", { alt: hilal.alt, elo: hilal.elo });
-  console.log("IMKAN:", imkan);
-  console.log("HISAB DAY:", hisab.d);
-  console.log("==========================");
+  let result = { ...hisab, source: "hybrid" };
 
-  // =========================
-  // 📌 DEFAULT RESULT
-  // =========================
-  let result = {
-    ...hisab,
-    source: "hybrid"
-  };
-
-  // =========================
-  // 🌙 LOGIKA PENENTUAN HARI
-  // =========================
   const masukHariBaru =
     ijtimaValid &&
     imkan &&
@@ -2906,14 +2897,13 @@ function getHijriHybrid(lat, lon){
 
   if (masukHariBaru) {
     result.d = hisab.d;
-    statusHilal = "AWAL BULAN (CONFIRMED)";
   } else {
     result.d = Math.max(1, hisab.d - 1);
-    statusHilal = "BELUM AWAL BULAN";
   }
 
   return result;
 }
+
 // === RESET HYBRID ===
 function resetHybridDaily(){
 
@@ -2950,6 +2940,7 @@ function updateHijriDisplay(){
     el.innerText = `${data.d} ${bulan[data.m-1]} ${data.y} H`;
   }
 }
+
 // === HIJRI MOONT YEAR ===
 function getHijriMonthYear(date){
 
