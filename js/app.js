@@ -47,6 +47,12 @@ setInterval(() => {
   updateHijriDisplay();
 }, 2000);
 
+// === HIJRI DEBUG ===
+function logHijriDebug(label, data) {
+  console.log(`\n🧭 [${label}]`);
+  console.table(data);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
   // === GLOBAL INSTALL ===
@@ -2205,6 +2211,13 @@ function hitungHilalCore(lat, lon, customTime=null){
   // === ILLUMINATION ===
   const illumination = (1 - Math.cos(elo * rad)) / 2 * 100;
 
+  logHijriDebug("HILAL CORE", {
+    alt,
+    azi,
+    elo,
+    age
+  });
+
   // =========================
   // OUTPUT SAFE
   // =========================
@@ -2347,6 +2360,11 @@ function hitungMaghrib(lat, lon, customDate=null){
   const solarNoon = 12 + timezone - (lon/15) - (EoT/60);
 
   const maghrib = solarNoon + (H/15);
+
+  logHijriDebug("MAGHRIB", {
+    decimal: maghrib,
+    jam: new Date()
+  });
 
   return { decimal: maghrib };
 }
@@ -2811,6 +2829,15 @@ function getHijriAstronomical(lat, lon){
   if (!Number.isFinite(m)) m = 1;
   if (!Number.isFinite(y)) y = 1447;
 
+  logHijriDebug("HISAB ENGINE", {
+    d,
+    m,
+    y,
+    ageDays,
+    maghrib,
+    jamNow
+  });
+
   return {
     d,
     m,
@@ -2900,6 +2927,14 @@ function getHijriHybrid(lat, lon){
   result.d = masukHariBaru
     ? hisab.d
     : Math.max(1, hisab.d - 1);
+
+  logHijriDebug("HYBRID ENGINE", {
+    hisabDay: hisab.d,
+    ijtimaValid,
+    imkan,
+    jamNow,
+    statusHilal
+  });
 
   return result;
 }
