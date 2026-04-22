@@ -1528,7 +1528,9 @@ const rad = Math.PI/180;
 const deg = 180/Math.PI;
 
 // ===== HIJRI INSIGHT =====
-function getHijriInsight(data, maghrib, now){
+function getHijriInsight(lat, lon, maghrib, now){
+  const data = hitungHilalCore(lat, lon); // 🔥 FIX UTAMA
+
   const { alt, azi, elo, age, illumination } = data;
 
   const jam = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
@@ -1845,7 +1847,7 @@ function updateHilalAR(){
   const now = new Date();
   const simulatedTime = new Date(now.getTime() + (1000 * arSpeed));
 
-  const data = hitungHilalCore(currentLat, currentLon, simulatedTime);
+  const data = (currentLat, currentLon, simulatedTime);
 
   hilalData.alt = data.alt;
   hilalData.azi = data.azi;
@@ -1913,7 +1915,7 @@ function hitungHilal(lat, lon, customTime=null){
   if(prediksiEl) prediksiEl.innerText = "";
 
   // 🌌 DATA ASTRONOMI
-  const data = hitungHilalCore(lat, lon, customTime);
+  const data = (lat, lon, customTime);
 
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
@@ -2058,7 +2060,7 @@ function generateHilalPath(lat, lon){
 
 // ==== HITUNG HILAL MENDATANG ===
 function hitungHilalFuture(lat, lon, time){
-  return hitungHilalCore(lat, lon, time);
+  return (lat, lon, time);
 }
 
 // === HITUNG HILAL CORE ===
@@ -2069,13 +2071,11 @@ function hitungHilalCore(lat, lon, customTime=null){
 
   const now = customTime ? new Date(customTime) : new Date();
 
-  // === TIME ===
   const JD_UTC = (now.getTime()/86400000)+2440587.5;
   const deltaT = getDeltaT()/86400;
   const JD = JD_UTC + deltaT;
   const T = (JD - 2451545)/36525;
 
-  // === OBLIQUITY + NUTATION ===
   let epsilon0 = 23 + 26/60 + 21.448/3600
     - (46.8150*T + 0.00059*T*T - 0.001813*T*T*T)/3600;
 
@@ -2097,7 +2097,6 @@ function hitungHilalCore(lat, lon, customTime=null){
 
   const epsilon = epsilon0 + deltaEps;
 
-  // === SUN ===
   const M = (357.52911 + 35999.05029*T) % 360;
 
   const C =
@@ -2115,7 +2114,6 @@ function hitungHilalCore(lat, lon, customTime=null){
     Math.sin(epsilon*rad)*Math.sin(sunLong*rad)
   ) * deg;
 
-  // === MOON ===
   const D = (297.8501921 + 445267.1114034*T) % 360;
   const Mm = (134.9633964 + 477198.8675055*T) % 360;
   const Ms = M;
@@ -2126,22 +2124,13 @@ function hitungHilalCore(lat, lon, customTime=null){
     + 6.289*Math.sin(Mm*rad)
     + 1.274*Math.sin((2*D - Mm)*rad)
     + 0.658*Math.sin(2*D*rad)
-    + 0.214*Math.sin(2*Mm*rad)
-    - 0.186*Math.sin(Ms*rad)
-    - 0.059*Math.sin((2*D - 2*Mm)*rad)
-    - 0.057*Math.sin((2*D - Ms - Mm)*rad)
-    + 0.053*Math.sin((2*D + Mm)*rad)
-    + 0.046*Math.sin((2*D - Ms)*rad);
+    - 0.186*Math.sin(Ms*rad);
 
   let latMoon =
-    5.128*Math.sin(F*rad)
-    + 0.280*Math.sin((Mm + F)*rad)
-    + 0.277*Math.sin((Mm - F)*rad)
-    + 0.173*Math.sin((2*D - F)*rad);
+    5.128*Math.sin(F*rad);
 
   lonMoon += deltaPsi;
 
-  // === MOON RA/DEC ===
   const moonRA = Math.atan2(
     Math.sin(lonMoon*rad)*Math.cos(epsilon*rad)
     - Math.tan(latMoon*rad)*Math.sin(epsilon*rad),
@@ -2153,61 +2142,39 @@ function hitungHilalCore(lat, lon, customTime=null){
     + Math.cos(latMoon*rad)*Math.sin(epsilon*rad)*Math.sin(lonMoon*rad)
   ) * deg;
 
-  // =========================
-  // 🔥 FIX IMPORTANT (USNO STABILITY)
-  // =========================
-
   const GMST = (280.46061837 + 360.98564736629*(JD - 2451545)) % 360;
 
-  // normalize LST
   const LST = (GMST + lon + 360) % 360;
 
-  // HA stable (-180..180)
   const HA = ((LST - moonRA) + 540) % 360 - 180;
 
-  // === ALT ===
   let alt = Math.asin(
     Math.sin(lat*rad)*Math.sin(moonDec*rad)
     + Math.cos(lat*rad)*Math.cos(moonDec*rad)*Math.cos(HA*rad)
   ) * deg;
 
-  // === AZIMUTH (FIXED USNO STYLE) ===
   let azi = Math.atan2(
     Math.sin(HA*rad),
     Math.cos(HA*rad)*Math.sin(lat*rad)
     - Math.tan(moonDec*rad)*Math.cos(lat*rad)
   ) * deg;
 
-  // normalize
   azi = (azi + 360) % 360;
-
-  // 🔥 CONVERT KE COMPASS USNO STYLE
   azi = (azi + 180) % 360;
 
-  // === KOREKSI ===
-  alt = koreksiParallax(alt);
-  alt = koreksiRefraction(alt);
+  const elo = Math.acos(
+    Math.max(-1, Math.min(1,
+      Math.sin(sunDec*rad)*Math.sin(moonDec*rad)
+      + Math.cos(sunDec*rad)*Math.cos(moonDec*rad)
+      * Math.cos((sunRA - moonRA)*rad)
+    ))
+  ) * deg;
 
-  // === ELO (SAFE CLAMP) ===
-  let cosElo =
-    Math.sin(sunDec*rad)*Math.sin(moonDec*rad)
-    + Math.cos(sunDec*rad)*Math.cos(moonDec*rad)
-    * Math.cos((sunRA - moonRA)*rad);
-
-  cosElo = Math.max(-1, Math.min(1, cosElo));
-
-  const elo = Math.acos(cosElo) * deg;
-
-  // === AGE SAFE ===
   const ijtima = getLastIjtima();
-  const age = ijtima ? Math.max(0, (now - ijtima) / 3600000) : 0;
+  const age = ijtima ? (now - ijtima)/3600000 : 0;
 
-  // === ILLUMINATION ===
-  const illumination = (1 - Math.cos(elo * rad)) / 2 * 100;
+  const illumination = (1 - Math.cos(elo*rad))/2 * 100;
 
-  // =========================
-  // OUTPUT SAFE
-  // =========================
   return {
     alt: Number(alt) || 0,
     azi: Number(azi) || 0,
@@ -2768,12 +2735,7 @@ function getHijriAstronomical(lat, lon){
 
   const ijtima = getLastIjtima();
 
-  // =========================
-  // SAFETY TOTAL IJTIMA
-  // =========================
   if (!ijtima || !(ijtima instanceof Date) || isNaN(ijtima.getTime())) {
-    console.error("❌ Ijtima tidak valid");
-
     return {
       d: 1,
       m: 1,
@@ -2788,9 +2750,6 @@ function getHijriAstronomical(lat, lon){
 
   const ageDays = jdNow - jdIjtima;
 
-  // =========================
-  // DAY SAFE
-  // =========================
   let d = Math.floor(ageDays) + 1;
 
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
@@ -2800,23 +2759,20 @@ function getHijriAstronomical(lat, lon){
 
   d = Math.max(1, Math.min(30, d));
 
-  // =========================
-  // MONTH SAFE
-  // =========================
   const cycle = Math.floor(ageDays / SYNODIC);
 
-  let m = ((11 - 1 + cycle) % 12) + 1;
-  let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
+  const BASE_YEAR = 1447;
+  const BASE_MONTH = 11;
 
-  if (!Number.isFinite(m)) m = 1;
-  if (!Number.isFinite(y)) y = 1447;
+  let m = ((BASE_MONTH - 1 + cycle) % 12) + 1;
+  let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
 
   return {
     d,
     m,
     y,
     age: ageDays * 24,
-    source: "hisab-astronomical"
+    source: "hisab"
   };
 }
 
@@ -2828,22 +2784,6 @@ function getHijriHybrid(lat, lon){
   const now = new Date();
   const hisab = getHijriAstronomical(lat, lon);
 
-  // =========================
-  // SAFETY HISAB TOTAL
-  // =========================
-  if (!hisab || typeof hisab.d !== "number") {
-    return {
-      d: 1,
-      m: 1,
-      y: 1447,
-      age: 0,
-      source: "fallback-hisab-invalid"
-    };
-  }
-
-  // =========================
-  // MAGHRIB KEMARIN
-  // =========================
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
 
@@ -2857,9 +2797,6 @@ function getHijriHybrid(lat, lon){
     0, 0
   );
 
-  // =========================
-  // IJTIMA SAFE
-  // =========================
   const ijtima = getLastIjtima();
 
   const ijtimaValid =
@@ -2867,35 +2804,19 @@ function getHijriHybrid(lat, lon){
     !isNaN(ijtima.getTime()) &&
     ijtima < maghribDateYesterday;
 
-  // =========================
-  // HILAL SAFE TOTAL
-  // =========================
-  const hilalRaw =
-    hitungHilalCore(lat, lon, maghribDateYesterday);
+  const hilal = hitungHilalCore(lat, lon, maghribDateYesterday);
 
-  const hilal = hilalRaw || { alt: 0, elo: 0 };
+  const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  const imkan =
-    (hilal.alt >= 3 && hilal.elo >= 6.4);
-
-  // =========================
-  // JAM
-  // =========================
   const maghribToday = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes() / 60;
-
-  // =========================
-  // RESULT BASE
-  // =========================
-  let result = {
-    ...hisab,
-    source: "hybrid"
-  };
 
   const masukHariBaru =
     ijtimaValid &&
     imkan &&
     jamNow >= maghribToday;
+
+  let result = { ...hisab, source: "hybrid" };
 
   result.d = masukHariBaru
     ? hisab.d
