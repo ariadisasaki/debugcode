@@ -290,6 +290,7 @@ function initHijriToggle(){
   // 🔹 AMBIL MODE DARI STORAGE
   // =========================
   modeHijri = JSON.parse(localStorage.getItem("modeHijri"));
+
   if(modeHijri === null) modeHijri = true; // default: hisab
 
   // =========================
@@ -298,9 +299,11 @@ function initHijriToggle(){
   checkbox.checked = modeHijri;
   label.innerText = modeHijri ? "Mode Hisab" : "Mode Hybrid";
 
-  // 🔥 render awal (INI YANG SEBELUMNYA KURANG)
+  // =========================
+  // 🔥 RENDER AWAL (WAJIB DIPAKSA 1x SAJA)
+  // =========================
   if(currentLat && currentLon){
-    updateHijriRealTime(currentLat, currentLon);
+    updateHijriDisplay(); // ✅ pakai display centralized
   }
 
   // =========================
@@ -310,7 +313,7 @@ function initHijriToggle(){
 
     modeHijri = checkbox.checked;
 
-    // simpan
+    // simpan mode
     localStorage.setItem("modeHijri", JSON.stringify(modeHijri));
 
     // update label
@@ -319,19 +322,23 @@ function initHijriToggle(){
     console.log("🔄 Mode berubah:", modeHijri ? "Hisab" : "Hybrid");
 
     // =========================
-    // 🔥 RESET STATE (PENTING)
+    // 🔥 RESET STATE
     // =========================
     sudahCekHariIni = false;
 
     if(typeof lastRender !== "undefined"){
-      lastRender.time = 0; // paksa render ulang
+      lastRender.time = 0;
     }
 
     // =========================
-    // 🔥 RENDER ULANG UI (FIX UTAMA)
+    // 🔥 UPDATE UI (INI FIX UTAMA)
     // =========================
     if(currentLat && currentLon){
-      updateHijriRealTime(currentLat, currentLon);
+
+      // ❌ jangan pakai updateHijriRealTime saja
+      // ✔ pakai centralized renderer
+
+      updateHijriDisplay();
     }
 
   });
