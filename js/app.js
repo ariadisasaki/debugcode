@@ -2817,7 +2817,7 @@ function getHijriAstronomical(lat, lon){
   };
 }
 
-// == GET HIJRI HYBRID ===
+// == GET HIJRI HYBRID FINAL ===
 let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
@@ -2842,47 +2842,64 @@ function getHijriHybrid(lat, lon){
   );
 
   // =========================
-  // 🌑 IJTIMA
+  // 🌑 IJTIMA CHECK
   // =========================
   const ijtima = getLastIjtima();
   const ijtimaValid = ijtima < maghribDateYesterday;
 
   // =========================
-  // 🌙 HILAL KEMARIN
+  // 🌙 HILAL CHECK KEMARIN
   // =========================
   const hilal = hitungHilalCore(lat, lon, maghribDateYesterday);
-  const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
-  console.log("=== DEBUG HYBRID ===");
+  const imkan =
+    (hilal.alt >= 3 && hilal.elo >= 6.4);
+
+  // =========================
+  // 🕒 JAM SAAT INI
+  // =========================
+  const maghribToday = hitungMaghrib(lat, lon)?.decimal ?? 18;
+  const jamNow = now.getHours() + now.getMinutes() / 60;
+
+  // =========================
+  // 🔥 LOG DEBUG
+  // =========================
+  console.log("=== DEBUG HYBRID FINAL ===");
   console.log("NOW:", now.toString());
   console.log("MAGHRIB KEMARIN:", maghribDateYesterday.toString());
   console.log("IJTIMA:", ijtima.toString());
   console.log("IJTIMA VALID:", ijtimaValid);
-  console.log("HILAL:", {
-    alt: hilal.alt,
-    elo: hilal.elo
-  });
+  console.log("HILAL:", { alt: hilal.alt, elo: hilal.elo });
   console.log("IMKAN:", imkan);
-  console.log("HISAB:", hisab.d);
-  console.log("====================");
-
-  let result = { ...hisab, source: "hybrid" };
+  console.log("HISAB DAY:", hisab.d);
+  console.log("==========================");
 
   // =========================
-  // 🌙 JIKA KEMARIN AWAL BULAN
+  // 📌 DEFAULT RESULT
   // =========================
-  if (ijtimaValid && imkan) {
+  let result = {
+    ...hisab,
+    source: "hybrid"
+  };
 
-  // jika kemarin sudah memenuhi syarat awal bulan
-  if (ijtimaValid && imkan) {
+  // =========================
+  // 🌙 LOGIKA PENENTUAN HARI
+  // =========================
+  const masukHariBaru =
+    ijtimaValid &&
+    imkan &&
+    jamNow >= maghribToday;
+
+  if (masukHariBaru) {
     result.d = hisab.d;
+    statusHilal = "AWAL BULAN (CONFIRMED)";
   } else {
-    result.d = hisab.d - 1;
+    result.d = Math.max(1, hisab.d - 1);
+    statusHilal = "BELUM AWAL BULAN";
   }
-  }
+
   return result;
 }
-
 // === RESET HYBRID ===
 function resetHybridDaily(){
 
