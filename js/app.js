@@ -42,6 +42,11 @@ let hijriState = {
 };
 const SYNODIC_MONTH = 29.530588;
 const DAY_MS = 86400000;
+setInterval(() => {
+  if(currentLat && currentLon){
+    updateHijriDisplay();
+  }
+}, 2000);
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -1440,6 +1445,7 @@ function getLocation() {
     maximumAge: 0
   });
 }
+
 // === SENSOR ===
 function initSensor(){
 
