@@ -2958,8 +2958,9 @@ function isMaghribTime(lat, lon){
 // === TOGLLE SET ===
 function setMode(mode){
   modeHijri = mode;
-  localStorage.setItem("modeHijri", mode);
-  location.reload();
+  localStorage.setItem("modeHijri", JSON.stringify(modeHijri));
+
+  updateHijriDisplay(); // 🔥 WAJIB
 }
 
 // === TOGGLE HIJRI HISAB ===
