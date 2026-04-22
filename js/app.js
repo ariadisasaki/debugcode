@@ -2205,6 +2205,14 @@ function hitungHilalCore(lat, lon, customTime=null){
   // === ILLUMINATION ===
   const illumination = (1 - Math.cos(elo * rad)) / 2 * 100;
 
+  console.log("📤 [HILAL CORE] OUTPUT", {
+    alt,
+    azi,
+    elo,
+    age,
+    illumination
+  });
+
   // =========================
   // OUTPUT SAFE
   // =========================
@@ -2811,6 +2819,17 @@ function getHijriAstronomical(lat, lon){
   if (!Number.isFinite(m)) m = 1;
   if (!Number.isFinite(y)) y = 1447;
 
+  // 🔥 CONSOLE DEBUG DI SINI
+  console.log("🌙 HISAB DEBUG", {
+    now: now.toISOString(),
+    ageDays,
+    d,
+    m,
+    y,
+    maghrib,
+    jamNow
+  });
+
   return {
     d,
     m,
@@ -2900,6 +2919,19 @@ function getHijriHybrid(lat, lon){
   result.d = masukHariBaru
     ? hisab.d
     : Math.max(1, hisab.d - 1);
+
+  // 🔥 DEBUG HYBRID DI SINI
+  console.log("🌙 HYBRID DEBUG", {
+    hisab,
+    ijtimaValid,
+    alt: hilal.alt,
+    elo: hilal.elo,
+    imkan,
+    maghribToday,
+    jamNow,
+    masukHariBaru,
+    result
+  });
 
   return result;
 }
