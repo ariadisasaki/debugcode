@@ -2905,9 +2905,7 @@ function updateHijriDisplay(){
   const lat = currentLat;
   const lon = currentLon;
 
-  const data = modeHijri
-    ? getHijriAstronomical(lat, lon)
-    : getHijriHybrid(lat, lon);
+  const data = hijriFinalState;
 
   console.log("🟢 DISPLAY MODE:", modeHijri ? "HISAB" : "HYBRID");
   console.log("🟢 DISPLAY RESULT:", data);
