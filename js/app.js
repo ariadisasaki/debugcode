@@ -1688,20 +1688,13 @@ function renderUI(){
     
     const insight = getHijriInsight(hilalDataFull, maghrib, now);
     document.getElementById('insight').innerHTML = insight;
+
+    const countdown = getCountdownMaghrib(now, maghrib);
+    document.getElementById('countdownMaghrib').innerText = countdown;
+
+    const progress = getProgressToMaghrib(now, currentLat, currentLon);
+    document.getElementById('progressBar').style.width = progress + "%";
   }
-
-  const now = new Date();
-  const maghribData = hitungMaghrib(currentLat, currentLon);
-  const maghrib = maghribData ? maghribData.decimal : 18;
-
-  const insight = getHijriInsight(hilalDataFull, maghrib, now);
-  document.getElementById('insight').innerHTML = insight;
-
-  const countdown = getCountdownMaghrib(now, maghrib);
-  document.getElementById('countdownMaghrib').innerText = countdown;
-
-  const progress = getProgressToMaghrib(now, currentLat, currentLon);
-  document.getElementById('progressBar').style.width = progress + "%";
 }
 
 // === PRELOAD HIJRI ===
