@@ -2766,11 +2766,13 @@ function getHijriAstronomical(lat, lon){
   const now = new Date();
   const SYNODIC = 29.530588853;
 
-  // 🌑 IJTIMA SAFETY CHECK
   const ijtima = getLastIjtima();
 
+  // =========================
+  // SAFETY TOTAL IJTIMA
+  // =========================
   if (!ijtima || !(ijtima instanceof Date) || isNaN(ijtima.getTime())) {
-    console.error("❌ Ijtima tidak valid:", ijtima);
+    console.error("❌ Ijtima tidak valid");
 
     return {
       d: 1,
@@ -2787,35 +2789,27 @@ function getHijriAstronomical(lat, lon){
   const ageDays = jdNow - jdIjtima;
 
   // =========================
-  // 📅 HARI
+  // DAY SAFE
   // =========================
   let d = Math.floor(ageDays) + 1;
 
   const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes() / 60;
 
-  if (jamNow < maghrib) {
-    d -= 1;
-  }
+  if (jamNow < maghrib) d -= 1;
 
-  // clamp aman
-  if (d < 1) d = 1;
-  if (d > 30) d = 30;
+  d = Math.max(1, Math.min(30, d));
 
   // =========================
-  // 📆 BULAN & TAHUN
+  // MONTH SAFE
   // =========================
   const cycle = Math.floor(ageDays / SYNODIC);
 
-  const BASE_YEAR = 1447;
-  const BASE_MONTH = 11;
+  let m = ((11 - 1 + cycle) % 12) + 1;
+  let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
 
-  let m = ((BASE_MONTH - 1 + cycle) % 12) + 1;
-  let y = BASE_YEAR + Math.floor((BASE_MONTH - 1 + cycle) / 12);
-
-  // safety final
-  if (isNaN(m)) m = 1;
-  if (isNaN(y)) y = 1447;
+  if (!Number.isFinite(m)) m = 1;
+  if (!Number.isFinite(y)) y = 1447;
 
   return {
     d,
@@ -2834,53 +2828,58 @@ function getHijriHybrid(lat, lon){
   const now = new Date();
   const hisab = getHijriAstronomical(lat, lon);
 
-  if (!hisab) {
+  // =========================
+  // SAFETY HISAB TOTAL
+  // =========================
+  if (!hisab || typeof hisab.d !== "number") {
     return {
       d: 1,
       m: 1,
       y: 1447,
       age: 0,
-      source: "fallback-hisab-null"
+      source: "fallback-hisab-invalid"
     };
   }
 
   // =========================
-  // 🌇 MAGHRIB KEMARIN
+  // MAGHRIB KEMARIN
   // =========================
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
 
-  const maghribYesterday = hitungMaghrib(lat, lon, yesterday)?.decimal ?? 18;
+  const maghribYesterday =
+    hitungMaghrib(lat, lon, yesterday)?.decimal ?? 18;
 
   const maghribDateYesterday = new Date(yesterday);
   maghribDateYesterday.setHours(
     Math.floor(maghribYesterday),
     Math.floor((maghribYesterday % 1) * 60),
-    0,
-    0
+    0, 0
   );
 
   // =========================
-  // 🌑 IJTIMA SAFETY
+  // IJTIMA SAFE
   // =========================
   const ijtima = getLastIjtima();
+
   const ijtimaValid =
     ijtima instanceof Date &&
     !isNaN(ijtima.getTime()) &&
     ijtima < maghribDateYesterday;
 
   // =========================
-  // 🌙 HILAL
+  // HILAL SAFE TOTAL
   // =========================
-  const hilal = hitungHilalCore(lat, lon, maghribDateYesterday) || {};
+  const hilalRaw =
+    hitungHilalCore(lat, lon, maghribDateYesterday);
 
-  const alt = hilal.alt ?? 0;
-  const elo = hilal.elo ?? 0;
+  const hilal = hilalRaw || { alt: 0, elo: 0 };
 
-  const imkan = (alt >= 3 && elo >= 6.4);
+  const imkan =
+    (hilal.alt >= 3 && hilal.elo >= 6.4);
 
   // =========================
-  // 🕒 JAM
+  // JAM
   // =========================
   const maghribToday = hitungMaghrib(lat, lon)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes() / 60;
@@ -2888,18 +2887,19 @@ function getHijriHybrid(lat, lon){
   // =========================
   // RESULT BASE
   // =========================
-  let result = { ...hisab, source: "hybrid" };
+  let result = {
+    ...hisab,
+    source: "hybrid"
+  };
 
   const masukHariBaru =
     ijtimaValid &&
     imkan &&
     jamNow >= maghribToday;
 
-  if (masukHariBaru) {
-    result.d = hisab.d;
-  } else {
-    result.d = Math.max(1, hisab.d - 1);
-  }
+  result.d = masukHariBaru
+    ? hisab.d
+    : Math.max(1, hisab.d - 1);
 
   return result;
 }
@@ -2919,26 +2919,34 @@ function resetHybridDaily(){
 // === HIJRI DISPLAY ===
 function updateHijriDisplay(){
 
-  const lat = currentLat;
-  const lon = currentLon;
+  if(!currentLat || !currentLon){
+    console.log("⛔ Lokasi belum siap");
+    return;
+  }
 
-  const data = hijriFinalState;
-  
-  console.log("🔥 updateHijriDisplay jalan");
-  console.log("🟢 DISPLAY MODE:", modeHijri ? "HISAB" : "HYBRID");
-  console.log("🟢 DISPLAY RESULT:", data);
+  const data = modeHijri
+    ? getHijriAstronomical(currentLat, currentLon)
+    : getHijriHybrid(currentLat, currentLon);
+
+  // 🔥 SAFETY CRITICAL
+  if(!data){
+    console.log("⛔ Hijri data NULL");
+    return;
+  }
 
   const el = document.getElementById("hijri");
-
-  if(el){
-    const bulan = [
-      "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
-      "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
-      "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
-    ];
-
-    el.innerText = `${data.d} ${bulan[data.m-1]} ${data.y} H`;
+  if(!el){
+    console.log("⛔ Element #hijri tidak ditemukan");
+    return;
   }
+
+  const bulan = [
+    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+  ];
+
+  el.innerText = `${data.d} ${bulan[data.m - 1]} ${data.y} H`;
 }
 
 // === HIJRI MOONT YEAR ===
