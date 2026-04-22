@@ -33,6 +33,12 @@ let hilalDataFull = {
   age: 0,
   illumination: 0
 };
+let hijriState = {
+  d: 1,
+  m: 1,
+  y: 1447,
+  locked: false
+};
 const SYNODIC_MONTH = 29.530588;
 const DAY_MS = 86400000;
 
@@ -1679,7 +1685,7 @@ function renderUI(){
   let lon = currentLon || 116.5293;
 
   // 🔥 CEK DATA SUDAH ADA BELUM
-  if(!hilalDataFull || hilalDataFull.age === 0){
+  if(!hilalDataFull || !hilalDataFull.age){
     document.getElementById('insight').innerHTML = "⏳ Mengambil data hilal...";
   } else {
     const now = new Date();
@@ -2733,7 +2739,7 @@ function getHijriAstronomical(lat, lon){
   // =========================
   // 📅 HITUNG TANGGAL
   // =========================
-  let d = Math.floor(ageDays % SYNODIC) + 1;
+  let d = Math.floor(ageDays) + 1;
 
   // =========================
   // 🌇 KOREKSI MAGHRIB (KRUSIAL)
@@ -2743,7 +2749,7 @@ function getHijriAstronomical(lat, lon){
 
   // sebelum maghrib → masih hari sebelumnya
   if (jamNow < maghrib) {
-    d -= 1;
+    d = Math.floor(ageDays);
   }
 
   // =========================
@@ -2834,14 +2840,14 @@ function getHijriHybrid(lat, lon){
   // =========================
   if (ijtimaValid && imkan) {
 
-    // hari ini = hari ke-(hisab - 1)
+  if(now >= maghribDateYesterday){
+    // hari ini sudah masuk bulan baru
+    result.d = hisab.d;
+  } else {
+    // sebelum maghrib → masih hari lama
     result.d = hisab.d - 1;
-
-    if (result.d < 1) result.d = 30;
-
-    result.note = "awal bulan sudah terjadi kemarin";
   }
-
+  }
   return result;
 }
 
