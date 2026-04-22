@@ -286,31 +286,55 @@ function initHijriToggle(){
     return;
   }
 
-  // ambil mode dari storage (true = hisab, false = hybrid)
-  modeHijri = JSON.parse(localStorage.getItem("modeHijri")) ?? true;
+  // =========================
+  // 🔹 AMBIL MODE DARI STORAGE
+  // =========================
+  modeHijri = JSON.parse(localStorage.getItem("modeHijri"));
+  if(modeHijri === null) modeHijri = true; // default: hisab
 
-  // set posisi toggle
+  // =========================
+  // 🔹 SET UI AWAL
+  // =========================
   checkbox.checked = modeHijri;
-
-  // set label
   label.innerText = modeHijri ? "Mode Hisab" : "Mode Hybrid";
 
-  // event toggle
+  // 🔥 render awal (INI YANG SEBELUMNYA KURANG)
+  if(currentLat && currentLon){
+    updateHijriRealTime(currentLat, currentLon);
+  }
+
+  // =========================
+  // 🔹 EVENT TOGGLE
+  // =========================
   checkbox.addEventListener("change", ()=>{
 
-  modeHijri = checkbox.checked;
+    modeHijri = checkbox.checked;
 
-  localStorage.setItem("modeHijri", JSON.stringify(modeHijri));
+    // simpan
+    localStorage.setItem("modeHijri", JSON.stringify(modeHijri));
 
-  label.innerText = modeHijri ? "Mode Hisab" : "Mode Hybrid";
+    // update label
+    label.innerText = modeHijri ? "Mode Hisab" : "Mode Hybrid";
 
-  // 🔥 reset agar bisa re-evaluate
-  sudahCekHariIni = false;
-  
-  lastRender.time = 0; // 🔥 paksa refresh
-  updateHijriRealTime(currentLat, currentLon);
+    console.log("🔄 Mode berubah:", modeHijri ? "Hisab" : "Hybrid");
 
-});
+    // =========================
+    // 🔥 RESET STATE (PENTING)
+    // =========================
+    sudahCekHariIni = false;
+
+    if(typeof lastRender !== "undefined"){
+      lastRender.time = 0; // paksa render ulang
+    }
+
+    // =========================
+    // 🔥 RENDER ULANG UI (FIX UTAMA)
+    // =========================
+    if(currentLat && currentLon){
+      updateHijriRealTime(currentLat, currentLon);
+    }
+
+  });
 }
 
 // === INISIALISASI SETELAH DOM READY ===
