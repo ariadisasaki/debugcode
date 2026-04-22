@@ -2773,13 +2773,13 @@ function getHijriAstronomical(lat, lon){
 
   // sebelum maghrib → masih hari sebelumnya
   if (jamNow < maghrib) {
-    d = Math.floor(ageDays);
+    d -= 1;
   }
 
   // =========================
   // 🔒 NORMALISASI HARI
   // =========================
-  if (d < 1) d = 30;
+  if (d < 1) d = 1;
   if (d > 30) d = 30;
 
   // =========================
@@ -2869,7 +2869,7 @@ function getHijriHybrid(lat, lon){
     result.d = hisab.d;
   } else {
     // sebelum maghrib → masih hari lama
-    result.d = hisab.d - 1;
+    result.d = hisab.d;
   }
   }
   return result;
