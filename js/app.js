@@ -48,9 +48,16 @@ setInterval(() => {
 }, 2000);
 
 // === HIJRI DEBUG ===
-function logHijriDebug(label, data) {
-  console.log(`\n🧭 [${label}]`);
-  console.table(data);
+const DEBUG_HIJRI = true;
+
+function logHijriDebug(label, data){
+  if(!DEBUG_HIJRI) return;
+
+  console.log(
+    `%c🌙 ${label}`,
+    "color: #00bcd4; font-weight: bold;",
+    data
+  );
 }
 
 document.addEventListener("DOMContentLoaded", () => {
