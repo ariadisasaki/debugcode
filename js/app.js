@@ -2887,6 +2887,27 @@ function resetHybridDaily(){
   }
 }
 
+// === HIJRI DISPLAY ===
+function updateHijriDisplay(){
+
+  let result;
+
+  if(modeHijri){
+    result = getHijriAstronomical(currentLat, currentLon);
+  } else {
+    result = getHijriHybrid(currentLat, currentLon);
+  }
+
+  const bulan = [
+    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+  ];
+
+  document.getElementById('hijri').innerText =
+    `${result.d} ${bulan[result.m-1]} ${result.y} H`;
+}
+
 // === HIJRI MOONT YEAR ===
 function getHijriMonthYear(date){
 
