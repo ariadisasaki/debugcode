@@ -355,44 +355,31 @@ let lastRender = {
   time: 0
 };
 
-// === UPDATE HIJRI REALTIME FINAL ===
+// === UPDATE HIJRI REALTIME FINAL (CLEAN VERSION) ===
 function updateHijriRealTime(lat, lon) {
 
   const now = Date.now();
 
-  // 🔒 anti spam render (opsional tapi sangat disarankan)
+  // 🔒 anti spam render
   if (now - lastRender.time < 500) return;
 
-  let result = null;
-  const currentMode = modeHijri ? "hisab" : "hybrid";
-
   // =========================
-  // 🔥 PILIH ENGINE
+  // 🔥 AMBIL DATA DARI 1 SOURCE OF TRUTH
   // =========================
-  if (currentMode === "hisab") {
-    if (typeof getHijriAstronomical === "function") {
-      result = getHijriAstronomical(lat, lon);
-    }
-  } 
-  else if (currentMode === "hybrid") {
-    if (typeof getHijriHybrid === "function") {
-      result = getHijriHybrid(lat, lon);
-    }
-  }
+  const result = getHijriFinal(lat, lon);
 
   // =========================
   // ❌ SAFETY
   // =========================
   if (!result) {
-    console.error("❌ Hijri result kosong atau engine tidak tersedia");
+    console.error("❌ Hijri result kosong atau engine gagal");
     return;
   }
 
   // =========================
   // 🔥 DEBUG INTI
   // =========================
-  console.log("=== HIJRI DEBUG ===");
-  console.log("MODE:", currentMode);
+  console.log("=== HIJRI DEBUG FINAL ===");
   console.log("RESULT:", result);
 
   // =========================
@@ -405,23 +392,26 @@ function updateHijriRealTime(lat, lon) {
   ];
 
   // =========================
-  // 🎯 RENDER UI
+  // 🎯 RENDER UI (ONLY DISPLAY)
   // =========================
   const hijriEl = document.getElementById("hijri");
   const statusEl = document.getElementById("statusHilal");
 
   if (hijriEl) {
-    hijriEl.innerText = `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
+    hijriEl.innerText =
+      `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
   }
 
   if (statusEl) {
-    statusEl.innerText = result.source || currentMode;
+    statusEl.innerText = result.source || "calculated";
   }
 
   // =========================
-  // 🔒 SIMPAN STATUS TERAKHIR
+  // 🔒 CACHE STATE
   // =========================
-  lastRender.mode = currentMode;
+  hijriFinalState = result;
+
+  lastRender.mode = modeHijri ? "hisab" : "hybrid";
   lastRender.time = now;
 }
   
