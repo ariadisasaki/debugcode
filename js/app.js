@@ -2248,13 +2248,12 @@ function calibrateWithSun(){
 }
 
 // === HITUNG MAGHRIB ===
-function hitungMaghrib(lat, lon){
+function hitungMaghrib(lat, lon, customDate=null){
 
-  const now = new Date();
+  const now = customDate ? new Date(customDate) : new Date();
 
-  // 🔥 pakai tanggal saja (fix)
   const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
+  
   const JD = (date.getTime()/86400000)+2440587.5;
   const T = (JD-2451545)/36525;
 
