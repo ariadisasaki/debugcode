@@ -47,6 +47,27 @@ setInterval(() => {
   updateHijriDisplay();
 }, 2000);
 
+let hijriState = {
+  d: 1,
+  m: 1,
+  y: 1447,
+  locked: false
+};
+
+const now = new Date();
+const maghrib = getMaghribTime(lat, lon);
+
+// 🔥 naikkan tanggal hanya saat maghrib
+if(now >= maghrib && !hijriState.locked){
+  hijriState.d += 1;
+  hijriState.locked = true;
+}
+
+// 🔥 reset lock besok siang
+if(now < maghrib){
+  hijriState.locked = false;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
   // === GLOBAL INSTALL ===
@@ -2762,10 +2783,8 @@ function nextMonth(current){
 
 // === DAPATKAN HIJRI ===
 function getHijriAstronomical(lat, lon){
-
-  const now = new Date();
+  const now = getHijriNow(lat, lon);
   const SYNODIC = 29.530588853;
-
   const ijtima = getLastIjtima();
 
   // =========================
@@ -2825,7 +2844,7 @@ let statusHilal = "-";
 
 function getHijriHybrid(lat, lon){
 
-  const now = new Date();
+  const now = getHijriNow(lat, lon);
   const hisab = getHijriAstronomical(lat, lon);
 
   // =========================
@@ -2902,6 +2921,22 @@ function getHijriHybrid(lat, lon){
     : Math.max(1, hisab.d - 1);
 
   return result;
+}
+
+// === HIJRI SEKARANG ===
+function getHijriNow(lat, lon){
+  const now = new Date();
+
+  const maghrib = getMaghribTime(lat, lon);
+
+  let hijriNow = new Date(now);
+
+  // 🔥 KUNCI UTAMA
+  if(now < maghrib){
+    hijriNow.setDate(hijriNow.getDate() - 1);
+  }
+
+  return hijriNow;
 }
 
 // === RESET HYBRID ===
