@@ -1936,55 +1936,58 @@ function hitungHilal(lat, lon, customTime = null) {
 
 // === DATA MATAHARI ===
 function updateSunCard() {
-    // 1. Validasi: Pastikan koordinat GPS sudah tersedia
+    // 1. Validasi keberadaan koordinat GPS
     if (typeof currentLat === "undefined" || !currentLat || !currentLon) {
         return; 
     }
 
     try {
-        // 2. Ambil data posisi matahari saat ini (Azimuth & Altitude)
+        // 2. Hitung posisi matahari (Azimuth & Altitude)
         const sunPos = hitungMatahari(currentLat, currentLon);
         
-        // 3. Ambil data waktu matahari (Terbit & Terbenam)
+        // 3. Hitung waktu matahari (Terbit & Terbenam)
         const sunTimes = hitungMaghrib(currentLat, currentLon);
 
-        // 4. Update elemen Azimuth & Altitude dengan 2 angka di belakang koma
+        // 4. Update UI: Azimuth
         const elAzi = document.getElementById('sun-azimuth');
-        const elAlt = document.getElementById('sun-altitude');
-        
         if (elAzi) elAzi.textContent = sunPos.azi.toFixed(2) + "°";
-        if (elAlt) elAlt.textContent = sunPos.alt.toFixed(2) + "°";
 
-        // 5. Update elemen Waktu Terbit & Terbenam
+        // 5. Update UI: Altitude dengan indikator warna malam
+        const elAlt = document.getElementById('sun-altitude');
+        if (elAlt) {
+            elAlt.textContent = sunPos.alt.toFixed(2) + "°";
+            
+            // Jika matahari di bawah horizon (malam), tambahkan class 'night'
+            if (sunPos.alt < 0) {
+                elAlt.classList.add('night');
+            } else {
+                elAlt.classList.remove('night');
+            }
+        }
+
+        // 6. Update UI: Waktu Terbit & Terbenam
         const elRise = document.getElementById('sun-rise');
         const elSet = document.getElementById('sun-set');
 
         if (elRise) elRise.textContent = formatDecimalTime(sunTimes.sunrise);
         if (elSet) elSet.textContent = formatDecimalTime(sunTimes.decimal);
 
-        // 6. Opsional: Beri warna merah jika matahari di bawah cakrawala (malam)
-        if (elAlt) {
-            elAlt.style.color = sunPos.alt < 0 ? "#e74c3c" : "#f1c40f";
-        }
-
     } catch (error) {
         console.error("Gagal memperbarui Sun Card:", error);
     }
 }
 
-// === WAKTU DESIMAL ===
+// === FUNGSI PEMBANTU WAKTU DESIMAL ===
 function formatDecimalTime(decimal) {
     if (isNaN(decimal) || decimal === null) return "--:--";
     
-    // Pastikan nilai berada dalam rentang 0-24
+    // Pastikan nilai tetap dalam siklus 24 jam
     let hours = Math.floor(decimal % 24);
+    if (hours < 0) hours += 24; 
+    
     let minutes = Math.floor((decimal * 60) % 60);
     
-    // Padding nol (misal: 5:3 menjadi 05:03)
-    const hDisplay = hours.toString().padStart(2, '0');
-    const mDisplay = minutes.toString().padStart(2, '0');
-    
-    return `${hDisplay}:${mDisplay}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
 setInterval(updateSunCard, 1000);
