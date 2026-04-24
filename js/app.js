@@ -415,8 +415,6 @@ function generateGalaxy(){
 
     galaxyPoints.push({ ra, dec });
   }
-
-  console.log("🌌 Galaxy generated:", galaxyPoints.length);
 }
 
 // === GENERATE AWAN ===
