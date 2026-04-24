@@ -4,209 +4,183 @@
   --card-bg: rgba(255, 255, 255, 0.06);
   --accent-blue: #3a7bfd;
   --accent-cyan: #00c6ff;
-  --accent-gold: #facc15;
-  --text-main: #ffffff;
-  --text-muted: #cbd5f5;
   --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
   margin: 0;
+  padding: 0;
   font-family: 'Poppins', sans-serif;
-  background: var(--primary-bg);
-  background-attachment: fixed;
-  color: var(--text-main);
+  background: #020611; /* Background dasar agar laptop tidak putih */
   display: flex;
-  justify-content: center; /* Center kan aplikasi di layar laptop */
+  justify-content: center; /* Mengetengahkan aplikasi di laptop */
+  min-height: 100vh;
 }
 
-/* === LIMIT WIDTH (Agar di laptop seperti HP) === */
+/* === APP WRAPPER (Simulasi HP di Laptop) === */
 .app-wrapper {
   width: 100%;
-  max-width: 450px; /* Standar lebar HP di laptop */
+  max-width: 450px; /* Lebar maksimal HP */
+  background: var(--primary-bg);
+  background-attachment: fixed;
   min-height: 100vh;
-  position: relative;
+  position: relative; /* Anchor untuk elemen fixed di dalamnya */
+  box-shadow: 0 0 50px rgba(0,0,0,0.5);
   overflow-x: hidden;
 }
 
-/* === SPLASH SCREEN === */
+/* === SPLASH SCREEN (Proporsional & Center) === */
 #splash {
-  position: fixed;
-  top: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 450px;
-  height: 100%;
+  position: absolute; /* Gunakan absolute agar tetap di dalam wrapper */
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: #020611;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   z-index: 9999;
 }
 
-/* === FLOATING MENU BUTTON === */
-.menu-btn {
-  position: fixed;
-  top: 15px;
-  left: 15px;
-  font-size: 22px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  padding: 8px 12px;
-  border-radius: 12px;
-  z-index: 2000;
-  cursor: pointer;
-  border: 1px solid var(--glass-border);
+.logo {
+  width: 80px; /* Diperkecil agar proporsional */
+  height: auto;
+  margin-bottom: 20px;
 }
 
-/* === SIDEBAR (Berjarak & Rapi) === */
+/* === HEADER (Center) === */
+.header {
+  text-align: center;
+  padding: 60px 20px 10px; /* Beri space atas agar tidak tertutup tombol menu */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header h1 { margin: 0; font-size: 24px; }
+
+/* === SIDEBAR & OVERLAY (Fixed & Berurutan) === */
 .sidebar {
-  position: fixed;
+  position: absolute;
   top: 0; left: 0;
   width: 280px; height: 100%;
-  background: rgba(2, 6, 17, 0.98);
+  background: rgba(10, 20, 40, 0.98);
   backdrop-filter: blur(15px);
   z-index: 2001;
   transform: translateX(-100%);
   transition: transform 0.4s ease;
   padding: 60px 20px;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
-.sidebar h3 { text-align: center; margin-bottom: 20px; }
+.sidebar.active { transform: translateX(0); }
 
 .sidebar button {
-  margin-bottom: 15px; /* Jarak antar menu diperbesar */
-  padding: 14px;
+  margin-bottom: 15px; /* Jarak antar menu */
+  padding: 12px;
   border-radius: 12px;
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--glass-border);
   color: white;
-  text-align: center;
   font-weight: 500;
+  cursor: pointer;
 }
 
-/* === CARD (Semua Teks Center) === */
-.card {
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  border-radius: 24px;
-  padding: 20px;
-  margin-bottom: 15px;
-  border: 1px solid var(--glass-border);
-  text-align: center; /* Judul dan isi jadi center */
-  transition: transform 0.3s ease;
-}
-
-.card h3 {
-  margin: 0 0 15px 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* === HIDDEN CARD (Padding & Justify) === */
-#hijriInfoCard, #insightCard {
-  text-align: justify;
-  line-height: 1.6;
-  font-size: 14px;
-  padding: 0 15px; /* Jarak teks dari pinggir card */
-}
-
-.insight-hidden {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: all 0.4s ease;
-}
-
-.insight-show {
-  max-height: 2000px;
-  opacity: 1;
-  padding: 15px; /* Spasi saat terbuka */
-  margin-bottom: 10px;
-}
-
-/* === TOGGLE & SPACING (Dirapatkan) === */
-.toggle-wrapper {
-  display: flex;
-  justify-content: center;
-  margin: 5px 0; /* Jarak antar toggle/card dirapatkan */
-}
-
-.hijri-toggle-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin: 10px auto;
-  background: rgba(255,255,255,0.05);
-  padding: 10px 25px;
-  border-radius: 30px;
-  border: 1px solid var(--glass-border);
-}
-
-/* === SUB-CARD LABELS (Lowercase/Normal & Hover) === */
-.label, .sun-box .label, .prediksi-box .label, .data-box .label {
-  font-size: 12px !important;
-  text-transform: none; /* Tidak Uppercase lagi */
-  color: #aaa;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.data-box, .prediksi-box, .sun-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--glass-border);
-  padding: 12px 8px;
-  border-radius: 16px;
-  transition: all 0.3s ease;
-}
-
-.data-box:hover, .prediksi-box:hover, .sun-box:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--accent-cyan);
-  transform: scale(1.03);
-}
-
-/* === PLANETARIUM (Proporsional) === */
-#planetarium {
-  width: 100% !important;
-  height: 300px !important; /* Diubah agar lebih proporsional */
-  border-radius: 12px;
-  background: #000;
-  display: block;
-  margin: 10px 0;
-}
-
-/* === INSTALL BUTTON === */
-#installBtn {
-  position: fixed;
-  bottom: 25px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9998;
-  padding: 12px 24px;
-  border-radius: 50px;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-  border: none;
-  color: #fff;
-  font-weight: 600;
-}
-
-/* === UTILS === */
-.data-grid, .prediksi-grid, .sun-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.full { grid-column: span 2; }
 .overlay {
-  position: fixed;
+  position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
   background: rgba(0,0,0,0.7);
-  z-index: 1999;
+  z-index: 2000;
   display: none;
 }
 .overlay.active { display: block; }
+
+/* === MENU BUTTON (Floating Left Top) === */
+.menu-btn {
+  position: absolute;
+  top: 15px; left: 15px;
+  z-index: 2002;
+  background: rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+/* === PROGRESS BAR (Pastikan Tampil) === */
+.progress-container {
+  margin: 20px;
+  text-align: center;
+}
+
+.countdown-text {
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 10px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%; /* Diatur via JS */
+  background: linear-gradient(90deg, #38bdf8, #22c55e) !important;
+  transition: width 0.5s ease;
+}
+
+/* === CARD & CONTENT === */
+.card {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 20px;
+  margin: 15px;
+  border: 1px solid var(--glass-border);
+  text-align: center;
+}
+
+/* Teks Hidden Card dengan jarak (Padding) */
+#hijriInfoCard, #insightCard {
+  padding: 15px 20px !important; /* Memberi jarak dari tepi */
+  text-align: justify;
+  line-height: 1.6;
+}
+
+/* Sembunyikan Kalibrasi di Layar Utama */
+#calibrateBtn { display: none !important; }
+
+/* Label sub-card (Normal/Bukan Uppercase) */
+.label {
+  font-size: 12px;
+  text-transform: none;
+  color: #aaa;
+}
+
+/* Planetarium Proporsional */
+#planetarium {
+  width: 100% !important;
+  height: 280px !important;
+  border-radius: 12px;
+  background: #000;
+}
+
+/* Install Button (Center Bottom) */
+#installBtn {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 10px 20px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  border: none;
+  color: white;
+  white-space: nowrap;
+}
