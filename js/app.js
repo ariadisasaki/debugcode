@@ -2741,7 +2741,11 @@ function getHijriAstronomical(lat, lon) {
     // Sejak matahari terbit sampai sore, d = diffDays (7).
     // Begitu masuk Maghrib, d bertambah 1 (8).
     let d = diffDays;
-    
+  
+    console.log("DEBUG -> diffDays:", diffDays); // Pastikan ini muncul angka 7
+    console.log("DEBUG -> jamNow:", jamNow);
+    console.log("DEBUG -> maghrib:", maghrib);
+
     if (jamNow >= maghrib) {
         d += 1;
     }
