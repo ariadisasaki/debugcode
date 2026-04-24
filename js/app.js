@@ -2785,26 +2785,43 @@ function getHijriAstronomical(lat, lon) {
 
 // === FUNGSI KOREKSI HYBRID) ===
 let statusHilal = "-";
+
 function getHijriHybrid(lat, lon) {
+    const now = new Date();
     const hisab = getHijriAstronomical(lat, lon);
-    
-    // KUNCI: Cek hilal pada saat Ijtima bulan ini (17 April 2026)
-    const ijtima = getLastIjtima(); 
-    const hilalAwalBulan = hitungHilalCore(lat, lon, ijtima);
-    
-    // Kriteria MABIMS
-    const lulusMABIMS = (hilalAwalBulan.alt >= 3 && hilalAwalBulan.elo >= 6.4);
 
-    let result = { ...hisab };
+    if (!hisab || typeof hisab.d !== "number") {
+        return { d: 1, m: 1, y: 1447, age: 0, source: "fallback-hisab-invalid" };
+    }
 
-    // Jika awal bulan kemarin tidak lulus MABIMS (Istikmal), 
-    // maka kalender Hybrid harus lebih lambat 1 hari dari Hisab.
-    if (!lulusMABIMS) {
-        if (hisab.d === 1) {
-            result.d = 30; // Jika Hisab sudah tanggal 1, Hybrid masih tanggal 30
-        } else {
-            result.d = hisab.d - 1; // Jika Hisab tanggal 7, Hybrid tanggal 6
-        }
+    // Tentukan kapan Maghrib terakhir yang menjadi penentu status bulan ini
+    const jamNow = now.getHours() + now.getMinutes() / 60;
+    const dataMaghribToday = hitungMaghrib(lat, lon);
+    const maghribToday = dataMaghribToday?.decimal ?? 18;
+
+    // Jika sekarang jam 01:00 pagi, kita cek Hilal pada Maghrib kemarin sore.
+    // Jika sekarang jam 19:00 malam, kita cek Hilal pada Maghrib tadi sore.
+    let tglCekHilal = new Date(now);
+    if (jamNow < maghribToday) {
+        tglCekHilal.setDate(now.getDate() - 1);
+    }
+
+    const maghribWaktuCek = hitungMaghrib(lat, lon, tglCekHilal)?.decimal ?? 18;
+    tglCekHilal.setHours(Math.floor(maghribWaktuCek), Math.floor((maghribWaktuCek % 1) * 60), 0, 0);
+
+    // Hitung Kriteria MABIMS
+    const hilal = hitungHilalCore(lat, lon, tglCekHilal) || { alt: 0, elo: 0 };
+    const imkan = (hilal.alt >= 3 && hilal.elo >= 6.4);
+
+    let result = { ...hisab, source: "hybrid" };
+
+    // --- REVISI LOGIKA HYBRID ---
+    // Jika Hisab bilang tanggal 1, tapi Hilal tidak Imkan, maka tetap di tanggal 29/30 (mundur 1)
+    if (!imkan && hisab.d === 1) {
+        result.d = 30; // Istikmal
+    } else if (!imkan && hisab.d > 1) {
+        // Jika belum masuk bulan baru, Hybrid biasanya tertinggal 1 hari dari Hisab Wujudul Hilal
+        result.d = hisab.d - 1;
     }
 
     return result;
