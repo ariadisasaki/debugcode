@@ -16,27 +16,34 @@ body {
   background: var(--primary-bg);
   background-attachment: fixed;
   color: var(--text-main);
+  display: flex;
+  justify-content: center; /* Center kan aplikasi di layar laptop */
+}
+
+/* === LIMIT WIDTH (Agar di laptop seperti HP) === */
+.app-wrapper {
+  width: 100%;
+  max-width: 450px; /* Standar lebar HP di laptop */
+  min-height: 100vh;
+  position: relative;
   overflow-x: hidden;
 }
 
 /* === SPLASH SCREEN === */
 #splash {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 450px;
+  height: 100%;
   background: #020611;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   z-index: 9999;
 }
 
-.logo {
-  width: 120px;
-  height: auto;
-  margin-bottom: 20px;
-}
-
-/* === FLOATING MENU BUTTON (Top Left) === */
+/* === FLOATING MENU BUTTON === */
 .menu-btn {
   position: fixed;
   top: 15px;
@@ -44,64 +51,43 @@ body {
   font-size: 22px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
-  color: #fff;
   padding: 8px 12px;
   border-radius: 12px;
   z-index: 2000;
   cursor: pointer;
   border: 1px solid var(--glass-border);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-/* === SIDEBAR (Vertical Stack) === */
+/* === SIDEBAR (Berjarak & Rapi) === */
 .sidebar {
   position: fixed;
   top: 0; left: 0;
-  width: 260px; height: 100%;
+  width: 280px; height: 100%;
   background: rgba(2, 6, 17, 0.98);
   backdrop-filter: blur(15px);
   z-index: 2001;
   transform: translateX(-100%);
   transition: transform 0.4s ease;
-  padding: 60px 20px 20px 20px; /* Padding top lebih besar agar tidak tertutup tombol close */
+  padding: 60px 20px;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column; /* Berurutan ke bawah */
-  gap: 10px;
+  flex-direction: column;
 }
 
-.sidebar.active { transform: translateX(0); }
+.sidebar h3 { text-align: center; margin-bottom: 20px; }
 
-.sidebar h3 {
-  margin-bottom: 10px;
-  text-align: center;
-  border-bottom: 1px solid var(--glass-border);
-  padding-bottom: 10px;
-}
-
-/* === TOGGLES (Center Horizontal) === */
-.toggle-wrapper {
-  display: flex;
-  justify-content: center; /* Center Horizontal */
-  align-items: center;
-  margin: 15px auto;
-  width: 100%;
-}
-
-.hijri-toggle-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center; /* Center Horizontal */
-  gap: 12px;
-  margin: 15px auto;
+.sidebar button {
+  margin-bottom: 15px; /* Jarak antar menu diperbesar */
+  padding: 14px;
+  border-radius: 12px;
   background: rgba(255,255,255,0.05);
-  padding: 10px 20px;
-  border-radius: 30px;
-  width: fit-content;
   border: 1px solid var(--glass-border);
+  color: white;
+  text-align: center;
+  font-weight: 500;
 }
 
-/* === CARD & LABELS (Hover Effects) === */
+/* === CARD (Semua Teks Center) === */
 .card {
   background: var(--card-bg);
   backdrop-filter: blur(10px);
@@ -109,50 +95,22 @@ body {
   padding: 20px;
   margin-bottom: 15px;
   border: 1px solid var(--glass-border);
+  text-align: center; /* Judul dan isi jadi center */
   transition: transform 0.3s ease;
 }
 
-.card:hover { transform: translateY(-3px); }
-
-/* Efek Hover pada Kotak Label (Azimuth, Altitude, dll) */
-.data-box, .prediksi-box, .sun-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--glass-border);
-  padding: 12px 8px;
-  border-radius: 16px;
-  transition: all 0.3s ease;
+.card h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 600;
 }
 
-.data-box:hover, .prediksi-box:hover, .sun-box:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--accent-cyan);
-  transform: scale(1.05); /* Sedikit membesar saat di-hover */
-  box-shadow: 0 5px 15px rgba(0, 198, 255, 0.2);
-}
-
-.label {
-  font-size: 11px !important;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #aaa;
-  display: block;
-  margin-bottom: 4px;
-}
-
-/* === PLANETARIUM (Ratio 1:2) === */
-#planetarium {
-  width: 100% !important;
-  height: 500px !important; /* Diperpanjang ke bawah */
-  border-radius: 12px;
-  background: #000;
-  display: block;
-}
-
-/* === HIDDEN CARD (Text Justify) === */
+/* === HIDDEN CARD (Padding & Justify) === */
 #hijriInfoCard, #insightCard {
   text-align: justify;
   line-height: 1.6;
   font-size: 14px;
+  padding: 0 15px; /* Jarak teks dari pinggir card */
 }
 
 .insight-hidden {
@@ -165,43 +123,75 @@ body {
 .insight-show {
   max-height: 2000px;
   opacity: 1;
-  padding: 15px 0;
+  padding: 15px; /* Spasi saat terbuka */
+  margin-bottom: 10px;
 }
 
-/* === PROGRESS BAR === */
-.countdown-text {
-  text-align: center;
-  font-weight: 600;
-  color: var(--accent-cyan);
-  margin-bottom: 8px;
+/* === TOGGLE & SPACING (Dirapatkan) === */
+.toggle-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 5px 0; /* Jarak antar toggle/card dirapatkan */
 }
 
-.progress-bar-bg {
-  height: 10px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 10px;
-  overflow: hidden;
+.hijri-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px auto;
+  background: rgba(255,255,255,0.05);
+  padding: 10px 25px;
+  border-radius: 30px;
+  border: 1px solid var(--glass-border);
 }
 
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #38bdf8, #22c55e);
+/* === SUB-CARD LABELS (Lowercase/Normal & Hover) === */
+.label, .sun-box .label, .prediksi-box .label, .data-box .label {
+  font-size: 12px !important;
+  text-transform: none; /* Tidak Uppercase lagi */
+  color: #aaa;
+  display: block;
+  margin-bottom: 4px;
 }
 
-/* === INSTALL BUTTON (Bottom Center) === */
+.data-box, .prediksi-box, .sun-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  padding: 12px 8px;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.data-box:hover, .prediksi-box:hover, .sun-box:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-cyan);
+  transform: scale(1.03);
+}
+
+/* === PLANETARIUM (Proporsional) === */
+#planetarium {
+  width: 100% !important;
+  height: 300px !important; /* Diubah agar lebih proporsional */
+  border-radius: 12px;
+  background: #000;
+  display: block;
+  margin: 10px 0;
+}
+
+/* === INSTALL BUTTON === */
 #installBtn {
   position: fixed;
   bottom: 25px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 9998;
   padding: 12px 24px;
   border-radius: 50px;
   background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
   border: none;
   color: #fff;
   font-weight: 600;
-  z-index: 9998;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
 }
 
 /* === UTILS === */
@@ -211,8 +201,6 @@ body {
   gap: 10px;
 }
 .full { grid-column: span 2; }
-#calibrateBtn { display: none !important; }
-
 .overlay {
   position: fixed;
   top: 0; left: 0;
