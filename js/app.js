@@ -358,66 +358,6 @@ let lastRender = {
   mode: null,
   time: 0
 };
-
-// === UPDATE HIJRI REALTIME FINAL (CLEAN VERSION) ===
-/* function updateHijriRealTime(lat, lon) {
-
-  const now = Date.now();
-
-  // 🔒 anti spam render
-  if (now - lastRender.time < 500) return;
-
-  // =========================
-  // 🔥 AMBIL DATA DARI 1 SOURCE OF TRUTH
-  // =========================
-  const result = getHijriFinal(lat, lon);
-
-  // =========================
-  // ❌ SAFETY
-  // =========================
-  if (!result) {
-    console.error("❌ Hijri result kosong atau engine gagal");
-    return;
-  }
-
-  // =========================
-  // 🔥 DEBUG INTI
-  // =========================
-  console.log("=== HIJRI DEBUG FINAL ===");
-  console.log("RESULT:", result);
-
-  // =========================
-  // 📅 NAMA BULAN
-  // =========================
-  const bulan = [
-    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
-    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
-    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
-  ];
-
-  // =========================
-  // 🎯 RENDER UI (ONLY DISPLAY)
-  // =========================
-  const hijriEl = document.getElementById("hijri");
-  const statusEl = document.getElementById("statusHilal");
-
-  if (hijriEl) {
-    hijriEl.innerText =
-      `${result.d} ${bulan[result.m - 1]} ${result.y} H`;
-  }
-
-  if (statusEl) {
-    statusEl.innerText = result.source || "calculated";
-  }
-
-  // =========================
-  // 🔒 CACHE STATE
-  // =========================
-  hijriFinalState = result;
-
-  lastRender.mode = modeHijri ? "hisab" : "hybrid";
-  lastRender.time = now;
-} */
   
 // === INIT ===
 window.onload = () => {
@@ -2761,13 +2701,28 @@ let statusHilal = "-";
 function getHijriHybrid(lat, lon) {
     const hisab = getHijriAstronomical(lat, lon);
     
-    // Karena April 2026 Hilal tidak memenuhi kriteria MABIMS (3/6.4)
-    // Maka Hybrid harus dipaksa -1 dari Hisab
-    let d = hisab.d - 1;
+    // 1. Ambil data hilal pada Maghrib hari ke-29 bulan berjalan
+    const ijtima = getLastIjtima();
+    const tglPenentuan = new Date(ijtima);
+    tglPenentuan.setHours(18, 15, 0, 0); // Estimasi waktu Maghrib
+    
+    const hilal = hitungHilalCore(lat, lon, tglPenentuan);
+    
+    // 2. Cek Kriteria MABIMS (Tinggi >= 3 derajat DAN Elongasi >= 6.4 derajat)
+    const imkanRukyat = (hilal.alt >= 3 && hilal.elo >= 6.4);
+    
+    let d = hisab.d;
     let m = hisab.m;
     let y = hisab.y;
 
-    // Jika d menjadi 0, maka kembali ke tanggal 30 bulan sebelumnya
+    // 3. LOGIKA OTOMATIS:
+    // Jika secara astronomis sudah masuk tanggal baru, tapi HILAL BELUM CUKUP SYARAT,
+    // maka tanggal hybrid harus dikurangi 1 (Istikmal/penggenapan bulan).
+    if (!imkanRukyat) {
+        d = d - 1;
+    }
+
+    // Koreksi jika d menjadi 0 (pindah ke bulan sebelumnya)
     if (d < 1) {
         d = 30;
         m = m - 1;
