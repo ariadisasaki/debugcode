@@ -2730,37 +2730,22 @@ function getHijriAstronomical(lat, lon) {
     const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate());
     
-    // 2. Hitung selisih hari (17 ke 24 = 7 hari)
-    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000);
+    // 2. Hitung selisih hari (Hasil: 24 April - 17 April = 7)
+    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000); 
 
-    // 3. Cek Maghrib
     const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
 
-    // 4. LOGIKA TANGGAL
-    // Sejak matahari terbit sampai sore, d = diffDays (7).
-    // Begitu masuk Maghrib, d bertambah 1 (8).
-    let d = diffDays;
-  
-    console.log("DEBUG -> diffDays:", diffDays); // Pastikan ini muncul angka 7
-    console.log("DEBUG -> jamNow:", jamNow);
-    console.log("DEBUG -> maghrib:", maghrib);
+    // 3. Logika: Karena Ijtima 17 April adalah tanggal 1, maka:
+    // Tanggal = Selisih Hari + 1
+    let d = diffDays + 1;
 
+    // 4. Update tanggal hanya jika SUDAH melewati waktu Maghrib
     if (jamNow >= maghrib) {
         d += 1;
     }
 
-    // Koreksi khusus: Jika ijtima terjadi pagi (seperti April 2026), 
-    // sore hari di tanggal yang sama sudah dianggap tanggal 1.
-    // Maka selisih 0 hari = tanggal 1. Jadi kita tambah 1.
-    d += 1;
-
-    // --- PROTEKSI DOUBLE INCREMENT ---
-    // Jika hari ini 24 April pagi, d harus 7.
-    // Jika d masih 8, kita kurangi 1 karena selisih 17 ke 24 adalah 7.
-    // (PENTING: Pastikan tidak ada d += 1 tersembunyi di bagian lain)
-
-    // Perhitungan Bulan & Tahun
+    // Perhitungan Bulan & Tahun (tetap menggunakan cycle rata-rata)
     const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
     const cycle = Math.floor(ageTotal / 29.530588853);
     let m = ((11 - 1 + cycle) % 12) + 1;
@@ -2808,35 +2793,21 @@ function resetHybridDaily(){
 
 // === HIJRI DISPLAY ===
 function updateHijriDisplay(){
+    if(!currentLat || !currentLon) return;
 
-  if(!currentLat || !currentLon){
-    console.log("⛔ Lokasi belum siap");
-    return;
-  }
+    // Ambil hasil akhir dari seleksi mode
+    const data = getHijriFinal(currentLat, currentLon);
 
-  const data = modeHijri
-    ? getHijriAstronomical(currentLat, currentLon)
-    : getHijriHybrid(currentLat, currentLon);
-
-  // 🔥 SAFETY CRITICAL
-  if(!data){
-    console.log("⛔ Hijri data NULL");
-    return;
-  }
-
-  const el = document.getElementById("hijri");
-  if(!el){
-    console.log("⛔ Element #hijri tidak ditemukan");
-    return;
-  }
-
-  const bulan = [
-    "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
-    "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
-    "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
-  ];
-
-  el.innerText = `${data.d} ${bulan[data.m - 1]} ${data.y} H`;
+    const bulan = [
+        "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
+        "Jumadil Awal","Jumadil Akhir","Rajab","Syaban",
+        "Ramadhan","Syawal","Zulkaidah","Zulhijjah"
+    ];
+    
+    const el = document.getElementById("hijri");
+    if(el && data) {
+        el.innerText = `${data.d} ${bulan[data.m - 1]} ${data.y} H`;
+    }
 }
 
 // === HIJRI MOONT YEAR ===
@@ -2877,15 +2848,14 @@ function renderHijriUI(){
 
 // === HIJRI FINAL ===
 function getHijriFinal(lat, lon){
-
-  const hisab = getHijriAstronomical(lat, lon);
-  const hybrid = getHijriHybrid(lat, lon);
-
-  const result = modeHijri ? hybrid : hisab;
-
-  hijriFinalState = result; // simpan hasil final
-
-  return result;
+    const hisab = getHijriAstronomical(lat, lon);
+    const hybrid = getHijriHybrid(lat, lon);
+    
+    // Perbaikan: modeHijri true (Hisab), false (Hybrid)
+    const result = modeHijri ? hisab : hybrid; 
+    
+    hijriFinalState = result; 
+    return result;
 }
 
 // === WAKTU MAGHRIB ===
@@ -2913,20 +2883,11 @@ function setMode(mode){
 
 // === TOGGLE HIJRI HISAB ===
 function toggleHijriMode() {
-  const checkbox = document.getElementById("hijriModeToggle");
-  const label = document.getElementById("hijriModeLabel");
-
-  modeHijri = checkbox.checked; // true = hisab, false = hybrid
-  label.innerText = modeHijri ? "Mode Hisab" : "Mode Hybrid";
-
-  console.log("Hijri mode:", modeHijri ? "Hisab" : "Rukyat");
-
-  // Simpan pilihan user ke localStorage
-  localStorage.setItem("modeHijri", modeHijri);
-
-  if (!modeHijri) {
-    // Jika Rukyat, reset tanggal Hijri agar menunggu input rukyat
-    tanggalHijriGlobal = 0;
-    document.getElementById("hijri").innerText = "Menunggu rukyat...";
-  }
+    const checkbox = document.getElementById("hijriModeToggle");
+    modeHijri = checkbox.checked; 
+    
+    // Gunakan JSON.stringify agar tersimpan sebagai boolean asli (bukan string)
+    localStorage.setItem("modeHijri", JSON.stringify(modeHijri));
+    
+    updateHijriDisplay(); 
 }
