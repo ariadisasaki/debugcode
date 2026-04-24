@@ -1862,7 +1862,7 @@ function hitungHilal(lat, lon, customTime = null) {
   set("azi", azi.toFixed(2) + "°");
   set("elo", elo.toFixed(2) + "°");
   set("age", age.toFixed(1) + " jam");
-  set("illum", illumination.toFixed(2) + " %");
+  set("illum", illumination.toFixed(2) + "%");
 
   // === VISIBILITY ===
   const yallop = hitungVisibilitasYallop(alt, elo);
