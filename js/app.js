@@ -56,8 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === SEBELUM INSTALL ===
   window.addEventListener("beforeinstallprompt", (e) => {
-    console.log("🔥 beforeinstallprompt TERPANGGIL");
-
     e.preventDefault();
     deferredPrompt = e;
 
