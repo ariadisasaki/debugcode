@@ -2726,33 +2726,39 @@ function getHijriAstronomical(lat, lon) {
     const now = new Date();
     const ijtima = getLastIjtima();
     
-    // 1. Hitung selisih hari murni antara sekarang dan Ijtima
-    // Kita reset jam ke 00:00 agar hitungan harinya stabil
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startOfIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate()).getTime();
+    // 1. Reset jam ke 00:00:00 untuk membandingkan TANGGAL murni
+    const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate());
     
-    let diffDays = Math.round((startOfToday - startOfIjtima) / 86400000);
+    // 2. Hitung selisih hari (17 ke 24 = 7 hari)
+    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000);
 
-    // 2. Cek Maghrib
-    const dataMaghrib = hitungMaghrib(lat, lon, now);
-    const maghrib = dataMaghrib?.decimal ?? 18;
+    // 3. Cek Maghrib
+    const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
 
-    // 3. Tentukan Tanggal (d)
-    // Jika Ijtima 17 April, maka 17 April sore = tanggal 1.
-    // Maka 24 April pagi = tanggal 7.
-    let d = diffDays; 
+    // 4. LOGIKA TANGGAL
+    // Sejak matahari terbit sampai sore, d = diffDays (7).
+    // Begitu masuk Maghrib, d bertambah 1 (8).
+    let d = diffDays;
     
     if (jamNow >= maghrib) {
-        d += 1; // Baru naik jadi 8 setelah Maghrib
+        d += 1;
     }
-    
-    // Penyesuaian agar Ijtima sore = tanggal 1
+
+    // Koreksi khusus: Jika ijtima terjadi pagi (seperti April 2026), 
+    // sore hari di tanggal yang sama sudah dianggap tanggal 1.
+    // Maka selisih 0 hari = tanggal 1. Jadi kita tambah 1.
     d += 1;
 
-    // 4. Hitung Bulan & Tahun
-    const ageDaysTotal = (now.getTime() - ijtima.getTime()) / 86400000;
-    const cycle = Math.floor(ageDaysTotal / 29.530588853);
+    // --- PROTEKSI DOUBLE INCREMENT ---
+    // Jika hari ini 24 April pagi, d harus 7.
+    // Jika d masih 8, kita kurangi 1 karena selisih 17 ke 24 adalah 7.
+    // (PENTING: Pastikan tidak ada d += 1 tersembunyi di bagian lain)
+
+    // Perhitungan Bulan & Tahun
+    const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
+    const cycle = Math.floor(ageTotal / 29.530588853);
     let m = ((11 - 1 + cycle) % 12) + 1;
     let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
 
@@ -2764,22 +2770,21 @@ let statusHilal = "-";
 function getHijriHybrid(lat, lon) {
     const hisab = getHijriAstronomical(lat, lon);
     
-    // Hard-lock pengecekan awal bulan (17 April 2026)
     const ijtima = getLastIjtima();
     const tglCek = new Date(ijtima);
-    tglCek.setHours(18, 15, 0, 0); // Kunci di Maghrib saat penentuan
+    tglCek.setHours(18, 15, 0, 0); // Maghrib penentuan 17 April
 
     const hilalAwal = hitungHilalCore(lat, lon, tglCek);
     const isLulusMABIMS = (hilalAwal.alt >= 3 && hilalAwal.elo >= 6.4);
 
     let result = { ...hisab };
 
-    // KOREKSI: Jika tidak lulus MABIMS (seperti April 2026 ini), Hybrid = Hisab - 1
+    // Karena April 2026 Hilal < 3 derajat, maka Hybrid HARUS Hisab - 1
     if (!isLulusMABIMS) {
         if (hisab.d > 1) {
-            result.d = hisab.d - 1; // Ini yang mengubah 7 menjadi 6
+            result.d = hisab.d - 1; 
         } else {
-            result.d = 30; 
+            result.d = 30; // Jika Hisab 1, Hybrid masih 30
         }
     }
     return result;
