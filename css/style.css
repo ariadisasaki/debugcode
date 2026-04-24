@@ -34,6 +34,15 @@ body{
   position:relative;  
   animation: fadeIn 0.5s ease;  
 }  
+
+/* REVISI: Judul Card (H3) menjadi Uppercase */
+.card h3 {
+  text-transform: uppercase;
+  font-size: 14px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  color: #cbd5f5; /* Warna perak lembut agar judul tidak terlalu dominan */
+}
   
 @keyframes fadeIn{  
   from{opacity:0; transform:translateY(10px);}  
@@ -48,7 +57,7 @@ body{
   margin-top:10px;  
 }  
   
-/* REVISI: Tambah Efek Hover & Border halus pada data-box */
+/* REVISI: Efek Hover Seragam SunCard */
 .data-box{  
   background: rgba(255,255,255,0.05);  
   padding:8px;  
@@ -63,25 +72,16 @@ body{
   background: rgba(255,255,255,0.1);
   border-color: rgba(0, 198, 255, 0.3);
 }
-
-/* REVISI: Tambah style label untuk data-box agar uppercase */
-.data-box .label {
-  display: block;
-  font-size: 11px;
-  color: #aaa;
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
   
 .full-width{  
   grid-column: span 2;  
 }  
-  
+
+/* REVISI: Highlight warna biru cerah (seperti aksen SunCard) */
 .highlight{  
   font-size:16px;  
   font-weight:600;  
-  color: #00c6ff; /* Warna teks biru cerah */
+  color: #00c6ff; 
 }  
   
 /* === STATUS === */  
@@ -92,7 +92,7 @@ body{
   padding:8px;  
   border-radius:12px;  
   margin-top:5px;  
-  text-transform: uppercase; /* Uppercase status */
+  text-transform: uppercase; /* Uppercase teks status */
 }  
   
 .status.ok{ background:#1f8f4e; }  
@@ -207,15 +207,6 @@ button{
   background:linear-gradient(135deg,#ff7b00,#ffd700);  
 }  
   
-/* === JALUR BULAN === */  
-.hilal-path-dot{  
-  position:absolute;  
-  width:6px;  
-  height:6px;  
-  border-radius:50%;  
-  background:rgba(0,198,255,0.7);  
-}  
-  
 /* === SIDEBAR === */  
 .menu-btn{  
   position: fixed;  
@@ -238,20 +229,19 @@ button{
   transform: translateX(-100%);  
   width: 250px;  
   height: 100%;  
-  background: rgba(10, 20, 40, 0.95); /* Sedikit lebih gelap agar kontras */
+  background: rgba(10, 20, 40, 0.95);  
   backdrop-filter: blur(10px);  
   padding: 20px;  
   transition: transform 0.3s ease;  
   z-index: 2001;  
-  display:flex;  
-  flex-direction:column;  
+  display: flex;
+  flex-direction: column;
 }  
   
 .sidebar.active{  
   transform: translateX(0);  
 }  
   
-/* === OVERLAY === */  
 .overlay{  
   position: fixed;  
   top:0;  
@@ -270,16 +260,10 @@ button{
   visibility:visible;  
 }  
   
-/* === HIDE BUTTON DARI CARD === */  
-#startARBtn,  
-#calibrateBtn{  
-  display:none;  
-}  
+#startARBtn, #calibrateBtn{ display:none; }  
   
 /* === SPLASH === */  
-html, body{  
-  height:100%;  
-}  
+html, body{ height:100%; }  
   
 #splash{  
   position: fixed;  
@@ -292,26 +276,6 @@ html, body{
   align-items:center;  
   justify-content:center;  
   z-index:9999;  
-  opacity:1;  
-  visibility:visible;  
-  transition: opacity 0.5s ease, visibility 0.5s ease;  
-}  
-  
-.splash-content{  
-  text-align:center;  
-}  
-  
-.logo{  
-  width:180px;  
-  max-width:40%;  
-  margin-bottom:10px;  
-  animation:zoomIn 0.8s ease;  
-  filter: drop-shadow(0 0 10px rgba(0,198,255,0.6));  
-}  
-  
-@keyframes zoomIn{  
-  from{ transform:scale(0.7); opacity:0; }  
-  to{ transform:scale(1); opacity:1; }  
 }  
   
 .loader{  
@@ -324,9 +288,7 @@ html, body{
   margin:10px auto;  
 }  
   
-@keyframes spin{  
-  to{transform:rotate(360deg);}  
-}  
+@keyframes spin{ to{transform:rotate(360deg);} }  
   
 /* === PREDIKSI HILAL === */  
 .prediksi-grid{  
@@ -348,31 +310,20 @@ html, body{
 .prediksi-box:hover{  
   transform:translateY(-3px);  
   background: rgba(255,255,255,0.1);  
-  border-color: rgba(34, 197, 94, 0.3); /* Hijau transparan saat hover */
+  border-color: rgba(34, 197, 94, 0.3);
 }  
   
-.prediksi-box.full{  
-  grid-column: span 2;  
+/* REVISI: Nilai teks dalam box (Warna Emas seperti Suncard) */
+.prediksi-box .value, .data-box .value {  
+  font-size: 15px;  
+  font-weight: 600;  
+  color: #facc15; /* Kuning Emas konsisten */
 }  
   
-.prediksi-box .label{  
-  display:block;  
-  font-size:11px;  
-  color:#aaa;  
-  margin-bottom:4px;  
-  text-transform: uppercase; /* Uppercase Label */
-  letter-spacing: 0.5px;
-}  
-  
-.prediksi-box .value{  
-  font-size:15px;  
-  font-weight:600;  
-}  
-  
-/* Warna teks berdasarkan hasil */  
-.value.ok{ color:#22c55e; }  
-.value.warn{ color:#facc15; }  
-.value.bad{ color:#ef4444; }  
+/* Warna dinamis tetap dipertahankan */
+.value.ok{ color:#22c55e !important; }  
+.value.warn{ color:#facc15 !important; }  
+.value.bad{ color:#ef4444 !important; }  
   
 /* === SUN CARD SPECIFIC === */  
 .sun-grid {  
@@ -396,8 +347,9 @@ html, body{
   background: rgba(255, 255, 255, 0.1);  
   border-color: rgba(250, 204, 21, 0.4);  
 }  
-  
-.sun-box .label {  
+
+/* Label kecil tetap uppercase */
+.sun-box .label, .prediksi-box .label, .data-box .label {  
   display: block;  
   font-size: 11px;  
   color: #aaa;  
@@ -405,42 +357,15 @@ html, body{
   text-transform: uppercase;  
   letter-spacing: 0.5px;  
 }  
-  
+
 .sun-box .value {  
   font-size: 15px;  
   font-weight: 600;  
   color: #facc15;  
 }  
-  
-.value.night {  
-  color: #ef4444;  
-}
+
+.value.night { color: #ef4444 !important; }
 
 /* === LAIN-LAIN === */
-#planetarium{
-  width: 100%;
-  height: 250px;
-  display: block;
-  border-radius: 12px;
-}
-
-@keyframes pulse{  
-  0%{ transform:translate(-50%, -50%) scale(1); }  
-  50%{ transform:translate(-50%, -50%) scale(1.2); }  
-  100%{ transform:translate(-50%, -50%) scale(1); }  
-}
-
-#installBtn{
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: auto;
-  padding: 12px 16px;
-  border-radius: 14px;
-  background: linear-gradient(135deg,#00c6ff,#3a7bfd);
-  color: #fff;
-  font-weight: 600;
-  display: none;
-}
-#installBtn.show{ display: block; animation: popIn 0.4s ease; }
-@keyframes popIn{ from{ transform: scale(0.6); opacity: 0; } to{ transform: scale(1); opacity: 1; } }
+#planetarium{ border-radius: 12px; overflow: hidden; }
+@keyframes pulse{ 0%{transform:scale(1);} 50%{transform:scale(1.2);} 100%{transform:scale(1);} }
