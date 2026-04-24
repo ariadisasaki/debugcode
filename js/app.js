@@ -2254,41 +2254,76 @@ function hitungMaghrib(lat, lon, customDate=null){
 }
 
 // === MAGHRIB WATCHER ===
-function startMaghribWatcher(lat, lon){
+// Variabel kontrol untuk mencegah trigger berulang di menit yang sama
+let lastTriggeredDate = ""; 
 
-  function loop(){
+// Memantau waktu secara real-time dan memicu pergantian tanggal Hijriah
+function startMaghribWatcher() {
+    console.log("🚀 Maghrib Watcher aktif: Memantau pergantian hari...");
 
-    const now = new Date();
+    setInterval(() => {
+        if (!currentLat || !currentLon) return;
 
-    const maghribData = hitungMaghrib(lat, lon);
-    if(!maghribData) return;
+        const now = new Date();
+        const jamSekarangDesimal = now.getHours() + (now.getMinutes() / 60) + (now.getSeconds() / 3600);
+        
+        // 1. Hitung waktu Maghrib hari ini berdasarkan lokasi
+        const maghrib = hitungMaghrib(currentLat, currentLon);
+        
+        // 2. Buat ID unik untuk hari ini
+        const todayId = now.toISOString().split('T')[0];
 
-    const maghrib = maghribData.decimal;
-    const jamNow = now.getHours() + now.getMinutes()/60;
+        // Jika jam sekarang sudah melewati Maghrib 
+        // dan kita belum melakukan update otomatis untuk hari ini
+        if (jamSekarangDesimal >= maghrib.decimal && lastTriggeredDate !== todayId) {
+            
+            console.log(`%c 🌇 Waktu Maghrib Tiba (${now.toLocaleTimeString()}) `, 'background: #d35400; color: white; font-weight: bold;');
+            
+            // Eksekusi Update
+            if (typeof requestHijriUpdate === "function") {
+                requestHijriUpdate();
+            } else if (typeof updateHijriDisplay === "function") {
+                updateHijriDisplay();
+            }
 
-    const todayKey = now.toDateString();
-    const lastReload = localStorage.getItem("hilalReloadDate");
+            // Tandai bahwa hari ini sudah di-update agar tidak trigger terus-menerus setiap detik
+            lastTriggeredDate = todayId;
+            
+            // Catat ke Audit Log jika tersedia
+            if (typeof logHijriAudit === "function") {
+                const data = getHijriFinal(currentLat, currentLon);
+                logHijriAudit(data, modeHijri);
+            }
+        }
+        
+        // Reset flag jika berganti hari (tengah malam) agar besok bisa trigger lagi
+        if (jamSekarangDesimal < 1 && lastTriggeredDate === todayId) {
+        }
+    }, 1000); // Cek setiap 1 detik
+}
 
-    if(jamNow >= maghrib && lastReload !== todayKey){
-
-      console.log("🌙 MAGHRIB TRIGGERED");
-
-      localStorage.setItem("hilalReloadDate", todayKey);
-
-      requestHijriUpdate(); // ✅ SATU PINTU
-
-      showNotif("Maghrib", "Tanggal Hijriah diperbarui 🌙");
+// === MINTA UPDATE HIJRI ===
+function requestHijriUpdate() {
+    console.log("🔄 Requesting Hijri update...");
+    
+    // 1. Jalankan ulang perhitungan utama
+    if (typeof updateHijriDisplay === "function") {
+        updateHijriDisplay();
     }
 
-    const selisih = Math.abs(jamNow - maghrib);
+    // 2. Kirim Notifikasi
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("Waktu Maghrib", {
+            body: "Tanggal Hijriah telah berganti.",
+            icon: "icon-hijri.png"
+        });
+    }
 
-    let delay = selisih > 2 ? 60000 :
-                selisih > 1 ? 30000 : 10000;
-
-    setTimeout(loop, delay);
-  }
-
-  loop();
+    // 3. Update Audit Log (Jika diperlukan trigger instan)
+    if (typeof currentLat !== "undefined" && currentLat) {
+        const data = getHijriFinal(currentLat, currentLon);
+        logHijriAudit(data, modeHijri);
+    }
 }
 
 // === KALIBRASI HORIZON ===
