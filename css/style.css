@@ -668,7 +668,7 @@ html, body{
 .sun-box .value {
   font-size: 15px;
   font-weight: 600;
-  color: #facc15; /* Warna Kuning Matahari */
+  color: #aaa; /* Warna Kuning Matahari */
 }
 
 /* Warna merah jika posisi di bawah horizon (malam) */
@@ -681,4 +681,3 @@ html, body{
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-
