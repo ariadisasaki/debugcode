@@ -2787,35 +2787,41 @@ function getHijriAstronomical(lat, lon) {
 let statusHilal = "-";
 
 function getHijriHybrid(lat, lon) {
-    // 1. Ambil dasar dari Hisab (yang sudah benar tanggal 7)
+    // 1. Ambil angka dasar dari Hisab (yang sudah benar tanggal 7)
     const hisab = getHijriAstronomical(lat, lon);
-    
     if (!hisab) return null;
 
-    // 2. KUNCI PERBAIKAN: Ambil data hilal pada awal bulan (saat Ijtima terakhir)
-    // Kita tidak mengecek hilal hari ini, tapi hilal pada malam 29 Syawal lalu
+    // 2. Tentukan Tanggal Penentuan (Maghrib 29 Syawal)
+    // Untuk Zulkaidah 1447H, ijtima adalah 17 April 2026 pagi.
     const ijtima = getLastIjtima(); 
-    const hilalAwalBulan = hitungHilalCore(lat, lon, ijtima);
     
-    // 3. Terapkan Kriteria MABIMS (3° dan 6.4°)
-    // Pada 17 April 2026, data ini akan menghasilkan FALSE karena tinggi hilal < 3°
-    const isLulusMABIMS = (hilalAwalBulan.alt >= 3 && hilalAwalBulan.elo >= 6.4);
+    // Kita buat sampel waktu: 17 April 2026 jam 18:15 (Waktu Maghrib standar)
+    // Menggunakan objek Date manual lebih aman untuk mengunci status awal bulan
+    const tglCek = new Date(ijtima);
+    tglCek.setHours(18, 15, 0, 0); 
 
-    let result = { ...hisab, source: "hybrid-mabims" };
+    // 3. Panggil Hilal Core dengan waktu yang sudah dikunci ke sore penentuan
+    const hilalAwal = hitungHilalCore(lat, lon, tglCek);
+    
+    // 4. DEBUG (Lihat di Console F12)
+    // Jika Alt muncul > 3, berarti fungsi hitungHilalCore kamu terlalu optimis/tinggi
+    console.log("Alt Hilal Sore Penentuan:", hilalAwal.alt);
 
-    // 4. LOGIKA KOREKSI ISTIKMAL
-    // Jika awal bulan tidak lulus MABIMS, maka kalender Hybrid "terlambat" 1 hari
+    // 5. KRITERIA MABIMS
+    const isLulusMABIMS = (hilalAwal.alt >= 3 && hilalAwal.elo >= 6.4);
+
+    let result = { ...hisab, source: "hybrid" };
+
+    // 6. LOGIKA EKSEKUSI
+    // Jika Hilal tgl 17 April TIDAK lulus 3 derajat, maka Hybrid HARUS Hisab - 1
     if (!isLulusMABIMS) {
         if (hisab.d === 1) {
-            // Jika Hisab sudah masuk tanggal 1 bulan baru, Hybrid masih di tanggal 30 bulan lama
-            result.d = 30; 
+            result.d = 30; // Istikmal
         } else {
-            // Jika Hisab tanggal 7 (seperti sekarang), maka Hybrid adalah 7 - 1 = 6
-            result.d = hisab.d - 1;
+            result.d = hisab.d - 1; // Ini yang akan merubah 7 menjadi 6
         }
     }
 
-    // Jika lulus MABIMS, maka result.d tetap sama dengan hisab.d (7)
     return result;
 }
 
