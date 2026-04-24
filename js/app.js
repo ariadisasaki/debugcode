@@ -43,7 +43,6 @@ let hijriState = {
 const SYNODIC_MONTH = 29.530588;
 const DAY_MS = 86400000;
 setInterval(() => {
-  console.log("CHECK:", currentLat, currentLon);
   updateHijriDisplay();
 }, 2000);
 
@@ -1235,7 +1234,6 @@ function startClock(){
 
 // === GPS ===
 let locationInitialized = false;
-
 function getLocation() {
 
   navigator.geolocation.getCurrentPosition(async (p) => {
@@ -1246,11 +1244,6 @@ function getLocation() {
     // 🔍 DEBUG
     const hisab = getHijriAstronomical(lat, lon);
     const hybrid = getHijriHybrid(lat, lon);
-
-    console.log("PERBANDINGAN FINAL:", {
-      hisab: hisab?.d,
-      hybrid: hybrid?.d
-    });
 
     // =========================
     // ✅ SIMPAN GLOBAL
