@@ -17,10 +17,10 @@ body {
   background-attachment: fixed;
   color: var(--text-main);
   overflow-x: hidden;
-  text-align: center; /* Judul dan teks umum jadi center */
+  text-align: center;
 }
 
-/* === SPLASH SCREEN (Proporsional) === */
+/* === SPLASH SCREEN === */
 #splash {
   position: fixed;
   top: 0; left: 0;
@@ -32,7 +32,7 @@ body {
 }
 
 .logo {
-  width: 80px; /* Diperkecil agar lebih manis */
+  width: 80px;
   height: auto;
   margin-bottom: 15px;
 }
@@ -53,7 +53,7 @@ body {
   border: 1px solid var(--glass-border);
 }
 
-/* === SIDEBAR (Rata Kiri & Renggang) === */
+/* === SIDEBAR === */
 .sidebar {
   position: fixed;
   top: 0; left: 0;
@@ -67,8 +67,8 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Memberi jarak antar menu */
-  text-align: left; /* Rata kiri sesuai request */
+  gap: 15px;
+  text-align: left;
 }
 
 .sidebar.active { transform: translateX(0); }
@@ -85,61 +85,85 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-/* === CARD & SPACING (Rapat) === */
+/* === CARD UTAMA === */
 .container {
-  padding: 10px 15px 100px; /* Rapatkan padding atas */
+  padding: 10px 15px 100px;
 }
 
 .card {
   background: var(--card-bg);
   backdrop-filter: blur(10px);
   border-radius: 20px;
-  padding: 15px; /* Lebih rapat */
-  margin-bottom: 12px; /* Lebih rapat antar card */
+  padding: 15px;
+  margin-bottom: 12px;
   border: 1px solid var(--glass-border);
   text-align: center;
 }
 
-/* Efek Hover Sub-Box */
-.data-box, .prediksi-box, .sun-box {
+/* === GRID SYSTEM (Identik untuk semua) === */
+.sun-grid, .data-grid, .prediksi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* === SUB-BOX DATA (Keseragaman Tampilan) === */
+.sun-box, .data-box, .prediksi-box {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
-  padding: 10px 5px;
-  border-radius: 14px;
+  padding: 12px 5px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column; /* Label atas, Nilai bawah */
+  align-items: center;    /* Center horizontal */
+  justify-content: center;/* Center vertical */
   transition: all 0.3s ease;
 }
 
-.data-box:hover, .prediksi-box:hover, .sun-box:hover {
+.sun-box:hover, .data-box:hover, .prediksi-box:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--accent-cyan);
 }
 
-/* Label (No Uppercase, Seragam) */
+/* Membuat subcard Cahaya atau elemen full width */
+.full, .full-width {
+  grid-column: span 2;
+}
+
+/* === FONT & LABEL (Identik & No Uppercase) === */
 .label, h3, .sidebar h3 {
-  text-transform: none !important; /* Hilangkan Uppercase */
+  text-transform: none !important;
   letter-spacing: normal;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #aaa; /* Warna abu-abu muted yang seragam */
   margin-bottom: 4px;
+  display: block;
 }
 
 .label { font-size: 12px !important; }
 
+.value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
 /* === PLANETARIUM (Proporsional) === */
 #planetarium {
   width: 100% !important;
-  height: 300px !important; /* Dipendekkan agar proporsional */
+  height: 280px !important; /* Proporsi ideal */
   border-radius: 12px;
   background: #000;
   display: block;
 }
 
-/* === HIDDEN CARD (Padding & Justify) === */
+/* === HIDDEN CARD (Justify & Margin Tepi) === */
 #hijriInfoCard, #insightCard {
   text-align: justify;
   line-height: 1.6;
   font-size: 14px;
-  padding: 15px 20px; /* Margin jarak dari tepi card */
+  padding: 15px 20px; /* Jarak teks dari garis card */
   box-sizing: border-box;
 }
 
@@ -156,18 +180,13 @@ body {
   margin-bottom: 10px;
 }
 
-/* === TOGGLE SPACING === */
-.toggle-wrapper, .hijri-toggle-wrapper {
-  margin: 5px auto 10px; /* Lebih rapat ke card bawahnya */
-}
-
 /* === PROGRESS BAR === */
 .progress-bar-bg {
   height: 8px;
   background: rgba(255,255,255,0.1);
   border-radius: 10px;
   overflow: hidden;
-  margin: 0 15px;
+  margin: 5px 15px;
 }
 
 .progress-bar {
@@ -175,13 +194,7 @@ body {
   background: linear-gradient(90deg, #38bdf8, #22c55e);
 }
 
-/* === UTILS === */
-.data-grid, .prediksi-grid, .sun-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px; /* Lebih rapat */
-}
-
+/* === TOMBOL INSTALL === */
 #installBtn {
   position: fixed;
   bottom: 20px;
