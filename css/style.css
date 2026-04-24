@@ -672,3 +672,56 @@ html, body{
 .value.night {
   color: #ef4444; /* Merah jika di bawah horizon */
 }
+
+/* ============================================================
+   UPGRADE EFEK CARD (Sesuai gaya Sun Card)
+   Tempelkan di bawah CSS asli Anda
+   ============================================================ */
+
+/* 1. Membuat Judul Card menjadi Uppercase */
+.card h3 {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* 2. Menyelaraskan Efek Hover semua Box (Data & Prediksi) */
+.data-box, .prediksi-box {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.data-box:hover, .prediksi-box:hover {
+  transform: translateY(-3px); /* Efek mengangkat seperti Sun Card */
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 3. Membuat Label (Judul Kecil) menjadi Uppercase */
+.data-box .label, .prediksi-box .label {
+  text-transform: uppercase;
+  font-size: 11px; /* Sedikit lebih kecil agar rapi */
+  letter-spacing: 0.5px;
+  color: #aaa;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* 4. Menyelaraskan Warna Teks Value */
+.data-box .value, .prediksi-box .value, .highlight {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff; /* Putih bersih */
+}
+
+/* 5. Warna Teks Khusus (Warna Suncard) pada elemen tertentu jika diinginkan */
+/* Contoh: Mengubah warna highlight menjadi emas seperti Suncard */
+.highlight {
+  color: #facc15; 
+}
+
+/* 6. Memastikan Warna Dinamis (Hijau/Merah) tetap bekerja */
+.value.ok { color: #22c55e !important; }
+.value.warn { color: #facc15 !important; }
+.value.bad { color: #ef4444 !important; }
