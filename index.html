@@ -13,185 +13,16 @@
 
 <body>
 
-  <!-- SPLASH -->
-  <div id="splash">
-    <div class="splash-content">
+  <div class="app-wrapper">
+
+    <div id="splash">
       <img src="assets/icon-512.png" class="logo" onerror="this.style.display='none'">
       <div class="logo-fallback">🌙</div>
       <h3>Hilal Checker</h3>
       <div class="loader"></div>
     </div>
-  </div>
 
-  <!-- HEADER -->
-  <div class="header">
-    <h1>🌕 Hilal Checker</h1>
-    <p>Metode Hisab & Rukyat Modern</p>
-  </div>
-
-  <!-- CONTAINER -->
-  <div class="container">
-
-    <!-- TOGGLE INFO HIJRI -->
-    <div class="toggle-wrapper">
-      <button id="toggleHijriBtn" onclick="toggleHijriInfo()">
-        🔽 Tampilkan Informasi
-      </button>
-    </div>
-    
-    <!-- ISI INFO -->
-    <div id="hijriInfoCard" class="info-hijri insight-hidden">
-      Aplikasi ini dapat digunakan untuk Hisab dan Rukyat Hilal berbasis lokasi pengguna. Semua data yang ditampilkan di aplikasi ini merupakan kondisi Hilal secara nyata di lokasi anda yang dihitung menggunakan rumus fisika astronomi. Datanya diperbaharui secara realtime berdasarkan pergerakan Hilal di langit.<br><br>
-      
-      Aplikasi ini menggunakan metode <b>Imkan Rukyat</b>, yaitu: awal bulan hanya ditetapkan jika <b>hilal memungkinkan untuk terlihat</b>. Penentuan awal bulan harus terpenuhi syarat Tinggi Bulan ≥ 3°, Elongasi Bulan ≥ 6.4° dan sudah terjadinya Ijtima (konjungsi) yaitu Bulan dan Matahari berada pada posisi sejajar. <b><i>(Baca penjelasan yang ada di bagian bawah aplikasi ini).</i></b><br><br>
-      
-      ❌ Jika hilal belum memenuhi syarat → bulan digenapkan (Istikmal)<br>
-      ✅ Jika hilal memenuhi syarat → masuk bulan baru<br><br>
-      Hal ini sesuai dengan praktek rukyat dalam penentuan awal bulan Hijriah.
-    </div>
-
-    <!-- TOGGLE MODE HIJRI -->
-    <div class="toggle-wrapper">
-      <input type="checkbox" id="hijriModeToggle" />
-      <label id="hijriModeLabel">Mode Hisab</label>
-    </div>
-
-    <!-- WAKTU -->
-    <div class="card">
-      <h3>⏰ Tanggal dan Waktu</h3>
-      <p id="waktu">Memuat...</p>
-      <p id="hijri">Memuat...</p>
-    </div>
-
-    <!-- LOKASI -->
-    <div class="card">
-      <h3>📍 Lokasi</h3>
-      <p id="loc">Memuat...</p>
-      <p id="lokasi">Memuat...</p>
-    </div>
-
-    <div class="card">
-      <h3>Data Matahari</h3>
-      <div class="sun-grid">
-        <div class="sun-box">
-          <span class="label">Azimuth</span>
-          <span id="sun-azimuth" class="value">0.00°</span>
-        </div>
-        <div class="sun-box">
-          <span class="label">Altitude</span>
-          <span id="sun-altitude" class="value">0.00°</span>
-        </div>
-        <div class="sun-box">
-          <span class="label">Terbit</span>
-          <span id="sun-rise" class="value">00:00</span>
-        </div>
-        <div class="sun-box">
-          <span class="label">Terbenam</span>
-          <span id="sun-set" class="value">00:00</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- DATA HILAL -->
-    <div class="card">
-      <h3>🌙 Data Hilal</h3>
-      <div class="data-grid">
-        <div class="data-box">Azimuth<br><span id="azi">0.00</span>°</div>
-        <div class="data-box">Tinggi<br><span id="alt">0.00</span>°</div>
-        <div class="data-box">Elongasi<br><span id="elo">0.00</span>°</div>
-        <div class="data-box">Umur<br><span id="age">0.0</span> jam</div>
-        <div class="data-box full-width">Cahaya<br><span id="illum">0.00%</span></div>
-      </div>
-    </div>
-
-    <!-- STATUS HILAL -->
-    <div class="card">
-      <h3>📝 Status Hilal</h3>
-      <div id="status" class="status">Memuat...</div>
-      <div id="prediksi" class="status">Memuat...</div>
-    </div>
-
-    <!-- PREDIKSI HILAL (CARD BARU) -->
-    <div class="card">
-      <h3>🔭 Visibilitas Hilal</h3>
-      <div class="prediksi-grid">
-        <div class="prediksi-box">
-          <span class="label">Metode Yallop</span>
-          <span id="yallop" class="value">...</span>
-        </div>
-        
-        <div class="prediksi-box">
-          <span class="label">Metode Odeh</span>
-          <span id="odeh" class="value">...</span>
-        </div>
-        
-        <div class="prediksi-box full">
-          <span class="label">Visibility Score</span>
-          <span id="visibility" class="value highlight">0%</span>
-        </div>
-        
-        <div class="prediksi-box full">
-          <span class="label">Status Ijtima</span>
-          <span id="statusIjtima" class="value">...</span>
-        </div>
-      </div>
-      
-      <!-- 🔥 PEMBATAS -->
-      <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-      <!-- ⏳ SIKLUS BULAN -->
-      <div class="prediksi-grid">
-        <div class="prediksi-box full">
-          <span class="label">Ijtima Terakhir</span>
-          <span id="ijtimaLast" class="value">...</span>
-        </div>
-        
-        <div class="prediksi-box full">
-          <span class="label">Ijtima Berikutnya</span>
-          <span id="ijtimaNext" class="value">...</span>
-        </div>
-        
-        <div class="prediksi-box full">
-          <span class="label">Menuju Ijtima</span>
-          <span id="countdownIjtima" class="value highlight">...</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="progress-container">
-      <!-- COUNTDOWN -->
-      <div id="countdownMaghrib" class="countdown-text"></div>
-      
-      <!-- PROGRESS BAR -->
-      <div class="progress-bar-bg">
-        <div id="progressBar" class="progress-bar"></div>
-      </div>
-    </div>
-
-    <!-- TOGGLE PENJELASAN -->
-    <div class="toggle-wrapper">
-      <button id="toggleInsightBtn" onclick="toggleInsight()">
-        🔽 Tampilkan Penjelasan
-      </button>
-    </div>
-    
-    <!-- ANALISIS (TOGGLE) -->
-    <div id="insightCard" class="card insight-hidden">
-      <div id="insight" class="insight-text"></div>
-    </div>
-    
-    <!-- PLANETARIUM -->
-    <div class="card">
-      <h3>🌌 Planetarium Hilal</h3>
-      <canvas id="planetarium"></canvas>
-      <div id="horizonLine"></div>
-      <div id="horizonLabel">UFUK 0°</div>
-      <button id="calibrateBtn">🧭 Kalibrasi Kompas</button>
-    </div>
-  
-    <div id="menuBtn" class="menu-btn">☰</div>
-    <!-- Overlay -->
     <div id="overlay" class="overlay"></div>
-    <!-- Sidebar -->
     <div id="sidebar" class="sidebar">
       <h3>📑 Menu</h3>
       <button onclick="location.reload()">🔄 Refresh</button>
@@ -202,36 +33,121 @@
       <button onclick="window.open('https://lokasiku.pages.dev/')">📍 MyLoc App</button>
       <button onclick="window.open('https://www.facebook.com/share/1C8bjd7Xoh','_blank')">👨‍💻 Developer</button>
     </div>
-  </div>
-  <script src="js/app.js"></script>
-  <script>
-    window.addEventListener("load", () => {
-      const splash = document.getElementById("splash");
-      
-      // 🔒 cegah error kalau elemen tidak ditemukan
-      if (!splash) return;
-      
-      // ⏳ durasi tampil splash
-      setTimeout(() => {
-        
-        // 🎬 animasi fade out
-        splash.style.opacity = "0";
-        splash.style.visibility = "hidden";
-        
-        // 🧹 hapus dari tampilan setelah animasi selesai
-        setTimeout(() => {
-          splash.style.display = "none";
-        }, 500);
-      
-      }, 1800); // bisa ubah (1500 - 2500)
-    });
 
-    if("serviceWorker" in navigator){
-      navigator.serviceWorker.register("sw.js");
-    }
-  </script>
+    <div id="menuBtn" class="menu-btn">☰</div>
 
+    <div class="header">
+      <h1>🌕 Hilal Checker</h1>
+      <p>Metode Hisab & Rukyat Modern</p>
+    </div>
+
+    <div class="container">
+
+      <div class="toggle-wrapper">
+        <button id="toggleHijriBtn" onclick="toggleHijriInfo()" style="padding: 10px 20px; border-radius: 30px; background: linear-gradient(135deg, #22c55e, #00c6ff); border:none; color:white; font-weight:600;">
+          🔽 Tampilkan Informasi
+        </button>
+      </div>
+      
+      <div id="hijriInfoCard" class="insight-hidden">
+        Aplikasi ini dapat digunakan untuk Hisab dan Rukyat Hilal berbasis lokasi pengguna. Semua data yang ditampilkan di aplikasi ini merupakan kondisi Hilal secara nyata di lokasi anda yang dihitung menggunakan rumus fisika astronomi. Datanya diperbaharui secara realtime berdasarkan pergerakan Hilal di langit.<br><br>
+        Aplikasi ini menggunakan metode <b>Imkan Rukyat</b>, yaitu: awal bulan hanya ditetapkan jika <b>hilal memungkinkan untuk terlihat</b>. Penentuan awal bulan harus terpenuhi syarat Tinggi Bulan ≥ 3°, Elongasi Bulan ≥ 6.4° dan sudah terjadinya Ijtima (konjungsi).<br><br>
+        ❌ Jika hilal belum memenuhi syarat → bulan digenapkan (Istikmal)<br>
+        ✅ Jika hilal memenuhi syarat → masuk bulan baru
+      </div>
+
+      <div class="hijri-toggle-wrapper">
+        <input type="checkbox" id="hijriModeToggle" />
+        <label id="hijriModeLabel">Mode Hisab</label>
+      </div>
+
+      <div class="card">
+        <h3>⏰ Tanggal dan Waktu</h3>
+        <p id="waktu" class="value">Memuat...</p>
+        <p id="hijri" class="value" style="color:var(--accent-gold)">Memuat...</p>
+      </div>
+
+      <div class="card">
+        <h3>📍 Lokasi</h3>
+        <p id="loc" class="value">Memuat...</p>
+        <p id="lokasi" class="label">Memuat...</p>
+      </div>
+
+      <div class="card">
+        <h3>Data Matahari</h3>
+        <div class="sun-grid">
+          <div class="sun-box">
+            <span class="label">Azimuth</span>
+            <span id="sun-azimuth" class="value">0.00°</span>
+          </div>
+          <div class="sun-box">
+            <span class="label">Altitude</span>
+            <span id="sun-altitude" class="value">0.00°</span>
+          </div>
+          <div class="sun-box">
+            <span class="label">Terbit</span>
+            <span id="sun-rise" class="value">00:00</span>
+          </div>
+          <div class="sun-box">
+            <span class="label">Terbenam</span>
+            <span id="sun-set" class="value">00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🌙 Data Hilal</h3>
+        <div class="data-grid">
+          <div class="data-box"><span class="label">Azimuth</span><span id="azi" class="value">0.00</span>°</div>
+          <div class="data-box"><span class="label">Tinggi</span><span id="alt" class="value">0.00</span>°</div>
+          <div class="data-box"><span class="label">Elongasi</span><span id="elo" class="value">0.00</span>°</div>
+          <div class="data-box"><span class="label">Umur</span><span id="age" class="value">0.0</span> jam</div>
+          <div class="data-box full"><span class="label">Cahaya</span><span id="illum" class="value">0.00%</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📝 Status Hilal</h3>
+        <div id="status" class="value">Memuat...</div>
+        <div id="prediksi" class="label" style="margin-top:10px">Memuat...</div>
+      </div>
+
+      <div class="card">
+        <h3>🔭 Visibilitas Hilal</h3>
+        <div class="prediksi-grid">
+          <div class="prediksi-box"><span class="label">Metode Yallop</span><span id="yallop" class="value">...</span></div>
+          <div class="prediksi-box"><span class="label">Metode Odeh</span><span id="odeh" class="value">...</span></div>
+          <div class="prediksi-box full"><span class="label">Visibility Score</span><span id="visibility" class="value highlight">0%</span></div>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div id="countdownMaghrib" class="countdown-text">... Menuju Maghrib</div>
+        <div class="progress-bar-bg">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+      </div>
+
+      <div class="toggle-wrapper">
+        <button id="toggleInsightBtn" onclick="toggleInsight()" style="padding: 10px 20px; border-radius: 30px; background: rgba(255,255,255,0.1); border:1px solid var(--glass-border); color:white;">
+          🔽 Tampilkan Penjelasan
+        </button>
+      </div>
+      
+      <div id="insightCard" class="insight-hidden">
+        <div id="insight" class="insight-text"></div>
+      </div>
+      
+      <div class="card">
+        <h3>🌌 Planetarium Hilal</h3>
+        <canvas id="planetarium"></canvas>
+        </div>
+    
+    </div> <button id="installBtn">📲 Install App</button>
+
+  </div> <script src="js/app.js"></script>
   <script>
+    // Script Sidebar & Overlay
     const menuBtn = document.getElementById("menuBtn");
     const sidebar = document.getElementById("sidebar");
     const overlay = document.getElementById("overlay");
@@ -241,25 +157,26 @@
       overlay.classList.toggle("active");
     });
     
-    overlay.addEventListener("click", ()=>{
-      closeMenu();
-    });
-    
+    overlay.addEventListener("click", closeMenu);
     function closeMenu(){
       sidebar.classList.remove("active");
       overlay.classList.remove("active");
     }
-  </script>
 
-  <script>
+    // Splash Screen Logic
     window.addEventListener("load", () => {
-      initPlanetarium(); // 🔥 WAJIB
+      const splash = document.getElementById("splash");
+      setTimeout(() => {
+        splash.style.opacity = "0";
+        splash.style.visibility = "hidden";
+        setTimeout(() => { splash.style.display = "none"; }, 500);
+      }, 1800);
+      initPlanetarium(); 
     });
-  </script>
-  <button id="installBtn">📲 Install App</button>
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>
-    eruda.init();
+
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.register("sw.js");
+    }
   </script>
 </body>
 </html>
