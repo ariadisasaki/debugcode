@@ -2841,3 +2841,56 @@ function toggleHijriMode() {
     
     updateHijriDisplay(); 
 }
+
+// === DEBUG CONSOLE ===
+function debugHilal() {
+    if (!currentLat || !currentLon) {
+        console.warn("⚠️ Lokasi belum tersedia. Pastikan GPS aktif.");
+        return;
+    }
+
+    const now = new Date();
+    const maghribData = hitungMaghrib(currentLat, currentLon);
+    const sun = hitungMatahari(currentLat, currentLon);
+    const moon = hitungHilalCore(currentLat, currentLon);
+    const hisab = getHijriAstronomical(currentLat, currentLon);
+    const hybrid = getHijriHybrid(currentLat, currentLon);
+    
+    console.log(`%c 🌙 HILAL CHECKER DEBUG - ${now.toLocaleTimeString()} `, 'background: #2c3e50; color: #ecf0f1; font-weight: bold; padding: 5px;');
+
+    // 1. Data Lokasi & Waktu
+    console.group("🌍 Lingkungan & Lokasi");
+    console.table({
+        "Koordinat": `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`,
+        "Maghrib Hari Ini": `${Math.floor(maghribData.decimal)}:${Math.floor((maghribData.decimal % 1) * 60)}`,
+        "Deklinasi Magnetik": declinationGlobal.toFixed(2) + "°",
+        "Mode Aktif": modeHijri ? "HISAB (Astronomis)" : "HYBRID (MABIMS)"
+    });
+    console.groupEnd();
+
+    // 2. Data Astronomi Real-time
+    console.group("🔭 Posisi Benda Langit");
+    console.table({
+        "Matahari": { Alt: sun.alt.toFixed(2) + "°", Azi: sun.azi.toFixed(2) + "°" },
+        "Bulan": { Alt: moon.alt.toFixed(2) + "°", Azi: moon.azi.toFixed(2) + "°" },
+        "Elongasi": moon.elo.toFixed(2) + "°",
+        "Umur Bulan": moon.age.toFixed(1) + " jam",
+        "Fraksi Cahaya": moon.illumination.toFixed(2) + "%"
+    });
+    console.groupEnd();
+
+    // 3. Perbandingan Kalender
+    console.group("📅 Status Kalender Hijriah");
+    const bulanIndo = ["Muharram","Safar","Rabiul Awal","Rabiul Akhir","Jumadil Awal","Jumadil Akhir","Rajab","Syaban","Ramadhan","Syawal","Zulkaidah","Zulhijjah"];
+    console.table({
+        "Metode HISAB": `${hisab.d} ${bulanIndo[hisab.m-1]} ${hisab.y}`,
+        "Metode HYBRID": `${hybrid.d} ${bulanIndo[hybrid.m-1]} ${hybrid.y}`,
+        "Kriteria MABIMS": (moon.alt >= 3 && moon.elo >= 6.4) ? "✅ TERPENUHI" : "❌ BELUM TERPENUHI"
+    });
+    console.groupEnd();
+
+    console.log("%c Ketik 'checkAudit()' untuk melihat riwayat perubahan harian. ", 'color: #3498db; font-style: italic;');
+}
+
+// Menjalankan debug otomatis setiap 30 detik di console agar Anda bisa memantau tanpa ngetik
+setInterval(debugHilal, 30000);
