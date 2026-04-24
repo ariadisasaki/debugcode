@@ -27,6 +27,7 @@ let loopId = null;
 let lastCheckDate = null;
 let sudahCekHariIni = false;
 let hijriFinalState = null;
+let lastTriggeredDate = "";
 let hilalDataFull = {
   alt: 0,
   azi: 0,
@@ -2294,72 +2295,42 @@ function hitungMaghrib(lat, lon, customDate=null){
 }
 
 // === MAGHRIB WATCHER ===
-// Variabel kontrol untuk mencegah trigger berulang di menit yang sama
-let lastTriggeredDate = ""; 
-
-// Memantau waktu secara real-time dan memicu pergantian tanggal Hijriah
 function startMaghribWatcher() {
     console.log("🚀 Maghrib Watcher aktif: Memantau pergantian hari...");
-
+    
     setInterval(() => {
         if (!currentLat || !currentLon) return;
-
+        
         const now = new Date();
         const jamSekarangDesimal = now.getHours() + (now.getMinutes() / 60) + (now.getSeconds() / 3600);
         
-        // 1. Hitung waktu Maghrib hari ini berdasarkan lokasi
+        // Hitung waktu Maghrib hari ini
         const maghrib = hitungMaghrib(currentLat, currentLon);
-        
-        // 2. Buat ID unik untuk hari ini
         const todayId = now.toISOString().split('T')[0];
 
-        // Jika jam sekarang sudah melewati Maghrib 
-        // dan kita belum melakukan update otomatis untuk hari ini
+        // Jalankan jika sudah Maghrib dan belum diproses hari ini
         if (jamSekarangDesimal >= maghrib.decimal && lastTriggeredDate !== todayId) {
+            console.log(`%c 🌇 Maghrib Tiba: ${now.toLocaleTimeString()} `, 'background: #d35400; color: white; font-weight: bold;');
             
-            console.log(`%c 🌇 Waktu Maghrib Tiba (${now.toLocaleTimeString()}) `, 'background: #d35400; color: white; font-weight: bold;');
-            
-            // Eksekusi Update
-            if (typeof requestHijriUpdate === "function") {
-                requestHijriUpdate();
-            } else if (typeof updateHijriDisplay === "function") {
-                updateHijriDisplay();
-            }
-
-            // Tandai bahwa hari ini sudah di-update agar tidak trigger terus-menerus setiap detik
-            lastTriggeredDate = todayId;
-            
-            // Catat ke Audit Log jika tersedia
-            if (typeof logHijriAudit === "function") {
-                const data = getHijriFinal(currentLat, currentLon);
-                logHijriAudit(data, modeHijri);
-            }
+            lastTriggeredDate = todayId; // Kunci agar tidak berulang
+            requestHijriUpdate(); // Panggil fungsi eksekusi
         }
-        
-        // Reset flag jika berganti hari (tengah malam) agar besok bisa trigger lagi
-        if (jamSekarangDesimal < 1 && lastTriggeredDate === todayId) {
-        }
-    }, 1000); // Cek setiap 1 detik
+    }, 1000); 
 }
 
 // === MINTA UPDATE HIJRI ===
 function requestHijriUpdate() {
-    console.log("🔄 Requesting Hijri update...");
+    console.log("🔄 Melakukan update kalender Hijriah...");
     
-    // 1. Jalankan ulang perhitungan utama
+    // 1. Update Tampilan Kalender
     if (typeof updateHijriDisplay === "function") {
         updateHijriDisplay();
     }
 
-    // 2. Kirim Notifikasi
-    if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("Waktu Maghrib", {
-            body: "Tanggal Hijriah telah berganti.",
-            icon: "/assets/icon-192.png"
-        });
-    }
+    // 2. Kirim Notifikasi via Fungsi Pusat
+    showNotif("Waktu Maghrib", "Tanggal Hijriah telah berganti ke hari baru.");
 
-    // 3. Update Audit Log (Jika diperlukan trigger instan)
+    // 3. Log Audit
     if (typeof currentLat !== "undefined" && currentLat) {
         const data = getHijriFinal(currentLat, currentLon);
         logHijriAudit(data, modeHijri);
@@ -2516,10 +2487,30 @@ function playBeep(freq=800, duration=100){
 }
 
 // === NOTIFIKASI ===
-function showNotif(judul,pesan){
-  if(Notification.permission==="granted"){
-    new Notification(judul,{body:pesan,icon:"/assets/icon-192.png"});
-  }
+function showNotif(judul, pesan) {
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+        // Gunakan Service Worker agar support Android/PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(judul, {
+                    body: pesan,
+                    icon: "/assets/icon-192.png", // pastikan path icon benar
+                    badge: "/assets/icon-192.png",
+                    vibrate: [200, 100, 200]
+                });
+            }).catch(err => {
+                console.error("SW Notification Error:", err);
+                new Notification(judul, { body: pesan }); // Fallback Desktop
+            });
+        } else {
+            // Standar Browser Desktop
+            new Notification(judul, { body: pesan, icon: "/assets/icon-192.png" });
+        }
+    } else {
+        console.warn("Izin notifikasi belum diberikan.");
+    }
 }
 
 // === OBSERVASI ===
