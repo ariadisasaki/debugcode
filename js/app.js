@@ -1858,10 +1858,10 @@ function hitungHilal(lat, lon, customTime = null) {
     const el = document.getElementById(id);
     if (el) el.innerText = val;
   };
-  set("alt", alt.toFixed(2));
-  set("azi", azi.toFixed(2));
-  set("elo", elo.toFixed(2));
-  set("age", age.toFixed(1));
+  set("alt", alt.toFixed(2) + "°");
+  set("azi", azi.toFixed(2) + "°");
+  set("elo", elo.toFixed(2) + "°");
+  set("age", age.toFixed(1) + " jam");
   set("illum", illumination.toFixed(2) + " %");
 
   // === VISIBILITY ===
