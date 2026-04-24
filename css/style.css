@@ -1,177 +1,228 @@
-/* ==== RESET & VARIABLES === */  
-:root {
-  --primary-blue: #00c6ff;
-  --secondary-blue: #3a7bfd;
-  --sun-gold: #facc15;
-  --moon-silver: #cbd5f5;
-  --success-green: #22c55e;
-  --error-red: #ef4444;
-}
-
-body {  
-  margin: 0;  
-  font-family: 'Poppins', sans-serif;  
+/* ==== RESET & BODY === */  
+body{  
+  margin:0;  
+  font-family:'Poppins',sans-serif;  
   background: radial-gradient(circle at top, #0b1a3a, #020611);  
   background-attachment: fixed;  
-  color: #fff;  
-  height: 100%;
+  color:#fff;  
 }  
-
-/* === HEADER & CONTAINER === */  
-.header {  
-  text-align: center;  
-  padding: 10px 0;  
+  
+/* === HEADER === */  
+.header{  
+  text-align:center;  
+  padding:10px 0;  
 }  
-
-.container {  
-  padding: 10px 16px;  
+  
+/* === CONTAINER === */  
+.container{  
+  padding:10px 16px;  
   transition: padding-left 0.3s ease;  
 }  
-
-.sidebar.active ~ .container {  
-  padding-left: calc(250px + 16px);  
+  
+.sidebar.active ~ .container{  
+  padding-left:calc(250px + 16px);  
 }  
-
-/* === CARD SYSTEM (UNIFIED) === */  
-.card {  
-  background: rgba(255, 255, 255, 0.08);  
-  border-radius: 20px;  
-  padding: 12px;  
-  margin-bottom: 12px;  
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);  
-  text-align: center;  
-  position: relative;  
+  
+/* === CARD === */  
+.card{  
+  background: rgba(255,255,255,0.08);  
+  border-radius:20px;  
+  padding:12px;  
+  margin-bottom:8px;  
+  box-shadow:0 5px 20px rgba(0,0,0,0.3);  
+  text-align:center;  
+  position:relative;  
   animation: fadeIn 0.5s ease;  
-  backdrop-filter: blur(5px);
+}  
+  
+@keyframes fadeIn{  
+  from{opacity:0; transform:translateY(10px);}  
+  to{opacity:1; transform:translateY(0);}  
+}  
+  
+/* === DATA GRID === */  
+.data-grid{  
+  display:grid;  
+  grid-template-columns:1fr 1fr;  
+  gap:8px;  
+  margin-top:10px;  
+}  
+  
+/* REVISI: Tambah Efek Hover & Border halus pada data-box */
+.data-box{  
+  background: rgba(255,255,255,0.05);  
+  padding:8px;  
+  border-radius:12px;  
+  text-align:center;  
+  transition: 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.05);
 }  
 
-@keyframes fadeIn {  
-  from { opacity: 0; transform: translateY(10px); }  
-  to { opacity: 1; transform: translateY(0); }  
-}  
-
-/* === GRID SYSTEM (Untuk Data, Prediksi, & Sun Card) === */  
-.data-grid, .prediksi-grid, .sun-grid {  
-  display: grid;  
-  grid-template-columns: 1fr 1fr;  
-  gap: 10px;  
-  margin-top: 10px;  
-}  
-
-/* Menyatukan Gaya Box (Efek Sun Card untuk Semua) */
-.data-box, .prediksi-box, .sun-box {  
-  background: rgba(255, 255, 255, 0.06);  
-  border-radius: 14px;  
-  padding: 10px;  
-  text-align: center;  
-  transition: all 0.3s ease;  
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}  
-
-.data-box:hover, .prediksi-box:hover, .sun-box:hover {  
-  transform: translateY(-3px);  
-  background: rgba(255, 255, 255, 0.1);  
-  border-color: var(--primary-blue);
+.data-box:hover {
+  transform: translateY(-3px);
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(0, 198, 255, 0.3);
 }
 
-.sun-box { border-color: rgba(250, 204, 21, 0.1); }
-.sun-box:hover { border-color: var(--sun-gold); }
-
-/* Gaya Label Uppercase untuk Semua Box */
-.data-box .label, .prediksi-box .label, .sun-box .label {  
-  display: block;  
-  font-size: 10px;  
-  color: #aaa;  
-  margin-bottom: 4px;  
+/* REVISI: Tambah style label untuk data-box agar uppercase */
+.data-box .label {
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+}
+  
+.full-width{  
+  grid-column: span 2;  
 }  
-
-/* Gaya Value */
-.data-box .value, .prediksi-box .value, .sun-box .value, .highlight {  
-  font-size: 15px;  
-  font-weight: 600;  
+  
+.highlight{  
+  font-size:16px;  
+  font-weight:600;  
+  color: #00c6ff; /* Warna teks biru cerah */
 }  
-
-.sun-box .value { color: var(--sun-gold); }
-.full-width, .prediksi-box.full { grid-column: span 2; }
-
+  
 /* === STATUS === */  
-.status {  
-  text-align: center;  
-  font-size: 16px;  
-  font-weight: 600;  
-  padding: 8px;  
-  border-radius: 12px;  
-  margin-top: 5px;  
+.status{  
+  text-align:center;  
+  font-size:16px;  
+  font-weight:600;  
+  padding:8px;  
+  border-radius:12px;  
+  margin-top:5px;  
+  text-transform: uppercase; /* Uppercase status */
 }  
-
-.status.ok { background: #1f8f4e; }  
-.status.no { background: #8f1f1f; }  
-
-/* === KAMERA & MARKER === */  
-.camera-wrapper {  
+  
+.status.ok{ background:#1f8f4e; }  
+.status.no{ background:#8f1f1f; }  
+  
+/* === KAMERA === */  
+.camera-wrapper{  
   position: relative;  
   overflow: hidden;  
-  border-radius: 15px;  
-  width: 100%;  
-  max-width: 400px;  
+  border-radius:15px;  
+  width:100%;  
+  max-width:400px;  
   aspect-ratio: 1/1;  
-  margin: 20px auto;  
-  background: #000;  
+  margin:20px auto;  
+  background:#000;  
 }  
-
-video {  
-  width: 100%;  
-  height: 100%;  
-  object-fit: cover;  
-  display: block;  
+  
+video{  
+  width:100%;  
+  height:100%;  
+  object-fit:cover;  
+  border-radius:15px;  
+  display:block;  
+  z-index:1;  
 }  
-
-#marker {  
-  position: absolute;  
-  left: 50%; top: 50%;  
-  transform: translate(-50%, -50%);  
-  z-index: 999;  
-  font-size: 28px;  
-  color: lime;  
-  text-shadow: 0 0 6px rgba(0, 255, 0, 0.8);  
+  
+/* === MARKER === */  
+#marker{  
+  position:absolute;  
+  left:50%;  
+  top:50%;  
+  transform:translate(-50%, -50%);  
+  z-index:999;  
+  font-size:28px;  
+  color:lime;  
+  background:transparent !important;  
+  border:none !important;  
+  box-shadow:none !important;  
+  outline:none !important;  
+  text-shadow: 0 0 6px rgba(0,255,0,0.8);  
+  line-height:1;  
+  padding:0;  
+  margin:0;  
   animation: pulse 1.5s infinite;
-  pointer-events: none;
 }  
-
-@keyframes pulse {  
-  0% { transform: translate(-50%, -50%) scale(1); }  
-  50% { transform: translate(-50%, -50%) scale(1.2); }  
-  100% { transform: translate(-50%, -50%) scale(1); }  
+  
+/* === CROSSHAIR === */  
+.crosshair{  
+  position:absolute;  
+  top:50%;  
+  left:50%;  
+  width:20px;  
+  height:20px;  
+  transform:translate(-50%,-50%);  
+  border:2px solid #00c6ff;  
+  border-radius:50%;  
+  z-index:3;  
 }  
-
-.crosshair {  
-  position: absolute;  
-  top: 50%; left: 50%;  
-  width: 20px; height: 20px;  
-  transform: translate(-50%, -50%);  
-  border: 2px solid var(--primary-blue);  
-  border-radius: 50%;  
-  z-index: 3;  
-}  
-
-.grid {  
-  position: absolute;  
-  width: 100%; height: 100%;  
-  top: 0; left: 0;  
-  background: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),  
-              linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);  
+  
+/* === GRID === */  
+.grid{  
+  position:absolute;  
+  width:100%;  
+  height:100%;  
+  top:0;  
+  left:0;  
+  background:  
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),  
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);  
   background-size: 40px 40px;  
-  z-index: 2;  
+  z-index:2;  
 }  
-
-/* === SIDEBAR & MENU === */  
-.menu-btn {  
+  
+/* === AR ==== */  
+.ar-status{  
+  position:absolute;  
+  bottom:10px;  
+  left:50%;  
+  transform:translateX(-50%);  
+  background:rgba(0,0,0,0.6);  
+  padding:6px 12px;  
+  border-radius:10px;  
+  font-size:13px;  
+  z-index:5;  
+}  
+  
+.ar-overlay{  
+  position:absolute;  
+  left:50%;  
+  transform:translateX(-50%);  
+  background:rgba(0,0,0,0.3);  
+  padding:4px 8px;  
+  border-radius:4px;  
+  font-weight:600;  
+  font-size:14px;  
+}  
+  
+/* ==== TOMBOL === */  
+button{  
+  width:100%;  
+  padding:12px;  
+  border:none;  
+  border-radius:12px;  
+  background:linear-gradient(135deg,#3a7bfd,#00c6ff);  
+  color:#fff;  
+  font-weight:600;  
+  margin-top:8px;  
+  box-shadow:0 5px 15px rgba(0,0,0,0.3);  
+}  
+  
+#calibrateBtn{  
+  background:linear-gradient(135deg,#ff7b00,#ffd700);  
+}  
+  
+/* === JALUR BULAN === */  
+.hilal-path-dot{  
+  position:absolute;  
+  width:6px;  
+  height:6px;  
+  border-radius:50%;  
+  background:rgba(0,198,255,0.7);  
+}  
+  
+/* === SIDEBAR === */  
+.menu-btn{  
   position: fixed;  
-  top: 15px; left: 15px;  
+  top: 15px;  
+  left: 15px;  
   font-size: 22px;  
-  background: rgba(255, 255, 255, 0.08);  
+  background: rgba(255,255,255,0.08);  
   color: #fff;  
   padding: 8px 12px;  
   border-radius: 12px;  
@@ -179,114 +230,217 @@ video {
   cursor: pointer;  
   backdrop-filter: blur(6px);  
 }  
-
-.sidebar {  
+  
+.sidebar{  
   position: fixed;  
-  top: 0; left: 0;  
+  top: 0;  
+  left: 0;  
   transform: translateX(-100%);  
   width: 250px;  
   height: 100%;  
-  background: rgba(10, 20, 40, 0.9);  
+  background: rgba(10, 20, 40, 0.95); /* Sedikit lebih gelap agar kontras */
   backdrop-filter: blur(10px);  
   padding: 20px;  
   transition: transform 0.3s ease;  
   z-index: 2001;  
-  display: flex;  
-  flex-direction: column;  
+  display:flex;  
+  flex-direction:column;  
 }  
-
-.sidebar.active { transform: translateX(0); }  
-
-.overlay {  
+  
+.sidebar.active{  
+  transform: translateX(0);  
+}  
+  
+/* === OVERLAY === */  
+.overlay{  
   position: fixed;  
-  top: 0; left: 0;  
-  width: 100%; height: 100%;  
-  background: rgba(0, 0, 0, 0.5);  
-  opacity: 0;  
-  visibility: hidden;  
+  top:0;  
+  left:0;  
+  width:100%;  
+  height:100%;  
+  background: rgba(0,0,0,0.5);  
+  opacity:0;  
+  visibility:hidden;  
+  transition:0.3s;  
+  z-index:1999;  
+}  
+  
+.overlay.active{  
+  opacity:1;  
+  visibility:visible;  
+}  
+  
+/* === HIDE BUTTON DARI CARD === */  
+#startARBtn,  
+#calibrateBtn{  
+  display:none;  
+}  
+  
+/* === SPLASH === */  
+html, body{  
+  height:100%;  
+}  
+  
+#splash{  
+  position: fixed;  
+  top:0;  
+  left:0;  
+  width:100%;  
+  height:100%;  
+  background:#020611;  
+  display:flex;  
+  align-items:center;  
+  justify-content:center;  
+  z-index:9999;  
+  opacity:1;  
+  visibility:visible;  
+  transition: opacity 0.5s ease, visibility 0.5s ease;  
+}  
+  
+.splash-content{  
+  text-align:center;  
+}  
+  
+.logo{  
+  width:180px;  
+  max-width:40%;  
+  margin-bottom:10px;  
+  animation:zoomIn 0.8s ease;  
+  filter: drop-shadow(0 0 10px rgba(0,198,255,0.6));  
+}  
+  
+@keyframes zoomIn{  
+  from{ transform:scale(0.7); opacity:0; }  
+  to{ transform:scale(1); opacity:1; }  
+}  
+  
+.loader{  
+  width:40px;  
+  height:40px;  
+  border:4px solid rgba(255,255,255,0.2);  
+  border-top:4px solid #3a7bfd;  
+  border-radius:50%;  
+  animation:spin 1s linear infinite;  
+  margin:10px auto;  
+}  
+  
+@keyframes spin{  
+  to{transform:rotate(360deg);}  
+}  
+  
+/* === PREDIKSI HILAL === */  
+.prediksi-grid{  
+  display:grid;  
+  grid-template-columns:1fr 1fr;  
+  gap:10px;  
+  margin-top:10px;  
+}  
+  
+.prediksi-box{  
+  background: rgba(255,255,255,0.06);  
+  border-radius:14px;  
+  padding:10px;  
+  text-align:center;  
+  transition:0.3s;  
+  border: 1px solid rgba(255,255,255,0.05);
+}  
+  
+.prediksi-box:hover{  
+  transform:translateY(-3px);  
+  background: rgba(255,255,255,0.1);  
+  border-color: rgba(34, 197, 94, 0.3); /* Hijau transparan saat hover */
+}  
+  
+.prediksi-box.full{  
+  grid-column: span 2;  
+}  
+  
+.prediksi-box .label{  
+  display:block;  
+  font-size:11px;  
+  color:#aaa;  
+  margin-bottom:4px;  
+  text-transform: uppercase; /* Uppercase Label */
+  letter-spacing: 0.5px;
+}  
+  
+.prediksi-box .value{  
+  font-size:15px;  
+  font-weight:600;  
+}  
+  
+/* Warna teks berdasarkan hasil */  
+.value.ok{ color:#22c55e; }  
+.value.warn{ color:#facc15; }  
+.value.bad{ color:#ef4444; }  
+  
+/* === SUN CARD SPECIFIC === */  
+.sun-grid {  
+  display: grid;  
+  grid-template-columns: 1fr 1fr;  
+  gap: 10px;  
+  margin-top: 10px;  
+}  
+  
+.sun-box {  
+  background: rgba(255, 255, 255, 0.06);  
+  border-radius: 14px;  
+  padding: 10px;  
+  text-align: center;  
   transition: 0.3s;  
-  z-index: 1999;  
+  border: 1px solid rgba(250, 204, 21, 0.1);  
 }  
-
-.overlay.active { opacity: 1; visibility: visible; }  
-
-/* === BUTTONS === */  
-button {  
-  width: 100%;  
-  padding: 12px;  
-  border: none;  
-  border-radius: 12px;  
-  background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));  
-  color: #fff;  
+  
+.sun-box:hover {  
+  transform: translateY(-3px);  
+  background: rgba(255, 255, 255, 0.1);  
+  border-color: rgba(250, 204, 21, 0.4);  
+}  
+  
+.sun-box .label {  
+  display: block;  
+  font-size: 11px;  
+  color: #aaa;  
+  margin-bottom: 4px;  
+  text-transform: uppercase;  
+  letter-spacing: 0.5px;  
+}  
+  
+.sun-box .value {  
+  font-size: 15px;  
   font-weight: 600;  
-  margin-top: 8px;  
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);  
-  cursor: pointer;
+  color: #facc15;  
 }  
+  
+.value.night {  
+  color: #ef4444;  
+}
 
-#calibrateBtn { background: linear-gradient(135deg, #ff7b00, #ffd700); }
-#startARBtn, #calibrateBtn { display: none; } /* Tetap hidden sesuai request awal */
+/* === LAIN-LAIN === */
+#planetarium{
+  width: 100%;
+  height: 250px;
+  display: block;
+  border-radius: 12px;
+}
 
-/* === SPLASH SCREEN === */  
-#splash {  
-  position: fixed;  
-  top: 0; left: 0;  
-  width: 100%; height: 100%;  
-  background: #020611;  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
-  z-index: 9999;  
-  transition: 0.5s;  
-}  
+@keyframes pulse{  
+  0%{ transform:translate(-50%, -50%) scale(1); }  
+  50%{ transform:translate(-50%, -50%) scale(1.2); }  
+  100%{ transform:translate(-50%, -50%) scale(1); }  
+}
 
-.logo {  
-  width: 180px;  
-  max-width: 40%;  
-  margin-bottom: 10px;  
-  animation: zoomIn 0.8s ease;  
-  filter: drop-shadow(0 0 10px rgba(0, 198, 255, 0.6));  
-}  
-
-@keyframes zoomIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-.loader {  
-  width: 40px; height: 40px;  
-  border: 4px solid rgba(255, 255, 255, 0.2);  
-  border-top: 4px solid var(--secondary-blue);  
-  border-radius: 50%;  
-  animation: spin 1s linear infinite;  
-  margin: 10px auto;  
-}  
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* === PWA INSTALL === */
-#installBtn {
-  position: fixed; bottom: 20px; right: 20px;
-  width: auto; padding: 12px 16px;
+#installBtn{
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: auto;
+  padding: 12px 16px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
-  color: #fff; font-weight: 600;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-  z-index: 9998; display: none;
+  background: linear-gradient(135deg,#00c6ff,#3a7bfd);
+  color: #fff;
+  font-weight: 600;
+  display: none;
 }
-#installBtn.show { display: block; animation: popIn 0.4s ease; }
-
-@keyframes popIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-/* === MISC ELEMENTS === */
-.value.ok { color: var(--success-green); }
-.value.warn { color: var(--sun-gold); }
-.value.bad, .value.night { color: var(--error-red); }
-
-#horizonLine { position: absolute; left: 0; width: 100%; height: 2px; background: lime; opacity: 0.7; z-index: 5; pointer-events: none; }
-#horizonLabel { position: absolute; left: 10px; color: lime; font-size: 12px; }
-#planetarium { width: 100%; height: 250px; display: block; border-radius: 12px; }
-
-/* Insight & Hijri Info Style */
-.info-hijri, #insight {
-  margin-top: 10px; padding: 10px; border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 13px; line-height: 1.5; text-align: justify;
-}
+#installBtn.show{ display: block; animation: popIn 0.4s ease; }
+@keyframes popIn{ from{ transform: scale(0.6); opacity: 0; } to{ transform: scale(1); opacity: 1; } }
