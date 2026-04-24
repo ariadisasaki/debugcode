@@ -1933,7 +1933,62 @@ function hitungHilal(lat, lon, customTime = null) {
 
   return data;
 }
-  
+
+// === DATA MATAHARI ===
+function updateSunCard() {
+    // 1. Validasi: Pastikan koordinat GPS sudah tersedia
+    if (typeof currentLat === "undefined" || !currentLat || !currentLon) {
+        return; 
+    }
+
+    try {
+        // 2. Ambil data posisi matahari saat ini (Azimuth & Altitude)
+        const sunPos = hitungMatahari(currentLat, currentLon);
+        
+        // 3. Ambil data waktu matahari (Terbit & Terbenam)
+        const sunTimes = hitungMaghrib(currentLat, currentLon);
+
+        // 4. Update elemen Azimuth & Altitude dengan 2 angka di belakang koma
+        const elAzi = document.getElementById('sun-azimuth');
+        const elAlt = document.getElementById('sun-altitude');
+        
+        if (elAzi) elAzi.textContent = sunPos.azi.toFixed(2) + "°";
+        if (elAlt) elAlt.textContent = sunPos.alt.toFixed(2) + "°";
+
+        // 5. Update elemen Waktu Terbit & Terbenam
+        const elRise = document.getElementById('sun-rise');
+        const elSet = document.getElementById('sun-set');
+
+        if (elRise) elRise.textContent = formatDecimalTime(sunTimes.sunrise);
+        if (elSet) elSet.textContent = formatDecimalTime(sunTimes.decimal);
+
+        // 6. Opsional: Beri warna merah jika matahari di bawah cakrawala (malam)
+        if (elAlt) {
+            elAlt.style.color = sunPos.alt < 0 ? "#e74c3c" : "#f1c40f";
+        }
+
+    } catch (error) {
+        console.error("Gagal memperbarui Sun Card:", error);
+    }
+}
+
+// === WAKTU DESIMAL ===
+function formatDecimalTime(decimal) {
+    if (isNaN(decimal) || decimal === null) return "--:--";
+    
+    // Pastikan nilai berada dalam rentang 0-24
+    let hours = Math.floor(decimal % 24);
+    let minutes = Math.floor((decimal * 60) % 60);
+    
+    // Padding nol (misal: 5:3 menjadi 05:03)
+    const hDisplay = hours.toString().padStart(2, '0');
+    const mDisplay = minutes.toString().padStart(2, '0');
+    
+    return `${hDisplay}:${mDisplay}`;
+}
+
+setInterval(updateSunCard, 1000);
+
 // === JALUR BULAN ===
 function generateHilalPath(lat, lon){
   let path = [];
@@ -2187,16 +2242,13 @@ function calibrateWithSun(){
 
 // === HITUNG MAGHRIB ===
 function hitungMaghrib(lat, lon, customDate=null){
-
   const now = customDate ? new Date(customDate) : new Date();
-
   const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
   const JD = (date.getTime()/86400000)+2440587.5;
   const T = (JD-2451545)/36525;
 
   const epsilon = 23.439291 - 0.0130042*T;
-
   const L0 = (280.46646 + 36000.76983*T)%360;
   const M = 357.52911 + 35999.05029*T;
 
@@ -2205,9 +2257,7 @@ function hitungMaghrib(lat, lon, customDate=null){
           + 0.000289*Math.sin(3*M*rad);
 
   const lambda = L0 + C;
-
   const delta = Math.asin(Math.sin(epsilon*rad)*Math.sin(lambda*rad));
-
   const y = Math.tan((epsilon/2)*rad)**2;
 
   const EoT = 4 * deg * (
@@ -2218,28 +2268,26 @@ function hitungMaghrib(lat, lon, customDate=null){
     - 1.25*0.0167*0.0167*Math.sin(2*M*rad)
   );
 
-  const h0 = -0.833 * rad;
-
+  const h0 = -0.833 * rad; 
   const cosH = (Math.sin(h0) - Math.sin(lat*rad)*Math.sin(delta)) /
                (Math.cos(lat*rad)*Math.cos(delta));
 
   let H;
-  
-  if(cosH < -1){
-    H = 180; // matahari tidak terbenam (polar case)
-  }else if(cosH > 1){
-    H = 0; // matahari tidak terbit
-  }else{
-    H = Math.acos(cosH)*deg;
-  }
+  if(cosH < -1) H = 180;
+  else if(cosH > 1) H = 0;
+  else H = Math.acos(cosH)*deg;
 
   const timezone = -now.getTimezoneOffset()/60;
-
   const solarNoon = 12 + timezone - (lon/15) - (EoT/60);
 
-  const maghrib = solarNoon + (H/15);
+  const sunrise = solarNoon - (H/15); // Terbit (Noon dikurang Hour Angle)
+  const sunset = solarNoon + (H/15);  // Terbenam (Noon ditambah Hour Angle)
 
-  return { decimal: maghrib };
+  return { 
+    sunrise: sunrise, 
+    decimal: sunset, // Tetap gunakan nama 'decimal' agar tidak merusak kode lama Anda
+    noon: solarNoon 
+  };
 }
 
 // === MAGHRIB WATCHER ===
