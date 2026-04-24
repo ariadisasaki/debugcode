@@ -54,7 +54,7 @@ body {
   border: 1px solid var(--glass-border);
 }
 
-/* === SIDEBAR (DENGAN INDENTASI MENU) === */
+/* === SIDEBAR (INDENTASI & EMAS) === */
 .sidebar {
   position: fixed;
   top: 0; left: 0;
@@ -68,21 +68,19 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Jarak antar tombol lebih rapat */
+  gap: 8px;
   text-align: left;
 }
 
 .sidebar.active { transform: translateX(0); }
 
-/* Judul Sidebar */
 .sidebar h3 {
   padding-left: 5px;
   margin-bottom: 12px;
-  color: var(--accent-cyan);
+  color: var(--accent-gold); /* Judul Menu jadi Emas */
   text-transform: none !important;
 }
 
-/* Tombol Menu Menjorok Ke Kanan */
 .sidebar button {
   background: none;
   border: none;
@@ -90,31 +88,35 @@ body {
   text-align: left;
   font-family: 'Poppins', sans-serif;
   font-size: 15px;
-  padding: 10px 5px 10px 25px; /* Padding kiri 25px agar menjorok */
+  padding: 10px 5px 10px 25px; /* Menjorok ke kanan */
   cursor: pointer;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   transition: all 0.3s ease;
 }
 
 .sidebar button:hover {
-  padding-left: 35px; /* Bergeser lebih dalam saat di-hover */
+  padding-left: 35px;
   color: var(--accent-cyan);
   background: rgba(255, 255, 255, 0.03);
 }
 
 /* === CONTAINER UTAMA === */
 .container {
-  padding: 10px 15px 40px; /* Padding bawah 40px menghapus space kosong */
+  padding: 10px 15px 40px; 
 }
 
+/* === CARD DENGAN AKSEN GARIS EMAS === */
 .card {
   background: var(--card-bg);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   border: 1px solid var(--glass-border);
+  /* Efek Garis Kuning Keemasan di bagian atas */
+  border-top: 3px solid var(--accent-gold); 
   text-align: center;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 /* === GRID SYSTEM DATA === */
@@ -125,7 +127,7 @@ body {
   margin-top: 10px;
 }
 
-/* === SUB-BOX DATA (RATA TENGAH & SERAGAM) === */
+/* === SUB-BOX DATA (BIRU SAAT HOVER) === */
 .sun-box, .data-box, .prediksi-box {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
@@ -140,7 +142,8 @@ body {
 
 .sun-box:hover, .data-box:hover, .prediksi-box:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: var(--accent-cyan);
+  border-color: var(--accent-cyan); /* Aksen Biru sesuai screenshot */
+  transform: translateY(-2px);
 }
 
 .full, .full-width {
@@ -175,7 +178,7 @@ body {
   margin-top: 5px;
 }
 
-/* === HIDDEN CARD & TOGGLE (RAPAT) === */
+/* === HIDDEN CARD & TOGGLE === */
 #hijriInfoCard, #insightCard {
   text-align: justify;
   line-height: 1.6;
