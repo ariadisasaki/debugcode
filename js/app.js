@@ -2877,19 +2877,14 @@ function toggleHijriMode() {
     updateHijriDisplay(); 
 }
 
-// ========================================================
-// SYSTEM AUDIT & DEBUG LOG (KODE FINAL)
-// ========================================================
-
-/**
- * 1. Fungsi Audit: Mencatat perubahan hari ke LocalStorage
- */
+// === SISTEM AUDIT & DEBUG LOG ===
+// 1. Fungsi Audit: Mencatat perubahan hari ke LocalStorage
 function logHijriAudit(data, mode) {
     try {
         let logs = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
         const dateString = `${data.d}-${data.m}-${data.y}`;
         
-        // Cek apakah entri terakhir sama dengan tanggal sekarang (hindari duplikat)
+        // Cek apakah entri terakhir sama dengan tanggal sekarang
         if (logs.length === 0 || logs[logs.length - 1].hijriDate !== dateString) {
             const newEntry = {
                 timestamp: new Date().toLocaleString('id-ID'),
@@ -2908,9 +2903,7 @@ function logHijriAudit(data, mode) {
     }
 }
 
-/**
- * 2. Fungsi Debug: Menampilkan dashboard data di Console
- */
+// 2. Fungsi Debug: Menampilkan dashboard data di Console
 function debugHilal() {
     // Validasi data lokasi
     if (typeof currentLat === "undefined" || !currentLat || !currentLon) {
@@ -2939,7 +2932,7 @@ function debugHilal() {
     });
     console.groupEnd();
 
-    // Tabel 2: Astronomi Real-time
+    // Tabel 2: Astronomi Realtime
     console.group("🔭 Posisi Benda Langit");
     console.table({
         "Matahari": { Alt: sun.alt.toFixed(2) + "°", Azi: sun.azi.toFixed(2) + "°" },
@@ -2961,9 +2954,7 @@ function debugHilal() {
     console.log("%c Ketik 'checkAudit()' untuk riwayat atau 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
 }
 
-/**
- * 3. Integrasi & Auto-Run
- */
+// 3. Integrasi dan Auto Run
 // Inject ke fungsi update display utama
 const originalUpdateDisplay = updateHijriDisplay;
 updateHijriDisplay = function() {
@@ -2984,7 +2975,7 @@ window.checkAudit = function() {
 // Jalankan Interval Otomatis
 let debugInterval = setInterval(debugHilal, 30000);
 
-// Fungsi untuk menghentikan auto-debug jika mengganggu
+// Menghentikan auto-debug jika mengganggu
 window.stopDebug = function() {
     clearInterval(debugInterval);
     console.log("Auto-debug dihentikan.");
