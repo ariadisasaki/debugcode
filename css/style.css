@@ -33,7 +33,8 @@ body{
   box-shadow:0 5px 20px rgba(0,0,0,0.3);  
   text-align:center;  
   position:relative;  
-  animation: fadeIn 0.5s ease;  
+  animation: fadeIn 0.5s ease;
+  border: 1px solid rgba(250, 204, 21, 0.1);
 }  
   
 @keyframes fadeIn{  
@@ -428,7 +429,6 @@ html, body{
   background: rgba(255,255,255,0.05);  
   font-size: 13px;  
   line-height: 1.5;  
-  
   text-align: justify;  
 }  
   
@@ -474,7 +474,6 @@ html, body{
 }
 
 /* === CARD TOGGLE === */
-
 #insightCard{
   overflow: hidden;
   transition: all 0.4s ease;
@@ -633,7 +632,7 @@ html, body{
   to{ transform: scale(1); opacity: 1; }
 }
 
-/* === SUN CARD SPECIFIC (Customized to Match Original) === */
+/* === SUN CARD SPECIFIC === */
 .sun-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -651,24 +650,24 @@ html, body{
 }
 
 .sun-box:hover {
-  transform: scale(1.03); /* Mengikuti gaya prediksi-box asli Anda */
+  transform: scale(1.03);
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(250, 204, 21, 0.4);
 }
 
 .sun-box .label {
-  display: block;
+  display: 
   font-size: 12px;
-  color: #aaa;
+  color: #ffffff;
   margin-bottom: 4px;
-  text-transform: uppercase; /* Sesuai keinginan Anda */
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .sun-box .value {
   font-size: 15px;
   font-weight: 600;
-  color: #aaa; /* Warna Kuning Matahari */
+  color: #ffffff;
 }
 
 /* Warna merah jika posisi di bawah horizon (malam) */
