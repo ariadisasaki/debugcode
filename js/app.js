@@ -2478,7 +2478,7 @@ function playBeep(freq=800, duration=100){
 // === NOTIFIKASI ===
 function showNotif(judul,pesan){
   if(Notification.permission==="granted"){
-    new Notification(judul,{body:pesan,icon:"assets/icon-192.png"});
+    new Notification(judul,{body:pesan,icon:"/assets/icon-192.png"});
   }
 }
 
