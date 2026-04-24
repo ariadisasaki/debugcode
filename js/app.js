@@ -1611,26 +1611,27 @@ function formatTanggalIndonesia(date){
 }
 
 // === IJTIMA TERAKHIR ===
-function getLastIjtima(){
-  const now = new Date();
-  const JD = (now.getTime()/86400000)+2440587.5;
+function getLastIjtima() {
+    const now = new Date();
+    const JD = (now.getTime() / 86400000) + 2440587.5;
+    
+    // Gunakan k untuk ijtima terdekat
+    let k = Math.floor((JD - 2451550.09765) / 29.530588853);
+    
+    function hitung(k) {
+        const T = k / 1236.85;
+        const JDE = 2451550.09765 + 29.530588853 * k + 0.0001337 * T * T;
+        return (JDE - 2440587.5) * 86400000;
+    }
 
-  let k = Math.floor((JD - 2451550.09765) / 29.530588853);
+    let ijtimaMillis = hitung(k);
+    
+    // Jika hasil hitungan k ternyata di masa depan, mundurkan k sekali
+    if (ijtimaMillis > now.getTime()) {
+        ijtimaMillis = hitung(k - 1);
+    }
 
-  function hitungIjtima(k){
-    const T = k / 1236.85;
-
-    return 2451550.09765
-      + 29.530588853*k
-      + 0.0001337*T*T
-      - 0.000000150*T*T*T
-      + 0.00000000073*T*T*T*T;
-  }
-
-  const JDE = hitungIjtima(k);
-  const millis = (JDE - 2440587.5) * 86400000;
-
-  return new Date(millis);
+    return new Date(ijtimaMillis);
 }
 
 // === IJTIMA BERIKUTNYA ===
@@ -2725,41 +2726,37 @@ function getHijriAstronomical(lat, lon) {
     const now = new Date();
     const ijtima = getLastIjtima();
     
-    // Julian Date
-    const jdNow = now.getTime() / 86400000 + 2440587.5;
-    const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
+    // 1. Hitung selisih hari murni antara sekarang dan Ijtima
+    // Kita reset jam ke 00:00 agar hitungan harinya stabil
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate()).getTime();
     
-    // Waktu Maghrib
-    const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
+    let diffDays = Math.round((startOfToday - startOfIjtima) / 86400000);
+
+    // 2. Cek Maghrib
+    const dataMaghrib = hitungMaghrib(lat, lon, now);
+    const maghrib = dataMaghrib?.decimal ?? 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
 
-    // Hitung umur bulan murni
-    let ageDays = jdNow - jdIjtima;
+    // 3. Tentukan Tanggal (d)
+    // Jika Ijtima 17 April, maka 17 April sore = tanggal 1.
+    // Maka 24 April pagi = tanggal 7.
+    let d = diffDays; 
     
-    // --- LOGIKA PERBAIKAN ---
-    // Kita ambil angka bulat dari umur hari
-    let d = Math.floor(ageDays);
-
-    // KUNCINYA DI SINI:
-    // Jika ijtima terjadi pagi (jam 06:00) dan sekarang pagi (jam 09:00), 
-    // ageDays adalah 7.1. Math.floor(7.1) = 7.
-    // Kita hanya tambah 1 hari jika SUDAH melewati Maghrib.
     if (jamNow >= maghrib) {
-        d += 1;
+        d += 1; // Baru naik jadi 8 setelah Maghrib
     }
     
-    // Tambahkan 1 karena hari pertama ijtima dihitung sebagai tanggal 1
+    // Penyesuaian agar Ijtima sore = tanggal 1
     d += 1;
 
-    // Jika hasil d masih 8, berarti ageDays anda sudah di angka 7 sejak kemarin.
-    // Kita paksa clamp agar sesuai dengan kalender standar Zulkaidah 1447H
-    // yang mana tanggal 24 April siang adalah tanggal 7.
-    
-    const cycle = Math.floor(ageDays / 29.530588853);
+    // 4. Hitung Bulan & Tahun
+    const ageDaysTotal = (now.getTime() - ijtima.getTime()) / 86400000;
+    const cycle = Math.floor(ageDaysTotal / 29.530588853);
     let m = ((11 - 1 + cycle) % 12) + 1;
     let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
 
-    return { d: Math.min(30, d), m, y };
+    return { d: Math.max(1, Math.min(30, d)), m, y };
 }
 
 // === FUNGSI KOREKSI HYBRID) ===
