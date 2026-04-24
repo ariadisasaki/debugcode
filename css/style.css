@@ -207,6 +207,13 @@ body {
 }
 
 /* === PROGRESS BAR === */
+#countdownMaghrib {
+  font-size: 10px;
+  color: var(--text-muted); /* Agar warnanya tidak terlalu mencolok */
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
 .progress-bar-bg {
   height: 8px;
   background: rgba(255,255,255,0.1);
@@ -219,6 +226,7 @@ body {
   height: 100%;
   background: linear-gradient(90deg, #38bdf8, #22c55e);
 }
+
 
 /* === TOMBOL INSTALL === */
 #installBtn {
