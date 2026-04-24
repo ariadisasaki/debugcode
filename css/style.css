@@ -34,7 +34,6 @@ body{
   text-align:center;  
   position:relative;  
   animation: fadeIn 0.5s ease;
-  border: 1px solid rgba(250, 204, 21, 0.1);
 }  
   
 @keyframes fadeIn{  
@@ -111,7 +110,7 @@ video{
   font-size:28px;  
   color:lime;  
   
-  /* ðŸ”¥ bersihin total */  
+  /* bersihkan total */  
   background:transparent !important;  
   border:none !important;  
   box-shadow:none !important;  
