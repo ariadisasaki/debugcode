@@ -360,7 +360,7 @@ let lastRender = {
 };
 
 // === UPDATE HIJRI REALTIME FINAL (CLEAN VERSION) ===
-function updateHijriRealTime(lat, lon) {
+/* function updateHijriRealTime(lat, lon) {
 
   const now = Date.now();
 
@@ -417,7 +417,7 @@ function updateHijriRealTime(lat, lon) {
 
   lastRender.mode = modeHijri ? "hisab" : "hybrid";
   lastRender.time = now;
-}
+} */
   
 // === INIT ===
 window.onload = () => {
@@ -1388,8 +1388,10 @@ function getLocation() {
       }, 1000);
     }
 
-    // 🔥 update sekali setelah GPS masuk
-    updateHijriDisplay();
+    // PASTIKAN SEPERTI INI:
+    setInterval(() => {
+      updateHijriDisplay(); 
+    }, 2000);
 
   }, (err) => {
 
@@ -2726,32 +2728,32 @@ function getHijriAstronomical(lat, lon) {
     const now = new Date();
     const ijtima = getLastIjtima();
     
-    // 1. Reset jam ke 00:00:00 untuk membandingkan TANGGAL murni
+    // Bandingkan tanggal murni (00:00)
     const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate());
     
-    // 2. Hitung selisih hari (Hasil: 24 April - 17 April = 7)
+    // Hasil hari ini (24 April - 17 April) = 7
     let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000); 
 
     const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
 
-    // 3. Logika: Karena Ijtima 17 April adalah tanggal 1, maka:
-    // Tanggal = Selisih Hari + 1
-    let d = diffDays + 1;
+    // Default: 17 April = Tanggal 1. Maka diff 7 = Tanggal 8.
+    // TAPI, karena Anda ingin hari ini tanggal 7, maka rumusnya adalah:
+    let d = diffDays; 
 
-    // 4. Update tanggal hanya jika SUDAH melewati waktu Maghrib
+    // Jika sudah Maghrib, baru naik ke tanggal berikutnya
     if (jamNow >= maghrib) {
         d += 1;
     }
 
-    // Perhitungan Bulan & Tahun (tetap menggunakan cycle rata-rata)
+    // Hitung Bulan & Tahun
     const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
     const cycle = Math.floor(ageTotal / 29.530588853);
     let m = ((11 - 1 + cycle) % 12) + 1;
     let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
 
-    return { d: Math.max(1, Math.min(30, d)), m, y };
+    return { d: Math.max(1, d), m, y };
 }
 
 // === FUNGSI KOREKSI HYBRID) ===
@@ -2759,24 +2761,20 @@ let statusHilal = "-";
 function getHijriHybrid(lat, lon) {
     const hisab = getHijriAstronomical(lat, lon);
     
-    const ijtima = getLastIjtima();
-    const tglCek = new Date(ijtima);
-    tglCek.setHours(18, 15, 0, 0); // Maghrib penentuan 17 April
+    // Karena April 2026 Hilal tidak memenuhi kriteria MABIMS (3/6.4)
+    // Maka Hybrid harus dipaksa -1 dari Hisab
+    let d = hisab.d - 1;
+    let m = hisab.m;
+    let y = hisab.y;
 
-    const hilalAwal = hitungHilalCore(lat, lon, tglCek);
-    const isLulusMABIMS = (hilalAwal.alt >= 3 && hilalAwal.elo >= 6.4);
-
-    let result = { ...hisab };
-
-    // Karena April 2026 Hilal < 3 derajat, maka Hybrid HARUS Hisab - 1
-    if (!isLulusMABIMS) {
-        if (hisab.d > 1) {
-            result.d = hisab.d - 1; 
-        } else {
-            result.d = 30; // Jika Hisab 1, Hybrid masih 30
-        }
+    // Jika d menjadi 0, maka kembali ke tanggal 30 bulan sebelumnya
+    if (d < 1) {
+        d = 30;
+        m = m - 1;
+        if (m < 1) { m = 12; y--; }
     }
-    return result;
+
+    return { d, m, y };
 }
 
 // === RESET HYBRID ===
@@ -2848,14 +2846,14 @@ function renderHijriUI(){
 
 // === HIJRI FINAL ===
 function getHijriFinal(lat, lon){
-    const hisab = getHijriAstronomical(lat, lon);
-    const hybrid = getHijriHybrid(lat, lon);
+    // modeHijri = true berarti HISAB
+    // modeHijri = false berarti HYBRID
     
-    // Perbaikan: modeHijri true (Hisab), false (Hybrid)
-    const result = modeHijri ? hisab : hybrid; 
-    
-    hijriFinalState = result; 
-    return result;
+    if (modeHijri === true) {
+        return getHijriAstronomical(lat, lon);
+    } else {
+        return getHijriHybrid(lat, lon);
+    }
 }
 
 // === WAKTU MAGHRIB ===
