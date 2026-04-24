@@ -2315,7 +2315,7 @@ function requestHijriUpdate() {
     if ("Notification" in window && Notification.permission === "granted") {
         new Notification("Waktu Maghrib", {
             body: "Tanggal Hijriah telah berganti.",
-            icon: "icon-hijri.png"
+            icon: "/assets/icon-192.png"
         });
     }
 
