@@ -18,7 +18,7 @@ body {
   color: var(--text-main);
   overflow-x: hidden;
   text-align: center;
-  min-height: auto; /* Mencegah space kosong jika konten sedikit */
+  min-height: auto; 
 }
 
 /* === SPLASH SCREEN === */
@@ -54,7 +54,7 @@ body {
   border: 1px solid var(--glass-border);
 }
 
-/* === SIDEBAR === */
+/* === SIDEBAR (DENGAN INDENTASI MENU) === */
 .sidebar {
   position: fixed;
   top: 0; left: 0;
@@ -68,12 +68,21 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 8px; /* Jarak antar tombol lebih rapat */
   text-align: left;
 }
 
 .sidebar.active { transform: translateX(0); }
 
+/* Judul Sidebar */
+.sidebar h3 {
+  padding-left: 5px;
+  margin-bottom: 12px;
+  color: var(--accent-cyan);
+  text-transform: none !important;
+}
+
+/* Tombol Menu Menjorok Ke Kanan */
 .sidebar button {
   background: none;
   border: none;
@@ -81,14 +90,21 @@ body {
   text-align: left;
   font-family: 'Poppins', sans-serif;
   font-size: 15px;
-  padding: 10px 5px;
+  padding: 10px 5px 10px 25px; /* Padding kiri 25px agar menjorok */
   cursor: pointer;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: all 0.3s ease;
+}
+
+.sidebar button:hover {
+  padding-left: 35px; /* Bergeser lebih dalam saat di-hover */
+  color: var(--accent-cyan);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* === CONTAINER UTAMA === */
 .container {
-  padding: 10px 15px 40px; /* Dikurangi dari 100px agar tidak ada space kosong di bawah */
+  padding: 10px 15px 40px; /* Padding bawah 40px menghapus space kosong */
 }
 
 .card {
@@ -96,12 +112,12 @@ body {
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 15px;
-  margin-bottom: 10px; /* Lebih rapat */
+  margin-bottom: 10px;
   border: 1px solid var(--glass-border);
   text-align: center;
 }
 
-/* === GRID SYSTEM === */
+/* === GRID SYSTEM DATA === */
 .sun-grid, .data-grid, .prediksi-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -109,7 +125,7 @@ body {
   margin-top: 10px;
 }
 
-/* === SUB-BOX DATA === */
+/* === SUB-BOX DATA (RATA TENGAH & SERAGAM) === */
 .sun-box, .data-box, .prediksi-box {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
@@ -149,17 +165,17 @@ body {
   color: #fff;
 }
 
-/* === PLANETARIUM (Tinggi Ideal) === */
+/* === PLANETARIUM === */
 #planetarium {
   width: 100% !important;
   height: 280px !important; 
   border-radius: 12px;
   background: #000;
   display: block;
-  margin-top: 5px; /* Rapat dengan judul */
+  margin-top: 5px;
 }
 
-/* === HIDDEN CARD (Rapat) === */
+/* === HIDDEN CARD & TOGGLE (RAPAT) === */
 #hijriInfoCard, #insightCard {
   text-align: justify;
   line-height: 1.6;
@@ -171,7 +187,7 @@ body {
   max-height: 0;
   opacity: 0;
   overflow: hidden;
-  margin: 0 !important; /* Hilangkan margin saat tertutup agar tidak jauh */
+  margin: 0 !important; 
   padding: 0 !important;
   transition: all 0.3s ease;
 }
@@ -183,9 +199,8 @@ body {
   margin-bottom: 10px;
 }
 
-/* === TOGGLE SPACING === */
 .toggle-wrapper, .hijri-toggle-wrapper {
-  margin: 2px auto 8px; /* Sangat rapat */
+  margin: 2px auto 8px;
 }
 
 /* === PROGRESS BAR === */
@@ -205,7 +220,7 @@ body {
 /* === TOMBOL INSTALL === */
 #installBtn {
   position: fixed;
-  bottom: 15px; /* Lebih ke bawah layar */
+  bottom: 15px;
   left: 50%;
   transform: translateX(-50%);
   padding: 10px 20px;
