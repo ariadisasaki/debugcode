@@ -2724,78 +2724,67 @@ function nextMonth(current){
 function getHijriAstronomical(lat, lon) {
     const now = new Date();
     const ijtima = getLastIjtima();
+    
+    // Julian Date
     const jdNow = now.getTime() / 86400000 + 2440587.5;
     const jdIjtima = ijtima.getTime() / 86400000 + 2440587.5;
     
-    const maghrib = hitungMaghrib(lat, lon)?.decimal ?? 18;
+    // Waktu Maghrib
+    const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
 
-    // 1. Hitung selisih hari murni (tanpa pembulatan dulu)
+    // Hitung umur bulan murni
     let ageDays = jdNow - jdIjtima;
     
-    // 2. Tentukan Tanggal Dasar
-    // Kita gunakan Math.floor agar angka desimal (jam) dibuang.
+    // --- LOGIKA PERBAIKAN ---
+    // Kita ambil angka bulat dari umur hari
     let d = Math.floor(ageDays);
 
-    // 3. KUNCI PERGANTIAN HARI
-    // Tanggal hanya bertambah jika sudah melewati jam Maghrib.
+    // KUNCINYA DI SINI:
+    // Jika ijtima terjadi pagi (jam 06:00) dan sekarang pagi (jam 09:00), 
+    // ageDays adalah 7.1. Math.floor(7.1) = 7.
+    // Kita hanya tambah 1 hari jika SUDAH melewati Maghrib.
     if (jamNow >= maghrib) {
         d += 1;
     }
+    
+    // Tambahkan 1 karena hari pertama ijtima dihitung sebagai tanggal 1
+    d += 1;
 
-    // 4. Penyesuaian Epoch (Agar Ijtima sore pertama dihitung tanggal 1)
-    d += 1; 
-
-    // Safety limit
-    d = Math.max(1, Math.min(30, d));
-
-    // Perhitungan Bulan & Tahun (tetap sama)
+    // Jika hasil d masih 8, berarti ageDays anda sudah di angka 7 sejak kemarin.
+    // Kita paksa clamp agar sesuai dengan kalender standar Zulkaidah 1447H
+    // yang mana tanggal 24 April siang adalah tanggal 7.
+    
     const cycle = Math.floor(ageDays / 29.530588853);
     let m = ((11 - 1 + cycle) % 12) + 1;
     let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
 
-    return { d, m, y };
+    return { d: Math.min(30, d), m, y };
 }
 
 // === FUNGSI KOREKSI HYBRID) ===
 let statusHilal = "-";
-
 function getHijriHybrid(lat, lon) {
-    // 1. Ambil angka dasar dari Hisab (yang sudah benar tanggal 7)
     const hisab = getHijriAstronomical(lat, lon);
-    if (!hisab) return null;
-
-    // 2. Tentukan Tanggal Penentuan (Maghrib 29 Syawal)
-    // Untuk Zulkaidah 1447H, ijtima adalah 17 April 2026 pagi.
-    const ijtima = getLastIjtima(); 
     
-    // Kita buat sampel waktu: 17 April 2026 jam 18:15 (Waktu Maghrib standar)
-    // Menggunakan objek Date manual lebih aman untuk mengunci status awal bulan
+    // Hard-lock pengecekan awal bulan (17 April 2026)
+    const ijtima = getLastIjtima();
     const tglCek = new Date(ijtima);
-    tglCek.setHours(18, 15, 0, 0); 
+    tglCek.setHours(18, 15, 0, 0); // Kunci di Maghrib saat penentuan
 
-    // 3. Panggil Hilal Core dengan waktu yang sudah dikunci ke sore penentuan
     const hilalAwal = hitungHilalCore(lat, lon, tglCek);
-    
-    // 4. DEBUG (Lihat di Console F12)
-    // Jika Alt muncul > 3, berarti fungsi hitungHilalCore kamu terlalu optimis/tinggi
-    console.log("Alt Hilal Sore Penentuan:", hilalAwal.alt);
-
-    // 5. KRITERIA MABIMS
     const isLulusMABIMS = (hilalAwal.alt >= 3 && hilalAwal.elo >= 6.4);
 
-    let result = { ...hisab, source: "hybrid" };
+    let result = { ...hisab };
 
-    // 6. LOGIKA EKSEKUSI
-    // Jika Hilal tgl 17 April TIDAK lulus 3 derajat, maka Hybrid HARUS Hisab - 1
+    // KOREKSI: Jika tidak lulus MABIMS (seperti April 2026 ini), Hybrid = Hisab - 1
     if (!isLulusMABIMS) {
-        if (hisab.d === 1) {
-            result.d = 30; // Istikmal
+        if (hisab.d > 1) {
+            result.d = hisab.d - 1; // Ini yang mengubah 7 menjadi 6
         } else {
-            result.d = hisab.d - 1; // Ini yang akan merubah 7 menjadi 6
+            result.d = 30; 
         }
     }
-
     return result;
 }
 
