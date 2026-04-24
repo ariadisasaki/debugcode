@@ -2927,7 +2927,7 @@ function debugHilal() {
     console.table({
         "Koordinat": `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`,
         "Estimasi Maghrib": `${Math.floor(maghribData.decimal)}:${Math.floor((maghribData.decimal % 1) * 60)}`,
-        "Mode Aktif": modeHijri ? "HISAB (Murni Astro)" : "HYBRID (MABIMS/Kemenag)",
+        "Mode Aktif": modeHijri ? "HISAB (MURNI ASTRONOMI)" : "HYBRID (MABIMS/KEMENAG)",
         "Variasi Magnetik": (typeof declinationGlobal !== "undefined" ? declinationGlobal.toFixed(2) : "0") + "°"
     });
     console.groupEnd();
