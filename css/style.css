@@ -632,3 +632,53 @@ html, body{
   from{ transform: scale(0.6); opacity: 0; }
   to{ transform: scale(1); opacity: 1; }
 }
+
+/* === SUN CARD SPECIFIC (Customized to Match Original) === */
+.sun-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.sun-box {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 10px;
+  text-align: center;
+  transition: 0.3s;
+  border: 1px solid rgba(250, 204, 21, 0.1); /* Border emas tipis */
+}
+
+.sun-box:hover {
+  transform: scale(1.03); /* Mengikuti gaya prediksi-box asli Anda */
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(250, 204, 21, 0.4);
+}
+
+.sun-box .label {
+  display: block;
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 4px;
+  text-transform: uppercase; /* Sesuai keinginan Anda */
+  letter-spacing: 0.5px;
+}
+
+.sun-box .value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #facc15; /* Warna Kuning Matahari */
+}
+
+/* Warna merah jika posisi di bawah horizon (malam) */
+.sun-box .value.night {
+  color: #ef4444;
+}
+
+/* Judul Card Uppercase */
+.card h3 {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
