@@ -1928,10 +1928,10 @@ function hitungHilal(lat, lon, customTime = null) {
     // Jika berada di malam pergantian (Hisab mungkin sudah tanggal 1, tapi kita cek kondisi rukyatnya)
     if (hari === 29 || hari === 30 || hari === 1) {
       if (imkan) {
-        if (statusEl) statusEl.innerText = "Hilal Terlihat (Imkan Rukyat)";
+        if (statusEl) statusEl.innerText = "Hilal terlihat (Imkan Rukyat)";
         if (prediksiEl) prediksiEl.innerText = "Siklus bulan baru telah dimulai";
       } else {
-        if (statusEl) statusEl.innerText = "Istikmal / Tidak Imkan";
+        if (statusEl) statusEl.innerText = "Istikmal/Tidak Imkan";
         if (prediksiEl) prediksiEl.innerText = "Bulan digenapkan atau menunggu kriteria terpenuhi besok";
       }
     } 
