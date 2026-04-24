@@ -15,12 +15,13 @@ body{
   
 /* === CONTAINER === */  
 .container{  
-  padding:10px 16px;  
+  padding:10px 16px; /* kanan = 16px */  
   transition: padding-left 0.3s ease;  
 }  
   
+/* Saat sidebar terbuka â†’ jarak kiri = kanan */  
 .sidebar.active ~ .container{  
-  padding-left:calc(250px + 16px);  
+  padding-left:calc(250px + 16px); /* ðŸ”¥ samakan dengan kanan */  
 }  
   
 /* === CARD === */  
@@ -34,15 +35,6 @@ body{
   position:relative;  
   animation: fadeIn 0.5s ease;  
 }  
-
-/* REVISI: Judul Card (H3) menjadi Uppercase */
-.card h3 {
-  text-transform: uppercase;
-  font-size: 14px;
-  letter-spacing: 1px;
-  margin-bottom: 10px;
-  color: #cbd5f5; /* Warna perak lembut agar judul tidak terlalu dominan */
-}
   
 @keyframes fadeIn{  
   from{opacity:0; transform:translateY(10px);}  
@@ -57,31 +49,20 @@ body{
   margin-top:10px;  
 }  
   
-/* REVISI: Efek Hover Seragam SunCard */
 .data-box{  
   background: rgba(255,255,255,0.05);  
   padding:8px;  
   border-radius:12px;  
   text-align:center;  
-  transition: 0.3s ease;
-  border: 1px solid rgba(255,255,255,0.05);
 }  
-
-.data-box:hover {
-  transform: translateY(-3px);
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(0, 198, 255, 0.3);
-}
   
 .full-width{  
   grid-column: span 2;  
 }  
-
-/* REVISI: Highlight warna biru cerah (seperti aksen SunCard) */
+  
 .highlight{  
   font-size:16px;  
   font-weight:600;  
-  color: #00c6ff; 
 }  
   
 /* === STATUS === */  
@@ -92,7 +73,6 @@ body{
   padding:8px;  
   border-radius:12px;  
   margin-top:5px;  
-  text-transform: uppercase; /* Uppercase teks status */
 }  
   
 .status.ok{ background:#1f8f4e; }  
@@ -126,17 +106,22 @@ video{
   top:50%;  
   transform:translate(-50%, -50%);  
   z-index:999;  
+  
   font-size:28px;  
   color:lime;  
+  
+  /* ðŸ”¥ bersihin total */  
   background:transparent !important;  
   border:none !important;  
   box-shadow:none !important;  
   outline:none !important;  
+    
+  /* glow halus */  
   text-shadow: 0 0 6px rgba(0,255,0,0.8);  
+  
   line-height:1;  
   padding:0;  
   margin:0;  
-  animation: pulse 1.5s infinite;
 }  
   
 /* === CROSSHAIR === */  
@@ -207,6 +192,15 @@ button{
   background:linear-gradient(135deg,#ff7b00,#ffd700);  
 }  
   
+/* === JALUR BULAN === */  
+.hilal-path-dot{  
+  position:absolute;  
+  width:6px;  
+  height:6px;  
+  border-radius:50%;  
+  background:rgba(0,198,255,0.7);  
+}  
+  
 /* === SIDEBAR === */  
 .menu-btn{  
   position: fixed;  
@@ -229,19 +223,24 @@ button{
   transform: translateX(-100%);  
   width: 250px;  
   height: 100%;  
-  background: rgba(10, 20, 40, 0.95);  
+  background: rgba(255,255,255,0.08);  
   backdrop-filter: blur(10px);  
   padding: 20px;  
   transition: transform 0.3s ease;  
   z-index: 2001;  
-  display: flex;
-  flex-direction: column;
 }  
   
 .sidebar.active{  
   transform: translateX(0);  
 }  
   
+/* === SIDEBAR LAYOUT === */  
+.sidebar{  
+  display:flex;  
+  flex-direction:column;  
+}  
+  
+/* === OVERLAY === */  
 .overlay{  
   position: fixed;  
   top:0;  
@@ -260,10 +259,16 @@ button{
   visibility:visible;  
 }  
   
-#startARBtn, #calibrateBtn{ display:none; }  
+/* === HIDE BUTTON DARI CARD === */  
+#startARBtn,  
+#calibrateBtn{  
+  display:none;  
+}  
   
 /* === SPLASH === */  
-html, body{ height:100%; }  
+html, body{  
+  height:100%;  
+}  
   
 #splash{  
   position: fixed;  
@@ -272,10 +277,34 @@ html, body{ height:100%; }
   width:100%;  
   height:100%;  
   background:#020611;  
+  
   display:flex;  
   align-items:center;  
   justify-content:center;  
+  
   z-index:9999;  
+  
+  opacity:1;  
+  visibility:visible;  
+  
+  transition: opacity 0.5s ease, visibility 0.5s ease;  
+}  
+  
+.splash-content{  
+  text-align:center;  
+}  
+  
+.logo{  
+  width:180px;  
+  max-width:40%;  
+  margin-bottom:10px;  
+  animation:zoomIn 0.8s ease;  
+  filter: drop-shadow(0 0 10px rgba(0,198,255,0.6));  
+}  
+  
+@keyframes zoomIn{  
+  from{ transform:scale(0.7); opacity:0; }  
+  to{ transform:scale(1); opacity:1; }  
 }  
   
 .loader{  
@@ -288,7 +317,59 @@ html, body{ height:100%; }
   margin:10px auto;  
 }  
   
-@keyframes spin{ to{transform:rotate(360deg);} }  
+@keyframes spin{  
+  to{transform:rotate(360deg);}  
+}  
+  
+.progress-container {  
+  margin-top: 10px;  
+}  
+  
+.progress-bar-bg {  
+  width: 100%;  
+  height: 8px;  
+  background: #1e293b;  
+  border-radius: 10px;  
+  overflow: hidden;  
+}  
+  
+.progress-bar {  
+  height: 100%;  
+  width: 0%;  
+  background: linear-gradient(90deg, #38bdf8, #22c55e);  
+  transition: width 0.5s ease;  
+}  
+  
+.countdown-text {  
+  text-align: center;  
+  font-size: 13px;  
+  margin-bottom: 6px;  
+  color: #cbd5f5;  
+}  
+  
+#insight{  
+  text-align: justify;  
+  line-height: 1.6;  
+  font-size: 14px;  
+}  
+  
+.insight-note{  
+  margin-top: 8px;  
+  font-size: 12px;  
+  color: #aaa;  
+  font-style: italic;  
+  text-align: justify;  
+}  
+  
+@keyframes pulse{  
+  0%{ transform:translate(-50%, -50%) scale(1); }  
+  50%{ transform:translate(-50%, -50%) scale(1.2); }  
+  100%{ transform:translate(-50%, -50%) scale(1); }  
+}  
+  
+#marker{  
+  animation: pulse 1.5s infinite;  
+}
   
 /* === PREDIKSI HILAL === */  
 .prediksi-grid{  
@@ -304,68 +385,250 @@ html, body{ height:100%; }
   padding:10px;  
   text-align:center;  
   transition:0.3s;  
-  border: 1px solid rgba(255,255,255,0.05);
 }  
   
 .prediksi-box:hover{  
-  transform:translateY(-3px);  
+  transform:scale(1.03);  
   background: rgba(255,255,255,0.1);  
-  border-color: rgba(34, 197, 94, 0.3);
 }  
   
-/* REVISI: Nilai teks dalam box (Warna Emas seperti Suncard) */
-.prediksi-box .value, .data-box .value {  
-  font-size: 15px;  
-  font-weight: 600;  
-  color: #facc15; /* Kuning Emas konsisten */
+.prediksi-box.full{  
+  grid-column: span 2;  
 }  
   
-/* Warna dinamis tetap dipertahankan */
-.value.ok{ color:#22c55e !important; }  
-.value.warn{ color:#facc15 !important; }  
-.value.bad{ color:#ef4444 !important; }  
+.prediksi-box .label{  
+  display:block;  
+  font-size:12px;  
+  color:#aaa;  
+  margin-bottom:4px;  
+}  
   
-/* === SUN CARD SPECIFIC === */  
-.sun-grid {  
-  display: grid;  
-  grid-template-columns: 1fr 1fr;  
-  gap: 10px;  
+.prediksi-box .value{  
+  font-size:15px;  
+  font-weight:600;  
+}  
+  
+/* warna berdasarkan hasil */  
+.value.ok{  
+  color:#22c55e;  
+}  
+  
+.value.warn{  
+  color:#facc15;  
+}  
+  
+.value.bad{  
+  color:#ef4444;  
+}  
+  
+.info-hijri{  
   margin-top: 10px;  
-}  
-  
-.sun-box {  
-  background: rgba(255, 255, 255, 0.06);  
-  border-radius: 14px;  
   padding: 10px;  
-  text-align: center;  
-  transition: 0.3s;  
-  border: 1px solid rgba(250, 204, 21, 0.1);  
+  border-radius: 8px;  
+  background: rgba(255,255,255,0.05);  
+  font-size: 13px;  
+  line-height: 1.5;  
+  
+  text-align: justify;  
 }  
   
-.sun-box:hover {  
-  transform: translateY(-3px);  
-  background: rgba(255, 255, 255, 0.1);  
-  border-color: rgba(250, 204, 21, 0.4);  
-}  
+/* === TOGGLE BUTTON === */
 
-/* Label kecil tetap uppercase */
-.sun-box .label, .prediksi-box .label, .data-box .label {  
-  display: block;  
-  font-size: 11px;  
-  color: #aaa;  
-  margin-bottom: 4px;  
-  text-transform: uppercase;  
-  letter-spacing: 0.5px;  
-}  
+/* Wrapper tombol */
+.toggle-wrapper{
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
 
-.sun-box .value {  
-  font-size: 15px;  
-  font-weight: 600;  
-  color: #facc15;  
-}  
+#toggleInsightBtn,
+#toggleHijriBtn{
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: none;
+  background: linear-gradient(135deg,#22c55e,#38bdf8);
+  
+  color: #0f172a; /* ðŸ”¥ teks dibuat gelap (biru tua) */
+  
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 
-.value.night { color: #ef4444 !important; }
+  /* ðŸ”¥ bantu kontras */
+  text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+}
 
-/* === LAIN-LAIN === */
-#planetarium{ border-radius: 12px; overflow: hidden; }
-@keyframes pulse{ 0%{transform:scale(1);} 50%{transform:scale(1.2);} 100%{transform:scale(1);} }
+/* Efek hover */
+#toggleInsightBtn:hover,
+#toggleHijriBtn:hover{
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
+
+/* Efek klik */
+#toggleInsightBtn:active,
+#toggleHijriBtn:active{
+  transform: scale(0.97);
+}
+
+/* === CARD TOGGLE === */
+
+#insightCard{
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+/* kondisi tertutup */
+.insight-hidden{
+  max-height: 0;
+  opacity: 0;
+  padding: 0 10px;
+}
+
+/* kondisi terbuka */
+.insight-show{
+  max-height: none;
+  opacity: 1;
+  margin-top: 10px;
+}
+
+/* === TOGGLE HIJRI MODE === */
+.hijri-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 10px 0;
+  gap: 10px;
+}
+
+#hijriModeLabel {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #fff; /* warna teks */
+}
+
+#hijriModeToggle {
+  width: 40px;
+  height: 20px;
+  appearance: none;
+  background-color: #ccc;
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.3s;
+}
+
+#hijriModeToggle:checked {
+  background-color: #4caf50; /* hijau saat aktif */
+}
+
+#hijriModeToggle::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #fff;
+  transition: 0.3s;
+}
+
+#hijriModeToggle:checked::before {
+  transform: translateX(20px);
+}
+
+#marker{
+  transition: left 0.2s linear, top 0.2s linear;
+}
+
+#marker{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
+  z-index:999;
+
+  width:50px;
+  height:50px;
+
+  pointer-events:none;
+}
+
+#horizonLine {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: lime;
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 5;
+}
+
+#horizonLabel{
+  position:absolute;
+  left:10px;
+  color:lime;
+  font-size:12px;
+}
+
+#planetarium{
+  width: 100%;
+  height: 250px; /* atau 300px */
+  display: block;
+  border-radius: 12px;
+}
+
+/* === PWA INSTALL BUTTON === */
+#installBtn{
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+
+  width: auto;
+  padding: 12px 16px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: linear-gradient(135deg,#00c6ff,#3a7bfd);
+  color: #fff;
+
+  font-weight: 600;
+  font-size: 14px;
+
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+
+  cursor: pointer;
+
+  z-index: 9998;
+
+  display: none; /* 🔥 penting: default hidden */
+
+  transition: all 0.3s ease;
+}
+
+/* hover effect */
+#installBtn:hover{
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* klik effect */
+#installBtn:active{
+  transform: scale(0.95);
+}
+
+/* ketika muncul animasi */
+#installBtn.show{
+  animation: popIn 0.4s ease;
+}
+
+@keyframes popIn{
+  from{ transform: scale(0.6); opacity: 0; }
+  to{ transform: scale(1); opacity: 1; }
+}
