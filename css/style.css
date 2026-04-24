@@ -18,6 +18,7 @@ body {
   color: var(--text-main);
   overflow-x: hidden;
   text-align: center;
+  min-height: auto; /* Mencegah space kosong jika konten sedikit */
 }
 
 /* === SPLASH SCREEN === */
@@ -85,9 +86,9 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-/* === CARD UTAMA === */
+/* === CONTAINER UTAMA === */
 .container {
-  padding: 10px 15px 100px;
+  padding: 10px 15px 40px; /* Dikurangi dari 100px agar tidak ada space kosong di bawah */
 }
 
 .card {
@@ -95,29 +96,29 @@ body {
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 15px;
-  margin-bottom: 12px;
+  margin-bottom: 10px; /* Lebih rapat */
   border: 1px solid var(--glass-border);
   text-align: center;
 }
 
-/* === GRID SYSTEM (Identik untuk semua) === */
+/* === GRID SYSTEM === */
 .sun-grid, .data-grid, .prediksi-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
   margin-top: 10px;
 }
 
-/* === SUB-BOX DATA (Keseragaman Tampilan) === */
+/* === SUB-BOX DATA === */
 .sun-box, .data-box, .prediksi-box {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
   padding: 12px 5px;
   border-radius: 16px;
   display: flex;
-  flex-direction: column; /* Label atas, Nilai bawah */
-  align-items: center;    /* Center horizontal */
-  justify-content: center;/* Center vertical */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
 }
 
@@ -126,44 +127,43 @@ body {
   border-color: var(--accent-cyan);
 }
 
-/* Membuat subcard Cahaya atau elemen full width */
 .full, .full-width {
   grid-column: span 2;
 }
 
-/* === FONT & LABEL (Identik & No Uppercase) === */
+/* === FONT & LABEL === */
 .label, h3, .sidebar h3 {
   text-transform: none !important;
   letter-spacing: normal;
   font-weight: 600;
-  color: #aaa; /* Warna abu-abu muted yang seragam */
+  color: #aaa;
   margin-bottom: 4px;
   display: block;
 }
 
-.label { font-size: 12px !important; }
+.label { font-size: 11px !important; }
 
 .value {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #fff;
 }
 
-/* === PLANETARIUM (Proporsional) === */
+/* === PLANETARIUM (Tinggi Ideal) === */
 #planetarium {
   width: 100% !important;
-  height: 280px !important; /* Proporsi ideal */
+  height: 280px !important; 
   border-radius: 12px;
   background: #000;
   display: block;
+  margin-top: 5px; /* Rapat dengan judul */
 }
 
-/* === HIDDEN CARD (Justify & Margin Tepi) === */
+/* === HIDDEN CARD (Rapat) === */
 #hijriInfoCard, #insightCard {
   text-align: justify;
   line-height: 1.6;
   font-size: 14px;
-  padding: 15px 20px; /* Jarak teks dari garis card */
   box-sizing: border-box;
 }
 
@@ -171,13 +171,21 @@ body {
   max-height: 0;
   opacity: 0;
   overflow: hidden;
-  transition: all 0.4s ease;
+  margin: 0 !important; /* Hilangkan margin saat tertutup agar tidak jauh */
+  padding: 0 !important;
+  transition: all 0.3s ease;
 }
 
 .insight-show {
   max-height: 2000px;
   opacity: 1;
+  padding: 15px 20px;
   margin-bottom: 10px;
+}
+
+/* === TOGGLE SPACING === */
+.toggle-wrapper, .hijri-toggle-wrapper {
+  margin: 2px auto 8px; /* Sangat rapat */
 }
 
 /* === PROGRESS BAR === */
@@ -197,7 +205,7 @@ body {
 /* === TOMBOL INSTALL === */
 #installBtn {
   position: fixed;
-  bottom: 20px;
+  bottom: 15px; /* Lebih ke bawah layar */
   left: 50%;
   transform: translateX(-50%);
   padding: 10px 20px;
@@ -207,6 +215,7 @@ body {
   color: #fff;
   font-weight: 600;
   z-index: 9998;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
 .overlay {
