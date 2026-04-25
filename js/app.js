@@ -1229,6 +1229,71 @@ function startClock(){
   },1000);
 }
 
+// ===== HIJRI INSIGHT =====
+function getHijriInsight(data, maghrib, now){
+  const { alt, azi, elo, age, illumination } = data;
+
+  const jam = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+
+  const statusWaktu = jam < maghrib ? "Sebelum Maghrib" : "Setelah Maghrib";
+  
+  const ijtimaNow = getLastIjtima();
+  const ijtimaNext = getNextIjtima();
+  
+  const sudahIjtima = now >= ijtimaNow;
+  const statusIjtima = sudahIjtima ? "✅ Sudah Ijtima" : "⏳ Belum Ijtima";
+  const countdownIjtima = getCountdownIjtima(now, ijtimaNext);
+  
+  const ijtimaStr = formatTanggalIndonesia(ijtimaNow);
+  const ijtimaNextStr = formatTanggalIndonesia(ijtimaNext);
+  
+  return `
+🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}°<br>
+Menunjukkan posisi bulan dari horizon. 
+${alt > 0 ? "Bulan sudah di atas ufuk dan berpotensi terlihat." : "Bulan masih di bawah ufuk sehingga tidak mungkin terlihat."}
+<br><br>
+
+🧭 <b>Azimuth:</b> ${azi.toFixed(2)}°<br>
+Menunjukkan arah bulan dari utara (0° = Utara, 90° = Timur, 180° = Selatan, 270° = Barat).
+<br><br>
+
+📐 <b>Elongasi:</b> ${elo.toFixed(2)}°<br>
+Jarak sudut bulan terhadap matahari. 
+Semakin besar elongasi, semakin besar peluang hilal terlihat.
+<br><br>
+
+💡 <b>Cahaya Bulan:</b> ${illumination.toFixed(2)}%<br>
+Menunjukkan fase bulan (semakin besar → semakin terang).
+<br><br>
+
+🌙 <b>Umur Bulan:</b> ${age.toFixed(1)} jam (~${(age/24).toFixed(2)} hari astronomi)<br><br>
+
+<b>Perkiraan:</b><br>
+Sekitar ${(24 - (age % 24)).toFixed(1)} jam lagi menuju fase hari berikutnya. Perkiraan berdasarkan fase bulan, dapat berbeda dari waktu Maghrib lokal.
+<br><br>
+
+🔭 <b>Metode Yallop</b><br>
+Digunakan secara internasional untuk menentukan apakah hilal bisa terlihat.
+Kategori A–B mudah terlihat, sedangkan E berarti tidak mungkin terlihat.<br><br>
+
+🔭 <b>Metode Odeh</b><br>
+Metode modern yang mirip Yallop, digunakan dalam penelitian rukyat.
+Menunjukkan apakah hilal bisa dilihat dengan mata atau alat bantu.<br><br>
+
+📊 <b>Visibility Score</b><br>
+Persentase peluang terlihatnya hilal berdasarkan tinggi, elongasi, dan umur bulan.
+Semakin tinggi nilainya, semakin besar kemungkinan hilal terlihat.<br><br>
+
+🌑 <b>Ijtima (Konjungsi)</b><br>
+Adalah saat bulan dan matahari sejajar. Ini adalah awal fase bulan baru,
+tetapi hilal belum tentu langsung terlihat setelah ijtima.<br><br>
+
+<b>Kesimpulan:</b><br>
+Penentuan awal bulan Hijriah tidak hanya berdasarkan ijtima,
+tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
+`;
+}
+
 // === GPS LOKASI ===
 // 1. Simpan variabel
 let locationInitialized = false;
@@ -1366,71 +1431,6 @@ async function getMagneticDeclination(lat, lon){
 // === KONSTANTA ===
 const rad = Math.PI/180;
 const deg = 180/Math.PI;
-
-// ===== HIJRI INSIGHT =====
-function getHijriInsight(data, maghrib, now){
-  const { alt, azi, elo, age, illumination } = data;
-
-  const jam = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
-
-  const statusWaktu = jam < maghrib ? "Sebelum Maghrib" : "Setelah Maghrib";
-  
-  const ijtimaNow = getLastIjtima();
-  const ijtimaNext = getNextIjtima();
-  
-  const sudahIjtima = now >= ijtimaNow;
-  const statusIjtima = sudahIjtima ? "✅ Sudah Ijtima" : "⏳ Belum Ijtima";
-  const countdownIjtima = getCountdownIjtima(now, ijtimaNext);
-  
-  const ijtimaStr = formatTanggalIndonesia(ijtimaNow);
-  const ijtimaNextStr = formatTanggalIndonesia(ijtimaNext);
-  
-  return `
-🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}°<br>
-Menunjukkan posisi bulan dari horizon. 
-${alt > 0 ? "Bulan sudah di atas ufuk dan berpotensi terlihat." : "Bulan masih di bawah ufuk sehingga tidak mungkin terlihat."}
-<br><br>
-
-🧭 <b>Azimuth:</b> ${azi.toFixed(2)}°<br>
-Menunjukkan arah bulan dari utara (0° = Utara, 90° = Timur, 180° = Selatan, 270° = Barat).
-<br><br>
-
-📐 <b>Elongasi:</b> ${elo.toFixed(2)}°<br>
-Jarak sudut bulan terhadap matahari. 
-Semakin besar elongasi, semakin besar peluang hilal terlihat.
-<br><br>
-
-💡 <b>Cahaya Bulan:</b> ${illumination.toFixed(2)}%<br>
-Menunjukkan fase bulan (semakin besar → semakin terang).
-<br><br>
-
-🌙 <b>Umur Bulan:</b> ${age.toFixed(1)} jam (~${(age/24).toFixed(2)} hari astronomi)<br><br>
-
-<b>Perkiraan:</b><br>
-Sekitar ${(24 - (age % 24)).toFixed(1)} jam lagi menuju fase hari berikutnya. Perkiraan berdasarkan fase bulan, dapat berbeda dari waktu Maghrib lokal.
-<br><br>
-
-🔭 <b>Metode Yallop</b><br>
-Digunakan secara internasional untuk menentukan apakah hilal bisa terlihat.
-Kategori A–B mudah terlihat, sedangkan E berarti tidak mungkin terlihat.<br><br>
-
-🔭 <b>Metode Odeh</b><br>
-Metode modern yang mirip Yallop, digunakan dalam penelitian rukyat.
-Menunjukkan apakah hilal bisa dilihat dengan mata atau alat bantu.<br><br>
-
-📊 <b>Visibility Score</b><br>
-Persentase peluang terlihatnya hilal berdasarkan tinggi, elongasi, dan umur bulan.
-Semakin tinggi nilainya, semakin besar kemungkinan hilal terlihat.<br><br>
-
-🌑 <b>Ijtima (Konjungsi)</b><br>
-Adalah saat bulan dan matahari sejajar. Ini adalah awal fase bulan baru,
-tetapi hilal belum tentu langsung terlihat setelah ijtima.<br><br>
-
-<b>Kesimpulan:</b><br>
-Penentuan awal bulan Hijriah tidak hanya berdasarkan ijtima,
-tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
-`;
-}
 
 // === TANGGAL INDONESIA ===
 function formatTanggalIndonesia(date){
