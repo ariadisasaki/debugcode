@@ -2095,11 +2095,11 @@ function hitungHilal(lat, lon, customTime = null) {
     // Di sini kita gunakan angka tanggal yang sudah "naik" otomatis di UI Anda
     if (hari === 29 || hari === 30 || hari === 1) {
       if (imkan) {
-        if (statusEl) statusEl.innerText = "Hilal Terlihat (Imkan Rukyat)";
+        if (statusEl) statusEl.innerText = "Hilal terlihat (Imkan Rukyat)";
         if (prediksiEl) prediksiEl.innerText = `Siklus bulan baru ${hisab.m} telah dimulai`;
       } else {
-        if (statusEl) statusEl.innerText = "Istikmal / Tidak Imkan";
-        if (prediksiEl) prediksiEl.innerText = "Bulan digenapkan (30 hari) sesuai kriteria MABIMS";
+        if (statusEl) statusEl.innerText = "Istikmal/Tidak Imkan";
+        if (prediksiEl) prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari";
       }
     } 
     // 2. Fase Normal (Malam 2 sampai 28)
@@ -2108,11 +2108,11 @@ function hitungHilal(lat, lon, customTime = null) {
       
       if (prediksiEl) {
         if (hari < 15) {
-          prediksiEl.innerText = "Bulan dalam fase menuju Purnama ( waxing )";
+          prediksiEl.innerText = "Bulan dalam fase menuju Purnama";
         } else if (hari === 15) {
-          prediksiEl.innerText = "Malam Purnama (Full Moon)";
+          prediksiEl.innerText = "Malam Purnama";
         } else {
-          prediksiEl.innerText = "Bulan dalam fase susut menuju akhir bulan (waning)";
+          prediksiEl.innerText = "Bulan dalam fase susut menuju akhir bulan";
         }
       }
     }
