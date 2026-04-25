@@ -2023,8 +2023,8 @@ function hitungHilal(lat, lon, customTime = null) {
   const now = customTime ? new Date(customTime) : new Date();
 
   // 2. Ambil data Kalender (Kirim parameter 'now')
-  const dataHisab = getHijriAstronomical(lat, lon, now);
-  const dataHybrid = getHijriHybrid(lat, lon, now);
+  const dataHisab = getHijriAstronomical(lat, lon);
+  const dataHybrid = getHijriHybrid(lat, lon);
   
   // Pastikan variabel ini tersedia untuk logika di bawah
   const hariHisab = dataHisab.d;
@@ -2081,8 +2081,8 @@ function hitungHilal(lat, lon, customTime = null) {
     } else {
       if (statusEl) statusEl.innerText = `Fase evaluasi hilal (${hariHisab} H)`;
       if (prediksiEl) prediksiEl.innerText = imkan ? 
-        "Hilal memenuhi kriteria MABIMS, berpotensi terlihat nanti sore" : 
-        "Hilal di bawah kriteria MABIMS, kemungkinan besar Istikmal";
+        "Hilal memenuhi kriteria, berpotensi terlihat nanti sore" : 
+        "Hilal di bawah kriteria, kemungkinan besar Istikmal";
     }
   } 
   else {
@@ -2092,7 +2092,7 @@ function hitungHilal(lat, lon, customTime = null) {
         statusEl.innerText = "Hilal terlihat (Imkan Rukyat)";
         prediksiEl.innerText = "Kriteria terpenuhi, awal bulan dimulai";
       } else {
-        statusEl.innerText = "Istikmal / Hilal Tak Terlihat";
+        statusEl.innerText = "Istikmal/Hilal tak terlihat";
         prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari sesuai kriteria";
       }
     } 
@@ -2109,7 +2109,6 @@ function hitungHilal(lat, lon, customTime = null) {
   }
   return data;
 }
-
 
 // === DATA MATAHARI ===
 function updateSunCard() {
