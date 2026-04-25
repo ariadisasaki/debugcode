@@ -1527,21 +1527,45 @@ async function updateAddress(lat, lon) {
     const locEl = document.getElementById('loc');
     const lokasiEl = document.getElementById('lokasi');
 
+    // 1. Update teks koordinat angka
     if (locEl) locEl.innerText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
 
     try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=id`);
+        if (lokasiEl) lokasiEl.innerText = "Mencari lokasi...";
+
+        // Menambahkan parameter accept-language=id agar nama tempat dalam Bahasa Indonesia
+        const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=id`
+        );
+        
+        if (!r.ok) throw new Error("Gagal mengambil data");
+        
         const d = await r.json();
         const a = d.address || {};
-        const alamat = [
-            a.village || a.town || a.city || "",
-            a.county || a.district || "",
-            a.state || ""
-        ].filter(v => v).join(", ");
         
-        if (lokasiEl) lokasiEl.innerText = alamat || "Lokasi tidak dikenal";
+        // 2. Susun komponen alamat secara hierarkis
+        const komponenAlamat = [
+            a.village || a.suburb || a.town || a.city || "", // Desa/Kelurahan/Kota
+            a.district || a.county || "",                    // Kecamatan/Kabupaten
+            a.state || "",                                   // Provinsi
+            a.postcode || "",                                // Kode Pos (Opsional)
+            a.country || ""                                  // NEGARA
+        ];
+
+        // 3. Gabungkan komponen yang tidak kosong dengan tanda koma
+        const alamatLengkap = komponenAlamat
+            .filter(v => v.trim() !== "") // Menghapus bagian yang kosong
+            .join(", ");                  // Menggabungkan dengan koma
+
+        if (lokasiEl) {
+            lokasiEl.innerText = alamatLengkap || "Lokasi tidak dikenal";
+        }
+
     } catch (err) {
-        if (lokasiEl) lokasiEl.innerText = "Gagal memuat nama lokasi";
+        console.error("Geocode Error:", err);
+        if (lokasiEl) {
+            lokasiEl.innerText = "Gagal memuat nama lokasi (Cek Koneksi)";
+        }
     }
 }
 
