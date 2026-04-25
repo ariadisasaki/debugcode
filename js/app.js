@@ -1229,151 +1229,60 @@ function startClock(){
   },1000);
 }
 
-// === GPS ===
+// === GPS LOKASI ===
+// 1. Simpan variabel
 let locationInitialized = false;
+let currentLat, currentLon;
+
 function getLocation() {
-
   navigator.geolocation.getCurrentPosition(async (p) => {
+    currentLat = p.coords.latitude;
+    currentLon = p.coords.longitude;
+    
+    // Update tampilan teks lokasi
+    document.getElementById('loc').innerText = `${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
+    
+    // Panggil fungsi pembantu untuk alamat
+    updateAddressLabel(currentLat, currentLon);
 
-    const lat = p.coords.latitude;
-    const lon = p.coords.longitude;
-
-    // 🔍 DEBUG
-    const hisab = getHijriAstronomical(lat, lon);
-    const hybrid = getHijriHybrid(lat, lon);
-
-    // =========================
-    // ✅ SIMPAN GLOBAL
-    // =========================
-    currentLat = lat;
-    currentLon = lon;
-
-    document.getElementById('loc').innerText =
-      `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-
-    // =========================
-    // 🌍 REVERSE GEOCODE
-    // =========================
-    try {
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
-      );
-      const d = await r.json();
-      const a = d.address || {};
-
-      const lokasi = [
-        a.village || a.town || a.city || "",
-        a.county || "",
-        a.state || "",
-        a.country || ""
-      ].filter(v => v).join(", ");
-
-      document.getElementById('lokasi').innerText = lokasi;
-
-    } catch {
-      document.getElementById('lokasi').innerText = "Lokasi tidak tersedia";
-    }
-
-    // =========================
-    // 🔹 INIT ONCE ONLY
-    // =========================
+    // Jalankan hanya sekali
     if (!locationInitialized) {
-
-      locationInitialized = true;
-
-      await getMagneticDeclination(lat, lon);
-
-      hitungHilal(lat, lon);
-      startMaghribWatcher(lat, lon);
-
-      // =========================
-      // 🔥 GLOBAL INTERVAL (HANYA SEKALI)
-      // =========================
-
-      setInterval(() => {
-        hitungHilal(currentLat, currentLon);
-      }, 10000);
-
-      setInterval(() => {
-        renderUI();
-        updatePrediksiCard();
-      }, 1000);
-
-      setInterval(() => {
-        updateHilalAR();
-      }, 1000);
-
-      setInterval(() => {
-
-        const now = new Date();
-        const maghribData = hitungMaghrib(currentLat, currentLon);
-        const maghrib = maghribData ? maghribData.decimal : 18;
-
-        document.getElementById('insight').innerHTML =
-          getHijriInsight(hilalDataFull, maghrib, now);
-
-        document.getElementById('countdownMaghrib').innerText =
-          getCountdownMaghrib(now, maghrib);
-
-      }, 1000);
+      initAppLogic(currentLat, currentLon);
     }
-
-    setInterval(() => {
-      updateHijriDisplay(); 
-    }, 2000);
-
   }, (err) => {
+    // Fallback jika GPS mati
+    handleLocationError();
+  }, { enableHighAccuracy: true, timeout: 15000 });
+}
 
-    // =========================
-    // ❌ FALLBACK
-    // =========================
-    const lat = -8.6522;
-    const lon = 116.5293;
+function initAppLogic(lat, lon) {
+  locationInitialized = true;
+  
+  // Jalankan perhitungan pertama kali
+  hitungHilal(lat, lon); 
 
-    currentLat = lat;
-    currentLon = lon;
+  // TIMER A: Update data astronomi berat (tiap 10 Detik)
+  setInterval(() => {
+    hitungHilal(currentLat, currentLon);
+  }, 10000);
 
-    document.getElementById('loc').innerText = `${lat}, ${lon}`;
-    document.getElementById('lokasi').innerText =
-      "GPS tidak aktif, memakai lokasi default";
+  // TIMER B: Update UI ringan (tiap 1 Detik)
+  setInterval(() => {
+    const now = new Date();
+    const maghribData = hitungMaghrib(currentLat, currentLon);
+    const maghrib = maghribData ? maghribData.decimal : 18;
 
-    if (!locationInitialized) {
-
-      locationInitialized = true;
-
-      declinationGlobal = 0;
-
-      hitungHilal(lat, lon);
-      startMaghribWatcher(lat, lon);
-
-      setInterval(() => {
-        hitungHilal(currentLat, currentLon);
-      }, 10000);
-
-      setInterval(() => {
-        const now = new Date();
-
-        const maghribData = hitungMaghrib(currentLat, currentLon);
-        const maghrib = maghribData ? maghribData.decimal : 18;
-
-        document.getElementById('insight').innerHTML =
-          getHijriInsight(hilalDataFull, maghrib, now);
-
-        document.getElementById('countdownMaghrib').innerText =
-          getCountdownMaghrib(now, maghrib);
-
-        updatePrediksiCard();
-
-      }, 1000);
+    renderUI();
+    updatePrediksiCard();
+    
+    // Update data di dalam teks penjelasan (Insight)
+    const insightEl = document.getElementById('insight');
+    if (insightEl && typeof hilalDataFull !== 'undefined') {
+      insightEl.innerHTML = getHijriInsight(hilalDataFull, maghrib, now);
     }
-
-    updateHijriDisplay();
-
-  }, {
-    enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 0
-  });
+    
+    document.getElementById('countdownMaghrib').innerText = getCountdownMaghrib(now, maghrib);
+  }, 1000);
 }
 
 // === SENSOR ===
