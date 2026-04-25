@@ -1497,28 +1497,25 @@ tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
 
 // === GPS LOKASI ===
 function getLocation() {
-    const lokasiEl = document.getElementById('lokasi');
-    if (lokasiEl) lokasiEl.innerText = "Mencari koordinat GPS...";
-
     navigator.geolocation.getCurrentPosition(async (p) => {
         currentLat = p.coords.latitude;
         currentLon = p.coords.longitude;
         
-        const locEl = document.getElementById('loc');
-        if (locEl) locEl.innerText = `${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
-        
-        // Jalankan inisialisasi hanya sekali
+        // Update koordinat dan alamat
+        updateAddress(currentLat, currentLon);
+
         if (!locationInitialized) {
             initApp(currentLat, currentLon);
         }
     }, (err) => {
-        // Fallback jika GPS gagal (Default: Selong, NTB)
+        // Fallback jika GPS mati (Contoh: Selong, NTB)
         currentLat = -8.6522;
         currentLon = 116.5293;
         
-        const locEl = document.getElementById('loc');
-        if (locEl) locEl.innerText = `${currentLat}, ${currentLon}`;
-        if (lokasiEl) lokasiEl.innerText = "GPS tidak aktif, memakai lokasi default";
+        const lokasiEl = document.getElementById('lokasi');
+        if (lokasiEl) lokasiEl.innerText = "GPS mati, memakai lokasi default";
+        
+        updateAddress(currentLat, currentLon);
         
         if (!locationInitialized) {
             initApp(currentLat, currentLon);
@@ -1526,53 +1523,72 @@ function getLocation() {
     }, { enableHighAccuracy: true, timeout: 15000 });
 }
 
-// === INISIALISASI APLIKASI ===
+async function updateAddress(lat, lon) {
+    const locEl = document.getElementById('loc');
+    const lokasiEl = document.getElementById('lokasi');
+
+    if (locEl) locEl.innerText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+    try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=id`);
+        const d = await r.json();
+        const a = d.address || {};
+        const alamat = [
+            a.village || a.town || a.city || "",
+            a.county || a.district || "",
+            a.state || ""
+        ].filter(v => v).join(", ");
+        
+        if (lokasiEl) lokasiEl.innerText = alamat || "Lokasi tidak dikenal";
+    } catch (err) {
+        if (lokasiEl) lokasiEl.innerText = "Gagal memuat nama lokasi";
+    }
+}
+
+// === 3. INISIALISASI APLIKASI ===
 async function initApp(lat, lon) {
     locationInitialized = true;
 
-    // A. Jalankan fungsi pendukung (pastikan fungsi-fungsi ini ada di script Anda)
+    // Jalankan fungsi pendukung jika ada
     try {
         if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(lat, lon);
         if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
-    } catch (e) { console.error("Fungsi pendukung gagal:", e); }
+    } catch (e) { console.warn("Fungsi pendukung belum siap."); }
 
-    // B. Hitung data pertama kali
-    // Pastikan hitungHilal(lat, lon) me-return object data hilal
-    const firstData = hitungHilal(lat, lon);
-    if (firstData) hilalDataFull = firstData;
+    // Hitung data pertama kali agar UI terisi
+    hilalDataFull = hitungHilal(lat, lon);
 
-    // C. TIMER UPDATE DATA (10 DETIK)
+    // TIMER A: Update hitungan Astronomi (Tiap 10 Detik)
     setInterval(() => {
         if (currentLat && currentLon) {
-            const newData = hitungHilal(currentLat, currentLon);
-            if (newData) hilalDataFull = newData;
+            hilalDataFull = hitungHilal(currentLat, currentLon);
         }
     }, 10000);
 
-    // D. TIMER UPDATE UI (1 DETIK)
+    // TIMER B: Update UI & Countdown (Tiap 1 Detik)
     setInterval(() => {
         const now = new Date();
-        const maghribData = hitungMaghrib(currentLat, currentLon);
+        const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
         const maghrib = maghribData ? maghribData.decimal : 18;
 
-        // Update Elemen UI satu per satu dengan pengecekan ID
+        // Render UI Utama
         if (typeof renderUI === 'function') renderUI();
         if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
-        if (typeof updateHilalAR === 'function') updateHilalAR();
         
+        // Update Insight & Teks Detail
         const insightEl = document.getElementById('insight');
-        if (insightEl) {
-            // Mengirim data ke template getHijriInsight
+        if (insightEl && typeof getHijriInsight === 'function') {
             insightEl.innerHTML = getHijriInsight(hilalDataFull, maghrib, now);
         }
         
+        // Update Countdown Maghrib
         const countEl = document.getElementById('countdownMaghrib');
-        if (countEl) {
+        if (countEl && typeof getCountdownMaghrib === 'function') {
             countEl.innerText = getCountdownMaghrib(now, maghrib);
         }
     }, 1000);
-    
-    // E. UPDATE TANGGAL (2 DETIK)
+
+    // TIMER C: Update Tanggal (Tiap 2 Detik)
     setInterval(() => {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
