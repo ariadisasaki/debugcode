@@ -1547,9 +1547,8 @@ async function updateAddress(lat, lon) {
         const komponenAlamat = [
             a.village || a.suburb || a.town || a.city || "", // Desa/Kelurahan/Kota
             a.district || a.county || "",                    // Kecamatan/Kabupaten
-            a.state || "",                                   // Provinsi
-            a.postcode || "",                                // Kode Pos (Opsional)
-            a.country || ""                                  // NEGARA
+            a.state || "",                                   // Provinsi                         
+            a.country || ""                                  // Negara
         ];
 
         // 3. Gabungkan komponen yang tidak kosong dengan tanda koma
