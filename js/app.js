@@ -2089,31 +2089,33 @@ function hitungHilal(lat, lon, customTime = null) {
     }
   } 
   
-  // === KONDISI C: SETELAH MAGHRIB (KEPUTUSAN FINAL / STATUS MALAM) ===
+  // === KONDISI C: SETELAH MAGHRIB ===
   else {
-    // 1. Malam Penentuan (Malam 29, 30, atau 1)
-    // Di sini kita gunakan angka tanggal yang sudah "naik" otomatis di UI Anda
-    if (hari === 29 || hari === 30 || hari === 1) {
+    // 1. MODE RUKYAT/PENENTUAN (Mengikuti Hybrid agar selaras dengan ketetapan)
+    // Kita aktifkan mode ini di akhir dan awal bulan saja
+    if (hybrid.d === 29 || hybrid.d === 30 || hybrid.d === 1) {
       if (imkan) {
-        if (statusEl) statusEl.innerText = "Hilal terlihat (Imkan Rukyat)";
-        if (prediksiEl) prediksiEl.innerText = `Siklus bulan baru ${hisab.m} telah dimulai`;
+        statusEl.innerText = "Hilal terlihat (Imkan Rukyat)";
+        prediksiEl.innerText = "Kriteria terpenuhi, awal bulan dimulai";
       } else {
-        if (statusEl) statusEl.innerText = "Istikmal/Tidak Imkan";
-        if (prediksiEl) prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari";
+        statusEl.innerText = "Istikmal/Hilal tak terlihat";
+        prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari sesuai kriteria";
       }
-    } 
-    // 2. Fase Normal (Malam 2 sampai 28)
+    }
+      // 2. MODE ASTRONOMI (Mengikuti Hisab untuk Realitas Dunia Nyata)
+      // Digunakan untuk fase selain penentuan awal bulan
     else {
-      if (statusEl) statusEl.innerText = `Fase Malam ${hari} Hijriah`;
-      
-      if (prediksiEl) {
-        if (hari < 15) {
-          prediksiEl.innerText = "Bulan dalam fase menuju Purnama";
-        } else if (hari === 15) {
-          prediksiEl.innerText = "Malam Purnama";
-        } else {
-          prediksiEl.innerText = "Bulan dalam fase susut menuju akhir bulan";
-        }
+      // Cek khusus untuk Purnama agar tetap akurat secara Hisab
+      if (hisab.d === 15) {
+        statusEl.innerText = "Malam Purnama";
+        prediksiEl.innerText = "Bulan tepat di titik oposisi 180°";
+      }
+      else {
+        // Tampilkan tanggal Hisab agar user tahu kondisi real bulan
+        statusEl.innerText = `Malam ke-${hisab.d}`;
+        prediksiEl.innerText = hisab.d < 15 ? 
+          "Bulan menuju fase Purnama" : 
+          "Bulan menuju fase akhir bulan";
       }
     }
   }
@@ -2708,8 +2710,8 @@ function nextMonth(current){
 }
 
 // === HIJRI HISAB ===
-function getHijriAstronomical(lat, lon) {
-    const now = new Date();
+function getHijriAstronomical(lat, lon, date = new Date()) { 
+    const now = date; 
     const ijtima = getLastIjtima();
     
     // Membandingkan tanggal murni (00:00)
@@ -2740,8 +2742,8 @@ function getHijriAstronomical(lat, lon) {
 
 // === HIJRI HYBRID ===
 let statusHilal = "-";
-function getHijriHybrid(lat, lon) {
-    const hisab = getHijriAstronomical(lat, lon);
+function getHijriHybrid(lat, lon, date = new Date()) { 
+    const hisab = getHijriAstronomical(lat, lon, date); 
     
     // 1. Ambil data hilal pada Maghrib hari ke-29 bulan berjalan
     const ijtima = getLastIjtima();
