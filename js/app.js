@@ -2031,7 +2031,7 @@ function hitungHilal(lat, lon, customTime = null) {
   const hariHybrid = dataHybrid.d;
 
   // 3. Hitung Data Astronomi
-  const data = hitungHilalCore(lat, lon, now);
+  const data = hitungHilalCore(lat, lon);
   
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
