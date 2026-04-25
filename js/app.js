@@ -2021,7 +2021,7 @@ function drawMoonRealistic(illumination){
   ctx.fill();
 }
 
-// ==== HITUNG HILAL (REVISI FINAL - FIXED ERROR) ===
+// ==== HITUNG HILAL (VERSI OPTIMASI - ANTI LAG) ===
 function hitungHilal(lat, lon, customTime = null) {
   const statusEl = document.getElementById('status');
   const prediksiEl = document.getElementById('prediksi');
@@ -2032,32 +2032,39 @@ function hitungHilal(lat, lon, customTime = null) {
   // 1. Definisikan Waktu Referensi
   const now = customTime ? new Date(customTime) : new Date();
 
-  // 2. Ambil data Kalender (Kirim parameter 'now')
+  // 2. Gunakan CACHED_IJTIMA (Pastikan sudah ada di baris paling atas script luar)
+  // Ini mencegah fungsi memanggil getLastIjtima() berulang kali yang bikin lag
+  const ijtima = CACHED_IJTIMA; 
+
+  // 3. Ambil data Kalender (Sekarang jadi ringan karena pakai Cache)
   const dataHisab = getHijriAstronomical(lat, lon);
   const dataHybrid = getHijriHybrid(lat, lon);
   
-  // Pastikan variabel ini tersedia untuk logika di bawah
   const hariHisab = dataHisab.d;
   const hariHybrid = dataHybrid.d;
 
-  // 3. Hitung Data Astronomi
-  const data = hitungHilalCore(lat, lon);
+  // 4. Hitung Data Astronomi Core
+  const data = hitungHilalCore(lat, lon, now);
   
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
-  const age = Number(data.age) || 0;
   const illumination = Number(data.illumination) || 0;
+
+  // 5. HITUNG UMUR BULAN (AGE) DI SINI
+  // Rumus: (Waktu Sekarang - Waktu Ijtima) dalam jam
+  const age = (now.getTime() - ijtima.getTime()) / 3600000;
 
   // === UI ANGKA ===
   const set = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.innerText = val;
   };
+
   set("alt", alt.toFixed(2) + "°");
   set("azi", azi.toFixed(2) + "°");
   set("elo", elo.toFixed(2) + "°");
-  set("age", age.toFixed(1) + " jam");
+  set("age", age.toFixed(1) + " jam"); // Menampilkan age hasil hitungan di atas
   set("illum", illumination.toFixed(2) + "%");
 
   // === VISIBILITY ===
@@ -2068,7 +2075,7 @@ function hitungHilal(lat, lon, customTime = null) {
   set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
 
   // === REFERENSI WAKTU ===
-  const ijtima = getLastIjtima();
+  // Menggunakan ijtima dari cache, bukan panggil fungsi baru
   set("statusIjtima", now >= ijtima ? "Sudah Ijtima" : "Belum Ijtima");
 
   const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
