@@ -1229,6 +1229,56 @@ function startClock(){
   },1000);
 }
 
+// === HITUNG MAGHRIB ===
+function hitungMaghrib(lat, lon, customDate=null){
+  const now = customDate ? new Date(customDate) : new Date();
+  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const JD = (date.getTime()/86400000)+2440587.5;
+  const T = (JD-2451545)/36525;
+
+  const epsilon = 23.439291 - 0.0130042*T;
+  const L0 = (280.46646 + 36000.76983*T)%360;
+  const M = 357.52911 + 35999.05029*T;
+
+  const C = (1.914602 - 0.004817*T)*Math.sin(M*rad)
+          + (0.019993 - 0.000101*T)*Math.sin(2*M*rad)
+          + 0.000289*Math.sin(3*M*rad);
+
+  const lambda = L0 + C;
+  const delta = Math.asin(Math.sin(epsilon*rad)*Math.sin(lambda*rad));
+  const y = Math.tan((epsilon/2)*rad)**2;
+
+  const EoT = 4 * deg * (
+    y*Math.sin(2*L0*rad)
+    - 2*0.0167*Math.sin(M*rad)
+    + 4*0.0167*y*Math.sin(M*rad)*Math.cos(2*L0*rad)
+    - 0.5*y*y*Math.sin(4*L0*rad)
+    - 1.25*0.0167*0.0167*Math.sin(2*M*rad)
+  );
+
+  const h0 = -0.833 * rad; 
+  const cosH = (Math.sin(h0) - Math.sin(lat*rad)*Math.sin(delta)) /
+               (Math.cos(lat*rad)*Math.cos(delta));
+
+  let H;
+  if(cosH < -1) H = 180;
+  else if(cosH > 1) H = 0;
+  else H = Math.acos(cosH)*deg;
+
+  const timezone = -now.getTimezoneOffset()/60;
+  const solarNoon = 12 + timezone - (lon/15) - (EoT/60);
+
+  const sunrise = solarNoon - (H/15); // Terbit (Noon dikurang Hour Angle)
+  const sunset = solarNoon + (H/15);  // Terbenam (Noon ditambah Hour Angle)
+
+  return { 
+    sunrise: sunrise, 
+    decimal: sunset, // Tetap gunakan nama 'decimal' agar tidak merusak kode lama Anda
+    noon: solarNoon 
+  };
+}
+
 // ===== HIJRI INSIGHT =====
 function getHijriInsight(data, maghrib, now){
   const { alt, azi, elo, age, illumination } = data;
@@ -2151,56 +2201,6 @@ function calibrateWithSun(){
     alert("Kalibrasi Matahari berhasil ✅\nOffset: " + headingOffset.toFixed(2) + "°");
 
   }, 1000);
-}
-
-// === HITUNG MAGHRIB ===
-function hitungMaghrib(lat, lon, customDate=null){
-  const now = customDate ? new Date(customDate) : new Date();
-  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  const JD = (date.getTime()/86400000)+2440587.5;
-  const T = (JD-2451545)/36525;
-
-  const epsilon = 23.439291 - 0.0130042*T;
-  const L0 = (280.46646 + 36000.76983*T)%360;
-  const M = 357.52911 + 35999.05029*T;
-
-  const C = (1.914602 - 0.004817*T)*Math.sin(M*rad)
-          + (0.019993 - 0.000101*T)*Math.sin(2*M*rad)
-          + 0.000289*Math.sin(3*M*rad);
-
-  const lambda = L0 + C;
-  const delta = Math.asin(Math.sin(epsilon*rad)*Math.sin(lambda*rad));
-  const y = Math.tan((epsilon/2)*rad)**2;
-
-  const EoT = 4 * deg * (
-    y*Math.sin(2*L0*rad)
-    - 2*0.0167*Math.sin(M*rad)
-    + 4*0.0167*y*Math.sin(M*rad)*Math.cos(2*L0*rad)
-    - 0.5*y*y*Math.sin(4*L0*rad)
-    - 1.25*0.0167*0.0167*Math.sin(2*M*rad)
-  );
-
-  const h0 = -0.833 * rad; 
-  const cosH = (Math.sin(h0) - Math.sin(lat*rad)*Math.sin(delta)) /
-               (Math.cos(lat*rad)*Math.cos(delta));
-
-  let H;
-  if(cosH < -1) H = 180;
-  else if(cosH > 1) H = 0;
-  else H = Math.acos(cosH)*deg;
-
-  const timezone = -now.getTimezoneOffset()/60;
-  const solarNoon = 12 + timezone - (lon/15) - (EoT/60);
-
-  const sunrise = solarNoon - (H/15); // Terbit (Noon dikurang Hour Angle)
-  const sunset = solarNoon + (H/15);  // Terbenam (Noon ditambah Hour Angle)
-
-  return { 
-    sunrise: sunrise, 
-    decimal: sunset, // Tetap gunakan nama 'decimal' agar tidak merusak kode lama Anda
-    noon: solarNoon 
-  };
 }
 
 // === MAGHRIB WATCHER ===
