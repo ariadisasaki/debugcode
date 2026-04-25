@@ -2021,6 +2021,11 @@ function hitungHilal(lat, lon, customTime = null) {
 
   // === DATA ASTRONOMI (MENGUNCI INPUT WAKTU) ===
   const now = customTime ? new Date(customTime) : new Date();
+  const hisab = getHijriAstronomical(lat, lon);
+  const hybrid = getHijriHybrid(lat, lon);
+  const hD = hisab.d;
+  const hbD = hybrid.d;
+
   const data = hitungHilalCore(lat, lon, now);
   
   const alt = Number(data.alt) || 0;
@@ -2098,21 +2103,22 @@ function hitungHilal(lat, lon, customTime = null) {
         statusEl.innerText = "Hilal terlihat (Imkan Rukyat)";
         prediksiEl.innerText = "Kriteria terpenuhi, awal bulan dimulai";
       } else {
-        statusEl.innerText = "Istikmal/Hilal tak terlihat";
+        statusEl.innerText = "Istikmal / Hilal Tak Terlihat";
         prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari sesuai kriteria";
       }
-    }
-      // 2. MODE ASTRONOMI (Mengikuti Hisab untuk Realitas Dunia Nyata)
-      // Digunakan untuk fase selain penentuan awal bulan
+    } 
+    
+    // 2. MODE ASTRONOMI (Mengikuti Hisab untuk Realitas Dunia Nyata)
+    // Digunakan untuk fase selain penentuan awal bulan
     else {
       // Cek khusus untuk Purnama agar tetap akurat secara Hisab
       if (hisab.d === 15) {
         statusEl.innerText = "Malam Purnama";
         prediksiEl.innerText = "Bulan tepat di titik oposisi 180°";
-      }
+      } 
       else {
         // Tampilkan tanggal Hisab agar user tahu kondisi real bulan
-        statusEl.innerText = `Malam ke-${hisab.d}`;
+        statusEl.innerText = `Malam ke-${hisab.d} Hijriah`;
         prediksiEl.innerText = hisab.d < 15 ? 
           "Bulan menuju fase Purnama" : 
           "Bulan menuju fase akhir bulan";
@@ -2710,8 +2716,8 @@ function nextMonth(current){
 }
 
 // === HIJRI HISAB ===
-function getHijriAstronomical(lat, lon, date = new Date()) { 
-    const now = date; 
+function getHijriAstronomical(lat, lon) {
+    const now = new Date();
     const ijtima = getLastIjtima();
     
     // Membandingkan tanggal murni (00:00)
@@ -2742,8 +2748,8 @@ function getHijriAstronomical(lat, lon, date = new Date()) {
 
 // === HIJRI HYBRID ===
 let statusHilal = "-";
-function getHijriHybrid(lat, lon, date = new Date()) { 
-    const hisab = getHijriAstronomical(lat, lon, date); 
+function getHijriHybrid(lat, lon) {
+    const hisab = getHijriAstronomical(lat, lon);
     
     // 1. Ambil data hilal pada Maghrib hari ke-29 bulan berjalan
     const ijtima = getLastIjtima();
