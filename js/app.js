@@ -2011,7 +2011,7 @@ function drawMoonRealistic(illumination){
   ctx.fill();
 }
 
-// ==== HITUNG HILAL (REVISI FINAL) ===
+// ==== HITUNG HILAL (REVISI FINAL - FIXED ERROR) ===
 function hitungHilal(lat, lon, customTime = null) {
   const statusEl = document.getElementById('status');
   const prediksiEl = document.getElementById('prediksi');
@@ -2019,13 +2019,18 @@ function hitungHilal(lat, lon, customTime = null) {
   if (statusEl) statusEl.innerText = "⏳ Menghitung hilal...";
   if (prediksiEl) prediksiEl.innerText = "";
 
-  // === DATA ASTRONOMI (MENGUNCI INPUT WAKTU) ===
+  // 1. Definisikan Waktu Referensi
   const now = customTime ? new Date(customTime) : new Date();
-  const hisab = getHijriAstronomical(lat, lon);
-  const hybrid = getHijriHybrid(lat, lon);
-  const hD = hisab.d;
-  const hbD = hybrid.d;
 
+  // 2. Ambil data Kalender (Kirim parameter 'now')
+  const dataHisab = getHijriAstronomical(lat, lon, now);
+  const dataHybrid = getHijriHybrid(lat, lon, now);
+  
+  // Pastikan variabel ini tersedia untuk logika di bawah
+  const hariHisab = dataHisab.d;
+  const hariHybrid = dataHybrid.d;
+
+  // 3. Hitung Data Astronomi
   const data = hitungHilalCore(lat, lon, now);
   
   const alt = Number(data.alt) || 0;
@@ -2050,55 +2055,39 @@ function hitungHilal(lat, lon, customTime = null) {
   const odeh = hitungVisibilitasOdeh(alt, elo);
   set("yallop", yallop);
   set("odeh", odeh);
-  const score = hitungVisibilityScore(alt, elo, age);
-  set("visibility", score + "%");
+  set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
 
-  // === REFERENSI WAKTU & KALENDER ===
+  // === REFERENSI WAKTU ===
   const ijtima = getLastIjtima();
   set("statusIjtima", now >= ijtima ? "Sudah Ijtima" : "Belum Ijtima");
 
   const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes() / 60;
   const sebelumMaghrib = jamNow < maghrib;
-
-  // === MENGAMBIL DATA HISAB SEBAGAI ACUAN FASE ===
-  const hisab = getHijriAstronomical(lat, lon);
-  const hari = hisab.d;
-  
-  // === KRITERIA MABIMS (3-6.4) ===
   const imkan = (alt >= 3 && elo >= 6.4);
 
   // ==========================================
   // 🌕 LOGIKA STATUS & PREDIKSI (UI DECISION)
   // ==========================================
 
-  // === KONDISI A: BULAN DI BAWAH UFUK ===
   if (alt < 0) {
     if (statusEl) statusEl.innerText = "Bulan di bawah ufuk";
     if (prediksiEl) prediksiEl.innerText = "Tidak dapat dilakukan observasi hilal";
   } 
-  
-  // === KONDISI B: SEBELUM MAGHRIB (EVALUASI) ===
   else if (sebelumMaghrib) {
-    // Jika masih jauh dari akhir bulan
-    if (hari < 29) {
+    if (hariHisab < 29) {
       if (statusEl) statusEl.innerText = "Fase normal bulan berjalan";
       if (prediksiEl) prediksiEl.innerText = "Belum memasuki fase akhir bulan";
-    } 
-    // Jika hari ini adalah hari penentuan (29 atau 30)
-    else {
-      if (statusEl) statusEl.innerText = `Fase evaluasi hilal (${hari} H)`;
+    } else {
+      if (statusEl) statusEl.innerText = `Fase evaluasi hilal (${hariHisab} H)`;
       if (prediksiEl) prediksiEl.innerText = imkan ? 
         "Hilal memenuhi kriteria MABIMS, berpotensi terlihat nanti sore" : 
         "Hilal di bawah kriteria MABIMS, kemungkinan besar Istikmal";
     }
   } 
-  
-  // === KONDISI C: SETELAH MAGHRIB ===
   else {
-    // 1. MODE RUKYAT/PENENTUAN (Mengikuti Hybrid agar selaras dengan ketetapan)
-    // Kita aktifkan mode ini di akhir dan awal bulan saja
-    if (hybrid.d === 29 || hybrid.d === 30 || hybrid.d === 1) {
+    // KONDISI SETELAH MAGHRIB
+    if (hariHybrid === 29 || hariHybrid === 30 || hariHybrid === 1) {
       if (imkan) {
         statusEl.innerText = "Hilal terlihat (Imkan Rukyat)";
         prediksiEl.innerText = "Kriteria terpenuhi, awal bulan dimulai";
@@ -2107,26 +2096,20 @@ function hitungHilal(lat, lon, customTime = null) {
         prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari sesuai kriteria";
       }
     } 
-    
-    // 2. MODE ASTRONOMI (Mengikuti Hisab untuk Realitas Dunia Nyata)
-    // Digunakan untuk fase selain penentuan awal bulan
     else {
-      // Cek khusus untuk Purnama agar tetap akurat secara Hisab
-      if (hisab.d === 15) {
+      if (hariHisab === 15) {
         statusEl.innerText = "Malam Purnama";
         prediksiEl.innerText = "Bulan tepat di titik oposisi 180°";
-      } 
-      else {
-        // Tampilkan tanggal Hisab agar user tahu kondisi real bulan
-        statusEl.innerText = `Malam ke-${hisab.d} Hijriah`;
-        prediksiEl.innerText = hisab.d < 15 ? 
-          "Bulan menuju fase Purnama" : 
-          "Bulan menuju fase akhir bulan";
+      } else {
+        statusEl.innerText = `Malam ke-${hariHisab} Hijriah (Hisab)`;
+        prediksiEl.innerText = hariHisab < 15 ? 
+          "Bulan menuju fase Purnama" : "Bulan menuju fase akhir bulan";
       }
     }
   }
   return data;
 }
+
 
 // === DATA MATAHARI ===
 function updateSunCard() {
