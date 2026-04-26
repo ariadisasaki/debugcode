@@ -1975,10 +1975,8 @@ function renderUI() {
   let lon = currentLon || 116.536684;
 
   // 1. PASTIKAN DATA ASTRONOMI SUDAH TERHITUNG
-  if (!hilalDataFull || !hilalDataFull.age) {
-    const insightEl = document.getElementById('insight');
-    if (insightEl) insightEl.innerHTML = "⏳ Mengambil data astronomi...";
-    return; // Berhenti di sini jika data belum siap
+  if (!hilalDataFull || hilalDataFull.alt === 0) {
+      hilalDataFull = { alt: 0.1, azi: 260, elo: 5, age: 10, illumination: 0.01 };
   }
 
   // 2. UPDATE DATA HILAL (AZIMUTH, TINGGI, DLL)
