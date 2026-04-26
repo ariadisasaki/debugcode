@@ -1609,35 +1609,44 @@ async function initApp(lat, lon) {
     // Hitung data pertama kali agar UI terisi
     hilalDataFull = hitungHilal(lat, lon);
 
-    // TIMER A: Update hitungan Astronomi (Tiap 10 Detik)
-    setInterval(() => {
-        if (currentLat && currentLon) {
-            hilalDataFull = hitungHilal(currentLat, currentLon);
-        }
-    }, 10000);
+    // TIMER A: Update Data Berat (Tiap 10 Detik - Cukup)
+setInterval(() => {
+    if (currentLat && currentLon) {
+        // 1. Update Cache Ijtima (Hanya di sini!)
+        GLOBAL_IJTIMA_DATA.last = getLastIjtima();
+        GLOBAL_IJTIMA_DATA.next = getNextIjtima();
 
-    // TIMER B: Update UI & Countdown (Tiap 1 Detik)
-    setInterval(() => {
-        const now = new Date();
-        const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
-        const maghrib = maghribData ? maghribData.decimal : 18;
-
-        // Render UI Utama
+        // 2. Hitung Hilal
+        hilalDataFull = hitungHilal(currentLat, currentLon);
+        
+        // 3. Update UI yang sifatnya statis (tidak butuh detik)
         if (typeof renderUI === 'function') renderUI();
         if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
         
-        // Update Insight & Teks Detail
         const insightEl = document.getElementById('insight');
         if (insightEl && typeof getHijriInsight === 'function') {
-            insightEl.innerHTML = getHijriInsight(hilalDataFull, maghrib, now);
+            const maghribData = hitungMaghrib(currentLat, currentLon);
+            insightEl.innerHTML = getHijriInsight(hilalDataFull, maghribData.decimal, new Date());
         }
-        
-        // Update Countdown Maghrib
-        const countEl = document.getElementById('countdownMaghrib');
-        if (countEl && typeof getCountdownMaghrib === 'function') {
-            countEl.innerText = getCountdownMaghrib(now, maghrib);
-        }
-    }, 1000);
+    }
+}, 10000);
+
+    // TIMER B: Update UI & Countdown (Tiap 1 Detik - Ringan)
+setInterval(() => {
+    const now = new Date();
+    
+    // 1. Update Countdown Maghrib (Hanya pengurangan, sangat ringan)
+    const countEl = document.getElementById('countdownMaghrib');
+    if (countEl && typeof getCountdownMaghrib === 'function') {
+        const maghribData = hitungMaghrib(currentLat, currentLon);
+        countEl.innerText = getCountdownMaghrib(now, maghribData.decimal);
+    }
+
+    // 2. Update Countdown Ijtima (Fungsi Baru yang kita bahas tadi)
+    // Fungsi ini tidak boleh memanggil getLastIjtima(), tapi membaca GLOBAL_IJTIMA_DATA.next
+    updateLiveCountdown(); 
+    
+}, 1000);
 
     // TIMER C: Update Tanggal (Tiap 2 Detik)
     setInterval(() => {
