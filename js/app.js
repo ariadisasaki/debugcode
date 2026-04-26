@@ -2200,10 +2200,16 @@ function hitungHilal(lat, lon, customTime = null) {
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
   const illumination = Number(data.illumination) || 0;
-
-  // 5. HITUNG UMUR BULAN (AGE) DI SINI
-  // Rumus: (Waktu Sekarang - Waktu Ijtima) dalam jam
   const age = (now.getTime() - ijtima.getTime()) / 3600000;
+
+  // 🔥 UPDATE VARIABEL GLOBAL (Wajib agar renderUI tidak membaca data nol)
+  hilalDataFull = {
+    alt: alt,
+    azi: azi,
+    elo: elo,
+    age: age,
+    illumination: illumination
+  };
 
   // === UI ANGKA ===
   const set = (id, val) => {
@@ -2214,8 +2220,8 @@ function hitungHilal(lat, lon, customTime = null) {
   set("alt", alt.toFixed(2) + "°");
   set("azi", azi.toFixed(2) + "°");
   set("elo", elo.toFixed(2) + "°");
-  set("age", age.toFixed(1) + " jam"); // Menampilkan age hasil hitungan di atas
-  set("illum", illumination.toFixed(2) + "%");
+  set("age", age.toFixed(1) + " jam");
+  set("illum", (illumination * 100).toFixed(2) + "%"); // Pastikan dikali 100 jika desimal
 
   // === VISIBILITY ===
   const yallop = hitungVisibilitasYallop(alt, elo);
@@ -2274,7 +2280,7 @@ function hitungHilal(lat, lon, customTime = null) {
       }
     }
   }
-  return data;
+  return hilalDataFull;
 }
 
 // === DATA MATAHARI ===
