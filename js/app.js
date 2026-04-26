@@ -1823,7 +1823,7 @@ function updateLiveCountdown() {
     const teks = getCountdownIjtima(now, target);
 
     // 3. Tampilkan ke elemen UI (Replace ID sesuai HTML Anda)
-    const el = document.getElementById("menuju-ijtima"); 
+    const el = document.getElementById("countdownIjtima"); 
     if (el) el.innerText = teks;
 
     // 4. Logika Keamanan: Jika waktu sudah lewat, hitung ulang Ijtima
