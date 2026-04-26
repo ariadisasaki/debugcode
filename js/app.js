@@ -37,7 +37,10 @@ let hijriState = {
   locked: false
 };
 
-const KABAH_COORD = { lat: 21.4225, lon: 39.8262 };
+const KABAH_COORD = { lat: 21.4225, lng: 39.8262 };
+let azimuthKiblat = 0;
+let currentHeading = 0;
+let smoothHeading = 0;
 
 // Data ini dihitung sekali saja saat aplikasi dibuka
 let CACHED_IJTIMA = null; 
@@ -1582,41 +1585,30 @@ async function initApp(lat, lon) {
     if (!lat || !lon) return;
     locationInitialized = true;
 
-    console.log("🚀 Aplikasi Dimulai: Menginisialisasi fungsi pusat...");
+    console.log("🚀 Aplikasi Dimulai: Menginisialisasi Hilal, Sholat & Kiblat...");
 
-    // ============================================================
-    // A. INTEGRASI BARU: JADWAL SHOLAT & KOMPAS
-    // ============================================================
+    // 1. Jalankan Fitur Baru (Sholat & Kiblat)
     try {
-        // 1. Hitung sudut kiblat dari koordinat saat ini
-        const qibla = getQiblaAngle(lat, lon);
-        const qiblaText = document.getElementById('qibla-angle-text');
-        if (qiblaText) qiblaText.innerText = `Sudut Kiblat: ${qibla.toFixed(2)}°`;
-
-        // 2. Ambil jadwal sholat (API)
+        hitungKiblat(lat, lon);
         fetchPrayers(lat, lon);
-        
-        // 3. Siapkan tombol aktivasi kompas
-        setupCompass(qibla);
+        initKiblatOverlay(lat, lon);
     } catch (err) {
-        console.warn("Gagal memuat fitur sholat/kiblat:", err);
+        console.warn("Fitur tambahan gagal dimuat:", err);
     }
 
-    // B. Jalankan fungsi pendukung sekali di awal
+    // 2. Jalankan fungsi pendukung Hilal Checker
     try {
         if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(lat, lon);
         if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
     } catch (e) { 
-        console.warn("Beberapa fungsi pendukung gagal dimuat."); 
+        console.warn("Fungsi pendukung Hilal error."); 
     }
 
-    // C. Hitungan Pertama (Initial Calculation)
+    // 3. Hitungan Astronomi Awal
     if (!CACHED_IJTIMA) refreshIjtimaData();
     hilalDataFull = hitungHilal(lat, lon);
 
-    // ============================================================
-    // TIMER 1: Astronomi & Data (Tiap 10 Detik)
-    // ============================================================
+    // TIMER 1: Astronomi (10 Detik)
     setInterval(() => {
         if (currentLat && currentLon) {
             hilalDataFull = hitungHilal(currentLat, currentLon);
@@ -1624,9 +1616,7 @@ async function initApp(lat, lon) {
         }
     }, 10000);
 
-    // ============================================================
-    // TIMER 2: UI, AR, & Countdown (Tiap 1 Detik)
-    // ============================================================
+    // TIMER 2: UI Responsif (1 Detik)
     setInterval(() => {
         const now = new Date();
         const maghribData = typeof hitungMaghrib === 'function' ? 
@@ -1649,102 +1639,112 @@ async function initApp(lat, lon) {
         
     }, 1000);
 
-    // ============================================================
-    // TIMER 3: Kalender Hijriah (Tiap 2 Detik)
-    // ============================================================
+    // TIMER 3: Hijri Display (2 Detik)
     setInterval(() => {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
 
-    // D. Pemicu Visual Instan (SunCard tampil tanpa nunggu interval 10s)
+    // Eksekusi visual pertama kali
     setTimeout(() => {
       if (typeof updateSunCard === 'function') updateSunCard();
     }, 0); 
 }
 
-// === SUDUT KIBLAT ===
-function getQiblaAngle(userLat, userLon) {
-    const dLon = (KABAH_COORD.lon - userLon) * Math.PI / 180;
-    const latRad = userLat * Math.PI / 180;
-    const kabahLatRad = KABAH_COORD.lat * Math.PI / 180;
+// === OVERLAY KIBLAT ===
+function initKiblatOverlay(lat, lon) {
+    const ticksContainer = document.getElementById("ticks");
+    const labelsContainer = document.getElementById("directionLabels");
+    if (!ticksContainer || ticksContainer.children.length > 0) return; // Mencegah duplikasi
 
-    const y = Math.sin(dLon);
-    const x = Math.cos(latRad) * Math.tan(kabahLatRad) - Math.sin(latRad) * Math.cos(dLon);
-    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    // 1. Buat Piringan
+    const labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    for (let i = 0; i < 360; i += 5) {
+        const tick = document.createElement("div");
+        tick.className = `tick ${i % 30 === 0 ? 'large' : ''}`;
+        tick.style.transform = `rotate(${i}deg)`;
+        ticksContainer.appendChild(tick);
+    }
+    labels.forEach((label, index) => {
+        const div = document.createElement("div");
+        div.className = "direction-label";
+        div.innerText = label;
+        const angle = (index * 45) * Math.PI / 180;
+        div.style.left = `${50 + Math.sin(angle) * 42}%`;
+        div.style.top = `${50 - Math.cos(angle) * 42}%`;
+        labelsContainer.appendChild(div);
+    });
+
+    // 2. Event Klik Overlay
+    document.getElementById("btnKiblat").onclick = () => {
+        document.getElementById("overlayKiblat").style.display = "flex";
+        
+        // Sensor dengan Smoothing (Adzan Pro Logic)
+        window.addEventListener("deviceorientation", e => {
+            if (e.alpha === null) return;
+            currentHeading = 360 - e.alpha;
+            smoothHeading += (currentHeading - smoothHeading) * 0.1;
+
+            document.getElementById("compassDisk").style.transform = `rotate(${-smoothHeading}deg)`;
+            document.getElementById("qiblatLine").style.transform = `translate(-50%,-100%) rotate(${azimuthKiblat - smoothHeading}deg)`;
+            
+            const selisih = ((azimuthKiblat - smoothHeading + 540) % 360) - 180;
+            document.getElementById("selisihSudut").innerText = `Selisih Sudut : ${Math.abs(selisih).toFixed(1)}°`;
+            
+            const labelsAngin = ["Utara","Timur Laut","Timur","Tenggara","Selatan","Barat Daya","Barat","Barat Laut"];
+            const index = Math.round(smoothHeading / 45) % 8;
+            document.getElementById("arahMataAngin").innerText = labelsAngin[index];
+        });
+    };
+
+    document.getElementById("closeCompass").onclick = () => {
+        document.getElementById("overlayKiblat").style.display = "none";
+    };
 }
 
-// === AMBIL JAXWAL SHOLAT ===
+// === AMBIL JADWAL SHOLAT ===
+async function fetchPrayers(lat, lon) {
 async function fetchPrayers(lat, lon) {
     try {
-        // Menggunakan method=custom agar bisa memasukkan sudut Kemenag (Subuh: 20, Isya: 18)
-        const resp = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=custom&tune=0,0,0,0,0,0,0,0,0&methodSettings=20,null,18`);
-        const data = await resp.json();
-        const t = data.data.timings;
+        // Menggunakan method=20 (Kemenag RI)
+        const resp = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=20`);
+        const json = await resp.json();
+        const t = json.data.timings;
         
-        // Update UI
         document.getElementById('fajr').innerText = t.Fajr;
         document.getElementById('dhuhr').innerText = t.Dhuhr;
         document.getElementById('asr').innerText = t.Asr;
         document.getElementById('maghrib').innerText = t.Maghrib;
         document.getElementById('isha').innerText = t.Isha;
-        document.getElementById('tgl-sholat').innerText = data.data.date.readable;
+        
+        const tglEl = document.getElementById('tgl-sholat');
+        if (tglEl) tglEl.innerText = json.data.date.readable;
     } catch (e) { 
         console.error("Gagal ambil jadwal sholat:", e); 
     }
 }
 
-// === HANDLE ROTATION ===
-function handleRotate(e, qibla) {
-    // 1. Ambil heading (Arah Utara)
-    let heading = 0;
+// === HITUNG KIBLAT ===
+function hitungKiblat(lat, lon) {
+    const dLon = (KABAH_COORD.lng - lon) * Math.PI / 180;
+    const lat1 = lat * Math.PI / 180;
+    const lat2 = KABAH_COORD.lat * Math.PI / 180;
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
     
-    if (e.webkitCompassHeading) {
-        // Khusus iOS
-        heading = e.webkitCompassHeading;
-    } else if (e.alpha) {
-        // Android (Gunakan alpha tapi sering perlu dibalik)
-        // Jika masih terbalik 180, gunakan: heading = (360 - e.alpha)
-        heading = e.alpha; 
-    }
+    azimuthKiblat = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 
-    if (heading !== undefined) {
-        // 2. Hitung selisih: (Sudut Kiblat - Arah Utara HP)
-        // Jika jarum masih terbalik, tambahkan atau kurangi 180 di sini
-        let rotation = qibla - heading;
-        
-        // Normalisasi agar selalu di antara 0-360
-        rotation = (rotation + 360) % 360;
-
-        // 3. Terapkan rotasi ke elemen jarum
-        const arrow = document.getElementById('qibla-arrow');
-        if (arrow) {
-            arrow.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-        }
-    }
-}
-
-// === SETUP KOMPAS ===
-function setupCompass(qibla) {
-    const btn = document.getElementById('enableCompassBtn');
+    // Update info di modal
+    const aziEl = document.getElementById("azimuthKabah");
+    const distEl = document.getElementById("jarakKabah");
     
-    btn.onclick = () => {
-        const handleRotate = (e) => {
-            let heading = e.webkitCompassHeading || e.alpha;
-            if (heading !== undefined) {
-                const rotation = qibla - heading;
-                document.getElementById('qibla-arrow').style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-            }
-        };
-
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission().then(state => {
-                if (state === 'granted') window.addEventListener('deviceorientation', handleRotate);
-            });
-        } else {
-            window.addEventListener('deviceorientationabsolute', handleRotate);
-        }
-        btn.style.display = 'none'; // Sembunyikan tombol setelah aktif
-    };
+    if (aziEl) aziEl.innerText = `Azimuth Ka'bah : ${azimuthKiblat.toFixed(2)}°`;
+    if (distEl) {
+        const R = 6371; // Radius bumi
+        const dLat = (KABAH_COORD.lat - lat) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2)**2;
+        const jarak = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        distEl.innerText = `Jarak ke Ka'bah : ${jarak.toFixed(2)} Km`;
+    }
 }
 
 // === SENSOR ===
