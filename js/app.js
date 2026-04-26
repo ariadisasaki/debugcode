@@ -37,7 +37,7 @@ let hijriState = {
   locked: false
 };
 
-// Data ini dihitung sekali saja saat aplikasi dibuka
+// === CACHE IJTIMA ===
 let CACHED_IJTIMA = null; 
 function refreshIjtimaData() {
     // Panggil fungsi berat Anda hanya di sini
@@ -46,8 +46,26 @@ function refreshIjtimaData() {
 // Jalankan saat startup
 refreshIjtimaData();
 
+// === GLOBAL IJTIMA ===
+let GLOBAL_IJTIMA = {
+    last: null,
+    next: null
+};
+// Fungsi ini dijalankan HANYA saat aplikasi pertama kali dibuka 
+// atau saat waktu menunjukkan sudah melewati waktu 'next'
+function updateGlobalIjtima() {
+    console.log("🔄 Menghitung ulang data Ijtima (Sekali saja)...");
+    const last = getLastIjtima();
+    const next = getNextIjtima();
+    GLOBAL_IJTIMA.last = last;
+    GLOBAL_IJTIMA.next = next;
+}
+// Jalankan segera saat app dibuka
+updateGlobalIjtima();
+
 const SYNODIC_MONTH = 29.530588;
 const DAY_MS = 86400000;
+
 setInterval(() => {
   updateHijriDisplay();
 }, 2000);
@@ -1372,7 +1390,7 @@ function hitungHilalCore(lat, lon, customTime=null){
   const elo = Math.acos(cosElo) * deg;
 
   // Umur
-  const ijtima = getLastIjtima();
+  const ijtima = GLOBAL_IJTIMA.last;
   const age = ijtima ? Math.max(0, (now - ijtima) / 3600000) : 0;
 
   // Cahaya Bulan
@@ -1448,7 +1466,7 @@ function getHijriInsight(data, maghrib, now){
 
   const statusWaktu = jam < maghrib ? "Sebelum Maghrib" : "Setelah Maghrib";
   
-  const ijtimaNow = getLastIjtima();
+  const ijtimaNow = GLOBAL_IJTIMA.last;
   const ijtimaNext = getNextIjtima();
   
   const sudahIjtima = now >= ijtimaNow;
@@ -1790,6 +1808,28 @@ function getCountdownIjtima(now, target){
   const detik = Math.floor((diff % 60000)/1000);
 
   return `${jam} jam ${menit} menit ${detik} detik`;
+}
+
+// === UPDATE COUNTDOWN ===
+function updateLiveCountdown() {
+    const now = new Date();
+    const target = GLOBAL_IJTIMA_DATA.next;
+
+    // 1. Cek apakah target sudah terisi
+    if (!target) return;
+
+    // 2. Panggil fungsi hitung mundur lama Anda (getCountdownIjtima)
+    // Sekarang fungsi lama Anda jadi ringan karena 'target' diambil dari memori
+    const teks = getCountdownIjtima(now, target);
+
+    // 3. Tampilkan ke elemen UI (Replace ID sesuai HTML Anda)
+    const el = document.getElementById("menuju-ijtima"); 
+    if (el) el.innerText = teks;
+
+    // 4. Logika Keamanan: Jika waktu sudah lewat, hitung ulang Ijtima
+    if (now >= target) {
+        inisialisasiDataIjtima();
+    }
 }
 
 // === REFRACTION & PARALLAX ===
@@ -2583,7 +2623,7 @@ function updatePrediksiCard(){
 
   const now = new Date();
 
-  const ijtimaNow = getLastIjtima();
+  const ijtimaNow = GLOBAL_IJTIMA.last;
   const ijtimaNext = getNextIjtima();
 
   const sudahIjtima = now >= ijtimaNow;
@@ -2682,7 +2722,7 @@ function hitungSelisihHariMaghrib(start, now, lat, lon){
 
 // === HIJRI EPOCH ===
 function getHijriEpoch(){
-  const ijtima = getLastIjtima();
+  const ijtima = GLOBAL_IJTIMA.last;
 
   if(!ijtima){
     console.error("Ijtima tidak ditemukan");
