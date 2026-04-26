@@ -171,43 +171,47 @@
       </div>
     </div>
 
-    <div class="card">
-      <h3>🕋 Jadwal Sholat</h3>
-      <p id="tgl-sholat" style="font-size: 11px; color: var(--accent-gold); margin-top: -10px;">Memuat tanggal...</p>
-      <div class="prayer-grid">
-        <div class="prayer-box">
-          <span class="label">Subuh</span>
-          <span id="fajr" class="value">--:--</span>
+    <div id="overlayKiblat" class="overlay-compass">
+      <div class="compass-card">
+        <div class="compass-info-top">
+          <p id="compassLokasi">📍 Mencari lokasi...</p>
+          <p id="compassKoordinat" style="font-size: 11px; opacity: 0.6; margin-top: -10px;">0.00, 0.00</p>
+          <h2 id="arahMataAngin" style="margin: 15px 0 5px 0; color: #111827;">--</h2>
         </div>
-        <div class="prayer-box">
-          <span class="label">Dzuhur</span>
-          <span id="dhuhr" class="value">--:--</span>
+        <div class="compass-container">
+          <div id="compassDisk" class="compass-disk">
+            <div id="directionLabels" class="direction-labels"></div>
+            <div id="ticks" class="ticks"></div>
+          </div>
+          <div class="needle-pointer"></div>
+          <div id="qiblatLine" class="qiblat-line"></div>
         </div>
-        <div class="prayer-box">
-          <span class="label">Ashar</span>
-          <span id="asr" class="value">--:--</span>
+        <div class="compass-info">
+          <p id="jarakKabah">Jarak ke Ka'bah : - Km</p>
+          <p id="azimuthKabah" style="display: none;">Azimuth: -</p> <p id="selisihSudut" style="font-weight: bold; color: #16a34a;">Selisih Sudut : -°</p>
         </div>
-        <div class="prayer-box">
-          <span class="label">Maghrib</span>
-          <span id="maghrib" class="value">--:--</span>
-        </div>
-        <div class="prayer-box full">
-          <span class="label">Isya</span>
-          <span id="isha" class="value">--:--</span>
-        </div>
+        <button id="closeCompass" style="
+            margin-top: 20px;
+            padding: 10px 25px;
+            border-radius: 15px;
+            border: none;
+            background: #111827;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        ">❌ Tutup</button>
       </div>
     </div>
-    
-    <div class="card">
-      <h3>🧭 Kompas Kiblat</h3>
-      <div class="compass-wrapper">
-        <div class="compass-base">
-          <div id="qibla-arrow" class="qibla-pointer"></div>
-          <div class="mark north">U</div>
-        </div>
+    <div id="prayer-section" class="glass-card" style="margin-top: 20px; padding: 15px;">
+      <h3 style="margin-bottom: 15px; font-size: 16px;">📅 Jadwal Sholat</h3>
+      <div id="jadwal-sholat-container">
+        <div class="jadwal-item"><span>Subuh</span><span id="fajr">--:--</span></div>
+        <div class="jadwal-item"><span>Dzuhur</span><span id="dhuhr">--:--</span></div>
+        <div class="jadwal-item"><span>Ashar</span><span id="asr">--:--</span></div>
+        <div class="jadwal-item"><span>Maghrib</span><span id="maghrib">--:--</span></div>
+        <div class="jadwal-item"><span>Isya</span><span id="isha">--:--</span></div>
       </div>
-      <p id="qibla-angle-text" class="value" style="font-size: 13px;">Sudut Kiblat: --°</p>
-      <button id="enableCompassBtn" class="btn-action">Aktifkan Sensor Kompas</button>
+      <p id="tgl-sholat" style="font-size: 12px; opacity: 0.6; margin-top: 10px; text-align: center;">-- -- ----</p>
     </div>
 
     <div class="progress-container">
