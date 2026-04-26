@@ -1509,30 +1509,49 @@ tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
 
 // === GPS LOKASI ===
 function getLocation() {
+    // 1. Beri notifikasi ke UI bahwa proses pencarian lokasi dimulai
+    const lokasiEl = document.getElementById('lokasi');
+    if (lokasiEl) lokasiEl.innerText = "Mencari lokasi GPS...";
+
     navigator.geolocation.getCurrentPosition(async (p) => {
+        // Simpan ke variabel global
         currentLat = p.coords.latitude;
         currentLon = p.coords.longitude;
         
-        // Update koordinat dan alamat
-        updateAddress(currentLat, currentLon);
+        console.log(`📍 Lokasi Berhasil: ${currentLat}, ${currentLon}`);
 
+        // Update Alamat (Reverse Geocoding)
+        if (typeof updateAddress === 'function') {
+            updateAddress(currentLat, currentLon);
+        }
+
+        // Kunci pemanggilan initApp agar hanya jalan 1x saat startup
         if (!locationInitialized) {
             initApp(currentLat, currentLon);
+            locationInitialized = true; // Kunci segera
         }
     }, (err) => {
-        // Fallback jika GPS mati (Contoh: Selong, NTB)
+        console.warn("⚠️ GPS Gagal/Ditolak, menggunakan lokasi default.");
+        
+        // Fallback: Selong, NTB (Sesuai koordinat Anda)
         currentLat = -8.6522;
         currentLon = 116.5293;
         
-        const lokasiEl = document.getElementById('lokasi');
-        if (lokasiEl) lokasiEl.innerText = "GPS mati, memakai lokasi default";
+        if (lokasiEl) lokasiEl.innerText = "GPS tidak aktif, menggunakan lokasi default (Selong)";
         
-        updateAddress(currentLat, currentLon);
+        if (typeof updateAddress === 'function') {
+            updateAddress(currentLat, currentLon);
+        }
         
         if (!locationInitialized) {
             initApp(currentLat, currentLon);
+            locationInitialized = true; // Kunci segera
         }
-    }, { enableHighAccuracy: true, timeout: 15000 });
+    }, { 
+        enableHighAccuracy: true, 
+        timeout: 10000, // 10 detik cukup, 15 detik terlalu lama menunggu
+        maximumAge: 0 
+    });
 }
 
 async function updateAddress(lat, lon) {
