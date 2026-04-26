@@ -192,6 +192,45 @@
     <div id="insightCard" class="card insight-hidden">
       <div id="insight" class="insight-text"></div>
     </div>
+
+    <div class="card">
+      <h3>🕋 Jadwal Sholat</h3>
+      <p id="tgl-sholat" style="font-size: 11px; color: var(--accent-gold); margin-top: -10px;">Memuat tanggal...</p>
+      <div class="prayer-grid">
+        <div class="prayer-box">
+          <span class="label">Subuh</span>
+          <span id="fajr" class="value">--:--</span>
+        </div>
+        <div class="prayer-box">
+          <span class="label">Dzuhur</span>
+          <span id="dhuhr" class="value">--:--</span>
+        </div>
+        <div class="prayer-box">
+          <span class="label">Ashar</span>
+          <span id="asr" class="value">--:--</span>
+        </div>
+        <div class="prayer-box">
+          <span class="label">Maghrib</span>
+          <span id="maghrib" class="value">--:--</span>
+        </div>
+        <div class="prayer-box full">
+          <span class="label">Isya</span>
+          <span id="isha" class="value">--:--</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h3>🧭 Kompas Kiblat</h3>
+      <div class="compass-wrapper">
+        <div class="compass-base">
+          <div id="qibla-arrow" class="qibla-pointer"></div>
+          <div class="mark north">U</div>
+        </div>
+      </div>
+      <p id="qibla-angle-text" class="value" style="font-size: 13px;">Sudut Kiblat: --°</p>
+      <button id="enableCompassBtn" class="btn-action">Aktifkan Sensor Kompas</button>
+    </div>
     
     <!-- PLANETARIUM -->
     <div class="card">
