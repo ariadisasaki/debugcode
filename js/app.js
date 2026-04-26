@@ -1687,7 +1687,7 @@ function initSensor(){
     window.lastAlpha = lastAlpha;
 
     // === KIRIM KE AR ===
-    updateAR(lastAlpha, lastBeta, lastGamma);
+    /* updateAR(lastAlpha, lastBeta, lastGamma); */
   }
 
   // === EVENT UTAMA ===
@@ -2201,8 +2201,6 @@ function formatDecimalTime(decimal) {
     
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
-
-setInterval(updateSunCard, 10000);
 
 // === JALUR BULAN ===
 function generateHilalPath(lat, lon){
