@@ -1944,27 +1944,72 @@ function getCountdownMaghrib(now, maghrib){
 }
 
 // === RENDER UI ====
-function renderUI(){
-  let lat = currentLat || -8.6522;
-  let lon = currentLon || 116.5293;
+function renderUI() {
+  // Gunakan lokasi deteksi atau fallback ke Selong (sesuai koordinat di gambar Anda)
+  let lat = currentLat || -8.639577; 
+  let lon = currentLon || 116.536684;
 
-  // 🔥 CEK DATA SUDAH ADA BELUM
-  if(!hilalDataFull || !hilalDataFull.age){
-    document.getElementById('insight').innerHTML = "⏳ Mengambil data hilal...";
-  } else {
-    const now = new Date();
-    const maghribData = hitungMaghrib(currentLat, currentLon);
-    const maghrib = maghribData ? maghribData.decimal : 18;
-    
+  // 1. PASTIKAN DATA ASTRONOMI SUDAH TERHITUNG
+  if (!hilalDataFull || !hilalDataFull.age) {
+    const insightEl = document.getElementById('insight');
+    if (insightEl) insightEl.innerHTML = "⏳ Mengambil data astronomi...";
+    return; // Berhenti di sini jika data belum siap
+  }
+
+  // 2. UPDATE DATA HILAL (AZIMUTH, TINGGI, DLL)
+  const dataHilal = {
+    'azi': `${hilalDataFull.azimuth.toFixed(2)}°`,
+    'alt': `${hilalDataFull.altitude.toFixed(2)}°`,
+    'elo': `${hilalDataFull.elongation.toFixed(2)}°`,
+    'age': `${hilalDataFull.age.toFixed(1)} jam`,
+    'illum': `${(hilalDataFull.illumination * 100).toFixed(2)}%`
+  };
+
+  for (const [id, val] of Object.entries(dataHilal)) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  }
+
+  // 3. UPDATE DATA MATAHARI (JIKA FUNGSI hitungMatahari ADA)
+  if (typeof hitungMatahari === 'function') {
+    const sun = hitungMatahari(lat, lon);
+    document.getElementById('sun-azimuth').innerText = `${sun.azimuth.toFixed(2)}°`;
+    document.getElementById('sun-altitude').innerText = `${sun.altitude.toFixed(2)}°`;
+  }
+
+  // 4. UPDATE STATUS & VISIBILITAS (MABIMS 3-6.4)
+  const statusEl = document.getElementById("status");
+  if (statusEl) {
+    const isLolos = hilalDataFull.altitude >= 3 && hilalDataFull.elongation >= 6.4;
+    statusEl.innerHTML = isLolos 
+      ? "<span style='color:#4ade80'>✅ Memenuhi Kriteria MABIMS</span>" 
+      : "<span style='color:#f87171'>❌ Belum Memenuhi Kriteria MABIMS</span>";
+  }
+
+  // 5. UPDATE INSIGHT, COUNTDOWN & PROGRESS (KODE ANDA)
+  const now = new Date();
+  const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(lat, lon) : null;
+  const maghrib = maghribData ? maghribData.decimal : 18;
+  
+  if (typeof getHijriInsight === 'function') {
     const insight = getHijriInsight(hilalDataFull, maghrib, now);
     document.getElementById('insight').innerHTML = insight;
+  }
 
+  if (typeof getCountdownMaghrib === 'function') {
     const countdown = getCountdownMaghrib(now, maghrib);
     document.getElementById('countdownMaghrib').innerText = countdown;
-
-    const progress = getProgressToMaghrib(now, currentLat, currentLon);
-    document.getElementById('progressBar').style.width = progress + "%";
   }
+
+  if (typeof getProgressToMaghrib === 'function') {
+    const progress = getProgressToMaghrib(now, lat, lon);
+    const pBar = document.getElementById('progressBar');
+    if (pBar) pBar.style.width = progress + "%";
+  }
+  
+  // Update Teks Lokasi di Card Utama
+  const locEl = document.getElementById('loc');
+  if (locEl) locEl.innerText = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
 }
 
 // === PRELOAD HIJRI ===
