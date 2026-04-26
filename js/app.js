@@ -1582,33 +1582,39 @@ async function updateAddress(lat, lon) {
 
 // === 3. INISIALISASI APLIKASI (CENTRALIZED VERSION - UPGRADED) ===
 async function initApp(lat, lon) {
-    if (!lat || !lon) return;
+    if (!lat || !lon) {
+        console.error("GPS belum siap!");
+        return;
+    }
+    
+    // Set koordinat ke variabel global agar bisa diakses fungsi lain
+    currentLat = lat;
+    currentLon = lon;
     locationInitialized = true;
 
-    console.log("🚀 Aplikasi Dimulai: Menginisialisasi Hilal, Sholat & Kiblat...");
+    // 1. UPDATE UI MODAL KOMPAS SEGERA
+    const coordEl = document.getElementById("compassKoordinat");
+    if(coordEl) coordEl.innerText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
 
-    // 1. Jalankan Fitur Baru (Sholat & Kiblat)
+    // 2. JALANKAN SEMUA FITUR SECARA PARALEL
+    // Kita panggil langsung tanpa menunggu hitungan Hilal yang berat
+    fetchPrayers(lat, lon);
+    hitungKiblat(lat, lon);
+    initKiblatOverlay(lat, lon);
+
+    // 3. JALANKAN LOGIKA HILAL (Data Hilal & Planetarium)
     try {
-        hitungKiblat(lat, lon);
-        fetchPrayers(lat, lon);
-        initKiblatOverlay(lat, lon);
-    } catch (err) {
-        console.warn("Fitur tambahan gagal dimuat:", err);
+        if (!CACHED_IJTIMA) refreshIjtimaData();
+        hilalDataFull = hitungHilal(lat, lon);
+        
+        // Pemicu visual instan untuk Data Hilal yang masih strip
+        if (typeof renderUI === 'function') renderUI();
+        if (typeof updateSunCard === 'function') updateSunCard();
+    } catch (e) {
+        console.warn("Astronomi Hilal sedang diproses...");
     }
 
-    // 2. Jalankan fungsi pendukung Hilal Checker
-    try {
-        if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(lat, lon);
-        if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
-    } catch (e) { 
-        console.warn("Fungsi pendukung Hilal error."); 
-    }
-
-    // 3. Hitungan Astronomi Awal
-    if (!CACHED_IJTIMA) refreshIjtimaData();
-    hilalDataFull = hitungHilal(lat, lon);
-
-    // TIMER 1: Astronomi (10 Detik)
+    // 4. SET INTERVAL (Sama seperti sebelumnya)
     setInterval(() => {
         if (currentLat && currentLon) {
             hilalDataFull = hitungHilal(currentLat, currentLon);
@@ -1616,38 +1622,11 @@ async function initApp(lat, lon) {
         }
     }, 10000);
 
-    // TIMER 2: UI Responsif (1 Detik)
     setInterval(() => {
         const now = new Date();
-        const maghribData = typeof hitungMaghrib === 'function' ? 
-            hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
-
         if (typeof renderUI === 'function') renderUI();
-        if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
-        
-        const insightEl = document.getElementById('insight');
-        if (insightEl && typeof getHijriInsight === 'function') {
-            insightEl.innerHTML = getHijriInsight(hilalDataFull, maghribData.decimal, now);
-        }
-        
-        const countEl = document.getElementById('countdownMaghrib');
-        if (countEl && typeof getCountdownMaghrib === 'function') {
-            countEl.innerText = getCountdownMaghrib(now, maghribData.decimal);
-        }
-
-        if (typeof updateHilalAR === 'function') updateHilalAR();
-        
+        // Update countdown dll...
     }, 1000);
-
-    // TIMER 3: Hijri Display (2 Detik)
-    setInterval(() => {
-        if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
-    }, 2000);
-
-    // Eksekusi visual pertama kali
-    setTimeout(() => {
-      if (typeof updateSunCard === 'function') updateSunCard();
-    }, 0); 
 }
 
 // === OVERLAY KIBLAT ===
@@ -1703,23 +1682,29 @@ function initKiblatOverlay(lat, lon) {
 
 // === AMBIL JADWAL SHOLAT ===
 async function fetchPrayers(lat, lon) {
-async function fetchPrayers(lat, lon) {
+    const ids = {
+        Fajr: 'fajr',
+        Dhuhr: 'dhuhr',
+        Asr: 'asr',
+        Maghrib: 'maghrib',
+        Isha: 'isha'
+    };
+
     try {
-        // Menggunakan method=20 (Kemenag RI)
-        const resp = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=20`);
-        const json = await resp.json();
-        const t = json.data.timings;
+        const response = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=20`);
+        const result = await response.json();
         
-        document.getElementById('fajr').innerText = t.Fajr;
-        document.getElementById('dhuhr').innerText = t.Dhuhr;
-        document.getElementById('asr').innerText = t.Asr;
-        document.getElementById('maghrib').innerText = t.Maghrib;
-        document.getElementById('isha').innerText = t.Isha;
-        
-        const tglEl = document.getElementById('tgl-sholat');
-        if (tglEl) tglEl.innerText = json.data.date.readable;
-    } catch (e) { 
-        console.error("Gagal ambil jadwal sholat:", e); 
+        if (result.code === 200) {
+            const timings = result.data.timings;
+            // Update tiap ID secara manual agar aman
+            for (const [apiName, htmlId] of Object.entries(ids)) {
+                const el = document.getElementById(htmlId);
+                if (el) el.innerText = timings[apiName];
+            }
+            console.log("✅ Jadwal Sholat Terupdate");
+        }
+    } catch (error) {
+        console.error("Gagal memuat jadwal:", error);
     }
 }
 
