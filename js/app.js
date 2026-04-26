@@ -1676,10 +1676,12 @@ function getQiblaAngle(userLat, userLon) {
 // === AMBIL JAXWAL SHOLAT ===
 async function fetchPrayers(lat, lon) {
     try {
-        const resp = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=2`);
+        // Menggunakan method=custom agar bisa memasukkan sudut Kemenag (Subuh: 20, Isya: 18)
+        const resp = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=custom&tune=0,0,0,0,0,0,0,0,0&methodSettings=20,null,18`);
         const data = await resp.json();
         const t = data.data.timings;
         
+        // Update UI
         document.getElementById('fajr').innerText = t.Fajr;
         document.getElementById('dhuhr').innerText = t.Dhuhr;
         document.getElementById('asr').innerText = t.Asr;
@@ -1688,6 +1690,36 @@ async function fetchPrayers(lat, lon) {
         document.getElementById('tgl-sholat').innerText = data.data.date.readable;
     } catch (e) { 
         console.error("Gagal ambil jadwal sholat:", e); 
+    }
+}
+
+// === HANDLE ROTATION ===
+function handleRotate(e, qibla) {
+    // 1. Ambil heading (Arah Utara)
+    let heading = 0;
+    
+    if (e.webkitCompassHeading) {
+        // Khusus iOS
+        heading = e.webkitCompassHeading;
+    } else if (e.alpha) {
+        // Android (Gunakan alpha tapi sering perlu dibalik)
+        // Jika masih terbalik 180, gunakan: heading = (360 - e.alpha)
+        heading = e.alpha; 
+    }
+
+    if (heading !== undefined) {
+        // 2. Hitung selisih: (Sudut Kiblat - Arah Utara HP)
+        // Jika jarum masih terbalik, tambahkan atau kurangi 180 di sini
+        let rotation = qibla - heading;
+        
+        // Normalisasi agar selalu di antara 0-360
+        rotation = (rotation + 360) % 360;
+
+        // 3. Terapkan rotasi ke elemen jarum
+        const arrow = document.getElementById('qibla-arrow');
+        if (arrow) {
+            arrow.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+        }
     }
 }
 
