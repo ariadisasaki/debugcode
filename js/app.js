@@ -1587,34 +1587,41 @@ async function initApp(lat, lon) {
         return;
     }
     
-    // Set koordinat ke variabel global agar bisa diakses fungsi lain
+    // 1. SET STATE GLOBAL SEGERA
     currentLat = lat;
     currentLon = lon;
     locationInitialized = true;
 
-    // 1. UPDATE UI MODAL KOMPAS SEGERA
+    // 2. PASTIKAN CACHE IJTIMA TERISI (Penting untuk hitungan Age/Umur)
+    if (!CACHED_IJTIMA) {
+        refreshIjtimaData();
+    }
+
+    // 3. UPDATE KOORDINAT DI MODAL KOMPAS
     const coordEl = document.getElementById("compassKoordinat");
     if(coordEl) coordEl.innerText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
 
-    // 2. JALANKAN SEMUA FITUR SECARA PARALEL
-    // Kita panggil langsung tanpa menunggu hitungan Hilal yang berat
-    fetchPrayers(lat, lon);
-    hitungKiblat(lat, lon);
-    initKiblatOverlay(lat, lon);
-
-    // 3. JALANKAN LOGIKA HILAL (Data Hilal & Planetarium)
+    // 4. JALANKAN PROSES HITUNG & AMBIL DATA (PARALEL)
+    // Gunakan await pada fungsi hitung agar hilalDataFull terisi sebelum render
     try {
-        if (!CACHED_IJTIMA) refreshIjtimaData();
-        hilalDataFull = hitungHilal(lat, lon);
+        // Hitung Data Astronomi Utama
+        hilalDataFull = hitungHilal(lat, lon); 
         
-        // Pemicu visual instan untuk Data Hilal yang masih strip
+        // Ambil data API & Inisialisasi Kompas (Background)
+        fetchPrayers(lat, lon);
+        hitungKiblat(lat, lon);
+        initKiblatOverlay(lat, lon);
+
+        // 5. PEMICU VISUAL INSTAN (Hapus status "Memuat")
         if (typeof renderUI === 'function') renderUI();
         if (typeof updateSunCard === 'function') updateSunCard();
+        
+        console.log("🚀 UI Initialized Successfully");
     } catch (e) {
-        console.warn("Astronomi Hilal sedang diproses...");
+        console.error("Gagal inisialisasi data:", e);
     }
 
-    // 4. SET INTERVAL (Sama seperti sebelumnya)
+    // 6. INTERVAL UPDATE (Setiap 10 detik untuk data berat)
     setInterval(() => {
         if (currentLat && currentLon) {
             hilalDataFull = hitungHilal(currentLat, currentLon);
@@ -1622,10 +1629,9 @@ async function initApp(lat, lon) {
         }
     }, 10000);
 
+    // 7. INTERVAL UI (Setiap 1 detik untuk jam/countdown)
     setInterval(() => {
-        const now = new Date();
         if (typeof renderUI === 'function') renderUI();
-        // Update countdown dll...
     }, 1000);
 }
 
