@@ -1644,6 +1644,9 @@ async function initApp(lat, lon) {
     setInterval(() => {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
+    setTimeout(() => {
+      updateSunCard();
+    }, 0); 
 }
 
 // === SENSOR ===
