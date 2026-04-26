@@ -1575,78 +1575,142 @@ async function updateAddress(lat, lon) {
     }
 }
 
-// === 3. INISIALISASI APLIKASI (CENTRALIZED VERSION) ===
+// === 3. INISIALISASI APLIKASI (CENTRALIZED VERSION - UPGRADED) ===
 async function initApp(lat, lon) {
     if (!lat || !lon) return;
     locationInitialized = true;
 
     console.log("🚀 Aplikasi Dimulai: Menginisialisasi fungsi pusat...");
 
-    // A. Jalankan fungsi pendukung sekali di awal
+    // ============================================================
+    // A. INTEGRASI BARU: JADWAL SHOLAT & KOMPAS
+    // ============================================================
+    try {
+        // 1. Hitung sudut kiblat dari koordinat saat ini
+        const qibla = getQiblaAngle(lat, lon);
+        const qiblaText = document.getElementById('qibla-angle-text');
+        if (qiblaText) qiblaText.innerText = `Sudut Kiblat: ${qibla.toFixed(2)}°`;
+
+        // 2. Ambil jadwal sholat (API)
+        fetchPrayers(lat, lon);
+        
+        // 3. Siapkan tombol aktivasi kompas
+        setupCompass(qibla);
+    } catch (err) {
+        console.warn("Gagal memuat fitur sholat/kiblat:", err);
+    }
+
+    // B. Jalankan fungsi pendukung sekali di awal
     try {
         if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(lat, lon);
         if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
     } catch (e) { 
-        console.warn("Beberapa fungsi pendukung gagal dimuat, aplikasi tetap berjalan."); 
+        console.warn("Beberapa fungsi pendukung gagal dimuat."); 
     }
 
-    // B. Hitungan Pertama (Initial Calculation)
-    // Pastikan CACHED_IJTIMA sudah ada agar hitungHilal tidak lag
+    // C. Hitungan Pertama (Initial Calculation)
     if (!CACHED_IJTIMA) refreshIjtimaData();
     hilalDataFull = hitungHilal(lat, lon);
 
     // ============================================================
     // TIMER 1: Astronomi & Data (Tiap 10 Detik)
-    // Fokus pada komputasi berat agar tidak membebani frame rate.
     // ============================================================
     setInterval(() => {
         if (currentLat && currentLon) {
             hilalDataFull = hitungHilal(currentLat, currentLon);
-            // Update posisi matahari untuk data card
             if (typeof updateSunCard === 'function') updateSunCard();
         }
     }, 10000);
 
     // ============================================================
-    // TIMER 2: UI, AR, & Countdown (Tiap 1 Detik / 1000ms)
-    // Fokus pada responsivitas visual bagi pengguna.
+    // TIMER 2: UI, AR, & Countdown (Tiap 1 Detik)
     // ============================================================
     setInterval(() => {
         const now = new Date();
         const maghribData = typeof hitungMaghrib === 'function' ? 
             hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
 
-        // 1. Update UI Prediksi & Hilal
         if (typeof renderUI === 'function') renderUI();
         if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
         
-        // 2. Update Insight Text & Progress
         const insightEl = document.getElementById('insight');
         if (insightEl && typeof getHijriInsight === 'function') {
             insightEl.innerHTML = getHijriInsight(hilalDataFull, maghribData.decimal, now);
         }
         
-        // 3. Update Countdown Maghrib
         const countEl = document.getElementById('countdownMaghrib');
         if (countEl && typeof getCountdownMaghrib === 'function') {
             countEl.innerText = getCountdownMaghrib(now, maghribData.decimal);
         }
 
-        // 4. Update AR Marker & Path (Smooth movement)
         if (typeof updateHilalAR === 'function') updateHilalAR();
         
     }, 1000);
 
     // ============================================================
     // TIMER 3: Kalender Hijriah (Tiap 2 Detik)
-    // Update display tanggal secara berkala.
     // ============================================================
     setInterval(() => {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
+
+    // D. Pemicu Visual Instan (SunCard tampil tanpa nunggu interval 10s)
     setTimeout(() => {
-      updateSunCard();
+      if (typeof updateSunCard === 'function') updateSunCard();
     }, 0); 
+}
+
+// === SUDUT KIBLAT ===
+function getQiblaAngle(userLat, userLon) {
+    const dLon = (KABAH_COORD.lon - userLon) * Math.PI / 180;
+    const latRad = userLat * Math.PI / 180;
+    const kabahLatRad = KABAH_COORD.lat * Math.PI / 180;
+
+    const y = Math.sin(dLon);
+    const x = Math.cos(latRad) * Math.tan(kabahLatRad) - Math.sin(latRad) * Math.cos(dLon);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+// === AMBIL JAXWAL SHOLAT ===
+async function fetchPrayers(lat, lon) {
+    try {
+        const resp = await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=2`);
+        const data = await resp.json();
+        const t = data.data.timings;
+        
+        document.getElementById('fajr').innerText = t.Fajr;
+        document.getElementById('dhuhr').innerText = t.Dhuhr;
+        document.getElementById('asr').innerText = t.Asr;
+        document.getElementById('maghrib').innerText = t.Maghrib;
+        document.getElementById('isha').innerText = t.Isha;
+        document.getElementById('tgl-sholat').innerText = data.data.date.readable;
+    } catch (e) { 
+        console.error("Gagal ambil jadwal sholat:", e); 
+    }
+}
+
+// === SETUP KOMPAS ===
+function setupCompass(qibla) {
+    const btn = document.getElementById('enableCompassBtn');
+    
+    btn.onclick = () => {
+        const handleRotate = (e) => {
+            let heading = e.webkitCompassHeading || e.alpha;
+            if (heading !== undefined) {
+                const rotation = qibla - heading;
+                document.getElementById('qibla-arrow').style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+            }
+        };
+
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(state => {
+                if (state === 'granted') window.addEventListener('deviceorientation', handleRotate);
+            });
+        } else {
+            window.addEventListener('deviceorientationabsolute', handleRotate);
+        }
+        btn.style.display = 'none'; // Sembunyikan tombol setelah aktif
+    };
 }
 
 // === SENSOR ===
