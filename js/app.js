@@ -37,6 +37,8 @@ let hijriState = {
   locked: false
 };
 
+const KABAH_COORD = { lat: 21.4225, lon: 39.8262 };
+
 // Data ini dihitung sekali saja saat aplikasi dibuka
 let CACHED_IJTIMA = null; 
 function refreshIjtimaData() {
