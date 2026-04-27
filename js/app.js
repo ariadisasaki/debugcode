@@ -1719,7 +1719,7 @@ async function getMagneticDeclination(lat, lon){
     }
 
   } catch(e){
-    console.warn("API gagal, pakai offline");
+    console.warn("Pemanggilan API deklinasi gagal, diubah pakai offline");
   }
 
   // 🔥 FALLBACK OFFLINE
@@ -2325,17 +2325,34 @@ function startMaghribWatcher() {
     }, 1000); 
 }
 
-// === MINTA UPDATE HIJRI ===
+// === MINTA UPDATE HIJRI (TANPA DUPLIKASI) ===
 function requestHijriUpdate() {
-    console.log("🔄 Melakukan update kalender Hijriah...");
+    const now = new Date();
+    // Buat kunci unik berdasarkan tanggal hari ini (contoh: "2026-04-27")
+    const dateKey = now.toISOString().split('T')[0]; 
+    const lastTriggered = localStorage.getItem("lastHijriNotifDate");
+
+    // 1. CEK: Jika sudah pernah dikirim hari ini, jangan kirim lagi
+    if (lastTriggered === dateKey) {
+        console.log("✅ Update Hijri sudah dilakukan hari ini. Melewati notifikasi.");
+        
+        // Tetap update tampilan UI agar tanggalnya benar, tapi tanpa notifikasi pop-up
+        if (typeof updateHijriDisplay === "function") updateHijriDisplay();
+        return; 
+    }
+
+    // 2. JALANKAN UPDATE JIKA BELUM PERNAH
+    console.log("🔄 Update hari baru terdeteksi. Mengirim notifikasi...");
     
-    // 1. Update Tampilan Kalender
     if (typeof updateHijriDisplay === "function") {
         updateHijriDisplay();
     }
 
-    // 2. Kirim Notifikasi via Fungsi Pusat
+    // Tampilkan notifikasi pop-up
     showNotif("Waktu Maghrib", "Tanggal Hijriah telah berganti ke hari baru.");
+
+    // Simpan ke LocalStorage agar tidak muncul lagi hari ini
+    localStorage.setItem("lastHijriNotifDate", dateKey);
 
     // 3. Log Audit
     if (typeof currentLat !== "undefined" && currentLat) {
