@@ -3014,18 +3014,18 @@ function debugHilal() {
         });
         console.groupEnd();
 
-        // 2. Indikator Visual Cepat
-        const statusWarna = (moon.alt >= 3 && moon.elo >= 6.4) ? 'color: #2ecc71' : 'color: #e74c3c';
-        console.log(`%c KESIMPULAN: ${ (moon.alt >= 3 && moon.elo >= 6.4) ? "SUDAH IMKAN RUKYAT" : "BELUM IMKAN RUKYAT" }`, `font-weight: bold; font-size: 12px; ${statusWarna}`);
-        console.log("%c Ketik 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
-
-        // 3. RIWAYAT AUDIT (Otomatis tampil di bawah Dashboard)
+        // 2. RIWAYAT AUDIT (Otomatis tampil di bawah Dashboard)
         const auditData = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
         if (auditData.length > 0) {
             console.log("%c 📑 RIWAYAT AUDIT TERAKHIR ", "background: #27ae60; color: white; padding: 2px; font-weight: bold;");
             console.table(auditData);
         }
 
+        // 3. Indikator Visual Cepat
+        const statusWarna = (moon.alt >= 3 && moon.elo >= 6.4) ? 'color: #2ecc71' : 'color: #e74c3c';
+        console.log(`%c KESIMPULAN: ${ (moon.alt >= 3 && moon.elo >= 6.4) ? "SUDAH IMKAN RUKYAT" : "BELUM IMKAN RUKYAT" }`, `font-weight: bold; font-size: 12px; ${statusWarna}`);
+        console.log("%c Ketik 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
+      
     } catch (err) {
         console.error("❌ Debug Dashboard Crash:", err);
     }
@@ -3050,4 +3050,4 @@ window.stopDebug = function() {
 };
 
 // 4. JALANKAN INTERVAL (Setiap 30 detik)
-let debugInterval = setInterval(debugHilal, 5000);
+let debugInterval = setInterval(debugHilal, 30000);
