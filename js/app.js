@@ -2970,7 +2970,7 @@ function debugHilal() {
     const now = new Date();
 
     try {
-        // Pengambilan data (Gunakan fallback agar tidak crash)
+        // 1. Pengambilan data (Gunakan fallback agar tidak crash)
         const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
         const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { alt: 0, azi: 0 };
         const moon = hilalDataFull; // Mengambil state global
@@ -3014,10 +3014,17 @@ function debugHilal() {
         });
         console.groupEnd();
 
-        // Indikator Visual Cepat
+        // 2. Indikator Visual Cepat
         const statusWarna = (moon.alt >= 3 && moon.elo >= 6.4) ? 'color: #2ecc71' : 'color: #e74c3c';
         console.log(`%c KESIMPULAN: ${ (moon.alt >= 3 && moon.elo >= 6.4) ? "SUDAH IMKAN RUKYAT" : "BELUM IMKAN RUKYAT" }`, `font-weight: bold; font-size: 12px; ${statusWarna}`);
-        console.log("%c Ketik 'checkAudit()' untuk history atau 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
+        console.log("%c Ketik 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
+
+        // 3. RIWAYAT AUDIT (Otomatis tampil di bawah Dashboard)
+        const auditData = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
+        if (auditData.length > 0) {
+            console.log("%c 📑 RIWAYAT AUDIT TERAKHIR ", "background: #27ae60; color: white; padding: 2px; font-weight: bold;");
+            console.table(auditData);
+        }
 
     } catch (err) {
         console.error("❌ Debug Dashboard Crash:", err);
