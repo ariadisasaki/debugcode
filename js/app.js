@@ -3014,6 +3014,10 @@ function debugHilal() {
         });
         console.groupEnd();
 
+        // 1. Kesimpulan
+        const statusWarna = (moon.alt >= 3 && moon.elo >= 6.4) ? 'color: #2ecc71' : 'color: #e74c3c';
+        console.log(`%c KESIMPULAN: ${ (moon.alt >= 3 && moon.elo >= 6.4) ? "SUDAH IMKAN RUKYAT" : "BELUM IMKAN RUKYAT" }`, `font-weight: bold; font-size: 12px; ${statusWarna}`);
+        
         // 2. RIWAYAT AUDIT (Otomatis tampil di bawah Dashboard)
         const auditData = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
         if (auditData.length > 0) {
@@ -3021,9 +3025,7 @@ function debugHilal() {
             console.table(auditData);
         }
 
-        // 3. Indikator Visual Cepat
-        const statusWarna = (moon.alt >= 3 && moon.elo >= 6.4) ? 'color: #2ecc71' : 'color: #e74c3c';
-        console.log(`%c KESIMPULAN: ${ (moon.alt >= 3 && moon.elo >= 6.4) ? "SUDAH IMKAN RUKYAT" : "BELUM IMKAN RUKYAT" }`, `font-weight: bold; font-size: 12px; ${statusWarna}`);
+        // 3. Stop Debugging
         console.log("%c Ketik 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
       
     } catch (err) {
