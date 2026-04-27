@@ -3043,5 +3043,4 @@ window.stopDebug = function() {
 };
 
 // 4. JALANKAN INTERVAL (Setiap 30 detik)
-let debugInterval = setInterval(debugHilal, 30000);
-
+let debugInterval = setInterval(debugHilal, 5000);
