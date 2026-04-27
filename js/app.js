@@ -3025,6 +3025,6 @@ window.stopDebug = function() {
     }
 };
 
-// 4. JALANKAN INTERVAL (Setiap 5 detik saat pengembangan)
-let debugInterval = setInterval(debugHilal, 5000);
+// 4. JALANKAN INTERVAL (Setiap 30 detik)
+let debugInterval = setInterval(debugHilal, 30000);
 
