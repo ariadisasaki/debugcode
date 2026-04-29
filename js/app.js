@@ -1376,6 +1376,9 @@ function hitungMaghrib(lat, lon, customDate=null){
 
 // ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
+    if (!data || data.yallop === "N/A" || data.yallop === undefined) {
+      return null; 
+    }
     // 1. Ambil & Validasi Data
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
@@ -1790,42 +1793,65 @@ function getCountdownMaghrib(now, maghrib){
   return `${jam} jam ${menit} menit lagi menuju Maghrib`;
 }
 
-// === RENDER UI ====
+// === RENDER UI (VERSI STABIL & ANTI-GLITCH) ====
 function renderUI() {
-    // 1. Pastikan koordinat tersedia (gunakan satu sumber kebenaran)
-    // Jika currentLat kosong, jangan render dulu agar tidak terjadi glitch angka lompat
+    // 1. Pastikan koordinat tersedia
     if (!currentLat || !currentLon) {
-        document.getElementById('insight').innerHTML = "⏳ Menunggu koordinat GPS...";
+        const insightEl = document.getElementById('insight');
+        if (insightEl && insightEl.innerHTML !== "⏳ Menunggu koordinat GPS...") {
+            insightEl.innerHTML = "⏳ Menunggu koordinat GPS...";
+        }
         return;
     }
 
-    // 2. Cek data Hilal (sudah dihitung oleh interval utama belum?)
-    if (!hilalDataFull || typeof hilalDataFull.age === 'undefined') {
-        document.getElementById('insight').innerHTML = "⏳ Mengkalkulasi data astronomi...";
+    // 2. Cek data Hilal (Gunakan pengecekan ketat pada yallop)
+    // Jika hilalDataFull belum ada atau masih N/A, kita jangan render dulu
+    if (!hilalDataFull || hilalDataFull.yallop === "N/A" || hilalDataFull.yallop === undefined) {
+        // Jangan timpa innerHTML di sini agar teks "Mengkalkulasi" tidak berkedip
         return;
     }
 
     const now = new Date();
 
     try {
-        // 3. Ambil data Maghrib (hanya panggil jika fungsinya ada)
+        // 3. Ambil data Maghrib
         const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
         const maghrib = maghribData.decimal;
 
-        // 4. Update UI Insight (kirim hilalDataFull yang sudah matang)
-        // Pastikan Anda sudah mengupdate fungsi getHijriInsight seperti saran sebelumnya
+        // 4. Update UI Insight (Hanya jika konten valid)
         const insightHTML = getHijriInsight(hilalDataFull, maghrib, now);
         const insightElement = document.getElementById('insight');
-        if (insightElement) insightElement.innerHTML = insightHTML;
+        
+        // --- LOGIKA PENGUNCIAN ---
+        if (insightElement && insightHTML !== null) {
+            // Hanya update jika konten berbeda (mencegah flicker)
+            if (insightElement.innerHTML !== insightHTML) {
+                insightElement.innerHTML = insightHTML;
+            }
 
-        // 5. Update Elemen Penunjang lainnya
+            // --- PASTIKAN CARD HIDDEN TAMPIL ---
+            // Jika data sudah valid, kita pastikan Card ditampilkan
+            const cardHidden = document.getElementById('cardHidden'); // Pastikan ID sesuai di HTML Anda
+            if (cardHidden && cardHidden.style.display !== 'block') {
+                cardHidden.style.display = 'block';
+            }
+        }
+
+        // 5. Update Elemen Penunjang (Countdown & Progress)
         const countdownStr = typeof getCountdownMaghrib === 'function' ? getCountdownMaghrib(now, maghrib) : "--:--";
         const countdownElement = document.getElementById('countdownMaghrib');
-        if (countdownElement) countdownElement.innerText = countdownStr;
+        if (countdownElement && countdownElement.innerText !== countdownStr) {
+            countdownElement.innerText = countdownStr;
+        }
 
         const progressVal = typeof getProgressToMaghrib === 'function' ? getProgressToMaghrib(now, currentLat, currentLon) : 0;
         const progressBar = document.getElementById('progressBar');
-        if (progressBar) progressBar.style.width = progressVal + "%";
+        if (progressBar) {
+            const widthStr = progressVal + "%";
+            if (progressBar.style.width !== widthStr) {
+                progressBar.style.width = widthStr;
+            }
+        }
 
     } catch (err) {
         console.error("❌ Render UI Error:", err);
@@ -2038,11 +2064,26 @@ function hitungHilal(lat, lon, customTime = null) {
   set("illum", illumination.toFixed(2) + "%");
 
   // === VISIBILITY ===
-  const yallop = hitungVisibilitasYallop(alt, elo);
-  const odeh = hitungVisibilitasOdeh(alt, elo);
-  set("yallop", yallop);
-  set("odeh", odeh);
-  set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
+  // 1. Hitung dulu secara lokal (simpan di variabel sementara)
+  const yallopVal = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(alt, elo) : "N/A";
+  const odehVal = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(alt, elo) : "N/A";
+  const vScoreVal = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(alt, elo, age) : 0;
+  
+  // 2. Update UI angka satu per satu (untuk tabel/tampilan cepat)
+  set("yallop", yallopVal);
+  set("odeh", odehVal);
+  set("visibility", vScoreVal + "%");
+  
+  // 3. UPDATE GLOBAL STATE (Kunci Utama Anti-Glitch)
+  // Gunakan nama variabel yang sama dengan yang dihitung di atas
+  hilalDataFull = {
+    ...dataCore, // Pastikan dataCore (alt, azi, elo) sudah ada
+    yallop: yallopVal,
+    odeh: odehVal,
+    vScore: vScoreVal,
+    age: age,
+    illumination: illumination
+  };
 
   // === REFERENSI WAKTU ===
   // Menggunakan ijtima dari cache, bukan panggil fungsi baru
