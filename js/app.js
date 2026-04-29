@@ -29,7 +29,18 @@ let lastTriggeredDate = "";
 let locationInitialized = false;
 let currentLat = null;
 let currentLon = null;
-let hilalDataFull = { alt: 0, azi: 0, elo: 0, age: 0, illumination: 0 };
+let hilalDataFull = { 
+    alt: 0, 
+    azi: 0, 
+    elo: 0, 
+    age: 0, 
+    illumination: 0,
+    yallop: "N/A", // Tambahkan ini
+    odeh: "N/A",   // Tambahkan ini
+    vScore: 0,     // Tambahkan ini
+    lastIjtima: null 
+};
+
 let hijriState = {
   d: 1,
   m: 1,
