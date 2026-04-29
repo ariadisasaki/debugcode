@@ -2063,28 +2063,32 @@ function hitungHilal(lat, lon, customTime = null) {
   set("illum", illumination.toFixed(2) + "%");
 
   // === VISIBILITY ===
-  // 1. Hitung dulu secara lokal (simpan di variabel sementara)
-  const yallopVal = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(alt, elo) : "N/A";
-  const odehVal = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(alt, elo) : "N/A";
-  const vScoreVal = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(alt, elo, age) : 0;
-  
-  // 2. Update UI angka satu per satu (untuk tabel/tampilan cepat)
-  set("yallop", yallopVal);
-  set("odeh", odehVal);
-  set("visibility", vScoreVal + "%");
-  
-  // 3. UPDATE GLOBAL STATE (DIPERBAIKI)
-  // Gunakan 'data' (sesuai variabel di atas), bukan 'dataCore'
-  hilalDataFull = {
-    alt: alt,
-    azi: azi,
-    elo: elo,
-    illumination: illumination,
-    yallop: yallopVal,
+  // 1. Pastikan angka sudah siap dan bertipe Number
+const altFix = Number(alt) || 0;
+const eloFix = Number(elo) || 0;
+const ageFix = Number(age) || 0;
+
+// 2. Hitung Visibilitas (Gunakan variabel Fix di atas)
+const yallopVal = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(altFix, eloFix) : "N/A";
+const odehVal = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(altFix, eloFix) : "N/A";
+const vScoreVal = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(altFix, eloFix, ageFix) : 0;
+
+// 3. Update UI Tabel (Langsung tampilkan)
+set("yallop", yallopVal);
+set("odeh", odehVal);
+set("visibility", vScoreVal + "%");
+
+// 4. UPDATE GLOBAL STATE (Inilah yang dibaca oleh getHijriInsight)
+hilalDataFull = {
+    alt: altFix,
+    azi: Number(azi) || 0,
+    elo: eloFix,
+    age: ageFix,
+    illumination: Number(illumination) || 0,
+    yallop: yallopVal, // Sekarang pasti berisi A, B, C, atau N/A
     odeh: odehVal,
-    age: age,
     vScore: vScoreVal
-  };
+};
   // Log ke konsol untuk memastikan data terisi (Hapus jika sudah lancar)
   console.log("Data Terupdate:", hilalDataFull.yallop, hilalDataFull.odeh);
 
