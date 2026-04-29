@@ -1374,68 +1374,80 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT =====
+// ===== HIJRI INSIGHT (VERSI STABIL & INFORMATIF) =====
 function getHijriInsight(data, maghrib, now) {
-  // 1. Ambil data dari parameter (pastikan data valid)
-  const alt = Number(data.alt) || 0;
-  const azi = Number(data.azi) || 0;
-  const elo = Number(data.elo) || 0;
-  const age = Number(data.age) || 0;
-  const illumination = Number(data.illumination) || 0;
+    // 1. Ambil data dengan proteksi (Default ke 0 atau "N/A" jika kosong)
+    const alt = Number(data.alt) || 0;
+    const azi = Number(data.azi) || 0;
+    const elo = Number(data.elo) || 0;
+    const age = Number(data.age) || 0;
+    const illum = Number(data.illumination) || 0;
+    const yallop = data.yallop || "N/A";
+    const odeh = data.odeh || "N/A";
+    const vScore = data.vScore || 0;
+    
+    // Ambil Ijtima dari cache atau gunakan 'now' sebagai fallback
+    const ijtimaTime = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) 
+                       ? CACHED_IJTIMA 
+                       : new Date();
 
-  // 2. Gunakan CACHED_IJTIMA (Jangan hitung ulang agar tidak lag/glitch)
-  const ijtimaNow = typeof CACHED_IJTIMA !== 'undefined' ? CACHED_IJTIMA : new Date();
-  
-  // 3. Logika Penjelasan Dinamis
-  const deskripsiAlt = alt > 0 
-    ? `<span style="color:#4ade80">Bulan sudah di atas ufuk dan berpotensi terlihat.</span>` 
-    : `<span style="color:#f87171">Bulan masih di bawah ufuk sehingga tidak mungkin terlihat.</span>`;
-  
-  return `
-🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}°<br>
-Menunjukkan posisi bulan dari horizon. 
-${alt > 0 ? "Bulan sudah di atas ufuk dan berpotensi terlihat." : "Bulan masih di bawah ufuk sehingga tidak mungkin terlihat."}
-<br><br>
+    // 2. Logika Narasi Dinamis Sederhana
+    const statusAlt = alt > 3 ? 
+        `<b style="color:#4ade80;">Sangat Baik (Sudah > 3°)</b>` : 
+        (alt > 0 ? `<b style="color:#fbbf24;">Rendah (Di bawah kriteria 3°)</b>` : `<b style="color:#f87171;">Negatif (Bawah Ufuk)</b>`);
 
-🧭 <b>Azimuth:</b> ${azi.toFixed(2)}°<br>
-Menunjukkan arah bulan dari utara (0° = Utara, 90° = Timur, 180° = Selatan, 270° = Barat).
-<br><br>
+    const statusElo = elo >= 6.4 ? 
+        `<span style="color:#4ade80;">Memenuhi syarat MABIMS (6.4°)</span>` : 
+        `<span style="color:#f87171;">Di bawah kriteria fisik hilal</span>`;
 
-📐 <b>Elongasi:</b> ${elo.toFixed(2)}°<br>
-Jarak sudut bulan terhadap matahari. 
-Semakin besar elongasi, semakin besar peluang hilal terlihat.
-<br><br>
+    // Mapping Kategori Yallop
+    const yallopMap = {
+        'A': 'Sangat Mudah (Mata Telanjang)',
+        'B': 'Mudah (Jika langit sangat cerah)',
+        'C': 'Butuh Alat Optik (Teleskop/Binokular)',
+        'D': 'Hanya dengan alat (Sangat sulit visual)',
+        'E': 'Mustahil terlihat secara visual',
+        'F': 'Bulan di bawah ufuk'
+    };
 
-💡 <b>Cahaya Bulan:</b> ${illumination.toFixed(2)}%<br>
-Menunjukkan fase bulan (semakin besar → semakin terang).
-<br><br>
+    // 3. Render HTML
+    return `
+    <div style="line-height: 1.6; color: #f1f5f9; font-size: 0.95em;">
+        <p>🔭 <b>Tinggi Hilal:</b> <span style="font-family:monospace;">${alt.toFixed(2)}°</span><br>
+        Status: ${statusAlt}</p>
 
-🌙 <b>Umur Bulan:</b> ${age.toFixed(1)} jam (~${(age/24).toFixed(2)} hari astronomi)<br><br>
+        <p>🧭 <b>Arah (Azimuth):</b> <span style="font-family:monospace;">${azi.toFixed(2)}°</span><br>
+        Bulan berada di arah <b>${getArahMataAngin(azi)}</b>. Gunakan sudut ini untuk orientasi teleskop.</p>
 
-<b>Perkiraan:</b><br>
-Sekitar ${(24 - (age % 24)).toFixed(1)} jam lagi menuju fase hari berikutnya. Perkiraan berdasarkan fase bulan, dapat berbeda dari waktu Maghrib lokal.
-<br><br>
+        <p>📐 <b>Elongasi & Cahaya:</b><br>
+        Jarak sudut: <b>${elo.toFixed(2)}°</b> (${statusElo}).<br>
+        Intensitas cahaya (Fraksi): <b>${illum.toFixed(2)}%</b>.</p>
 
-🔭 <b>Metode Yallop</b><br>
-Digunakan secara internasional untuk menentukan apakah hilal bisa terlihat.
-Kategori A–B mudah terlihat, sedangkan E berarti tidak mungkin terlihat.<br><br>
+        <p>🌙 <b>Umur Bulan:</b><br>
+        Sudah berjalan <b>${age.toFixed(1)} jam</b> sejak waktu Ijtima/Konjungsi.</p>
 
-🔭 <b>Metode Odeh</b><br>
-Metode modern yang mirip Yallop, digunakan dalam penelitian rukyat.
-Menunjukkan apakah hilal bisa dilihat dengan mata atau alat bantu.<br><br>
+        <hr style="border:0; border-top:1px solid #475569; margin:15px 0;">
 
-📊 <b>Visibility Score</b><br>
-Persentase peluang terlihatnya hilal berdasarkan tinggi, elongasi, dan umur bulan.
-Semakin tinggi nilainya, semakin besar kemungkinan hilal terlihat.<br><br>
+        <p>📊 <b>Kriteria Internasional:</b><br>
+        • <b>Yallop:</b> Kategori [${yallop}] - ${yallopMap[yallop] || "Mengevaluasi..."}<br>
+        • <b>Odeh:</b> ${odeh}<br>
+        • <b>V-Score:</b> ${vScore}% Peluang terlihat</p>
 
-🌑 <b>Ijtima (Konjungsi)</b><br>
-Adalah saat bulan dan matahari sejajar. Ini adalah awal fase bulan baru,
-tetapi hilal belum tentu langsung terlihat setelah ijtima.<br><br>
+        <p>🌑 <b>Ijtima Terakhir:</b><br>
+        Terjadi pada pukul <b>${ijtimaTime.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB</b>.</p>
 
-<b>Kesimpulan:</b><br>
-Penentuan awal bulan Hijriah tidak hanya berdasarkan ijtima,
-tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
-`;
+        <div style="border-left:4px solid #3b82f6; background:rgba(59,130,246,0.1); padding:10px; border-radius:5px; margin-top:10px;">
+            <b>Analisis Ringkas:</b><br>
+            ${alt > 3 && elo >= 6.4 ? 
+                "Secara teknis, hilal sudah memenuhi kriteria Imkanur Rukyat (3°/6.4°). Peluang terlihat sangat besar jika cuaca cerah." : 
+                "Hilal masih sangat sulit atau belum mungkin terlihat berdasarkan kriteria astronomis saat ini."}
+        </div>
+        
+        <p style="font-size:0.8em; color:#94a3b8; margin-top:15px; font-style:italic;">
+        *Keputusan resmi awal bulan tetap mengikuti hasil Sidang Isbat Pemerintah.
+        </p>
+    </div>
+    `;
 }
 
 // === GPS LOKASI ===
