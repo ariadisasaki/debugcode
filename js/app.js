@@ -1376,12 +1376,10 @@ function hitungMaghrib(lat, lon, customDate=null){
 
 // ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
+    // Penjaga: Jika data belum siap, jangan render dulu
     if (!data || typeof data.alt === 'undefined') return null;
 
-    // Untuk yallop, berikan nilai default agar tidak macet
-    const yallop = data.yallop || "N/A";
-    const odeh = data.odeh || "N/A";
-    // 1. Ambil & Validasi Data
+    // AMBIL DATA (Hanya satu kali deklarasi)
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
     const elo = Number(data.elo) || 0;
@@ -1797,19 +1795,17 @@ function getCountdownMaghrib(now, maghrib){
 
 // === RENDER UI (VERSI STABIL & ANTI-GLITCH) ====
 function renderUI() {
-    // 1. Pastikan koordinat tersedia
     if (!currentLat || !currentLon) {
         const insightEl = document.getElementById('insight');
-        if (insightEl && insightEl.innerHTML !== "⏳ Menunggu koordinat GPS...") {
-            insightEl.innerHTML = "⏳ Menunggu koordinat GPS...";
-        }
+        if (insightEl) insightEl.innerHTML = "⏳ Menunggu koordinat GPS...";
         return;
     }
 
-    // 2. Cek data Hilal (Versi Longgar agar UI tidak blank)
-    if (!hilalDataFull) {
-      console.warn("Menunggu hilalDataFull...");
-      return; // Berhenti jika objek benar-benar belum ada
+    // DEBUG: Cek apakah data masuk atau tidak
+    // console.log("Isi hilalDataFull:", hilalDataFull);
+
+    if (!hilalDataFull || typeof hilalDataFull.alt === 'undefined') {
+      return; 
     }
   
     const now = new Date();
@@ -2075,11 +2071,14 @@ function hitungHilal(lat, lon, customTime = null) {
   set("odeh", odehVal);
   set("visibility", vScoreVal + "%");
   
-  // 3. UPDATE GLOBAL STATE (Kunci Utama Anti-Glitch)
-  // Gunakan nama variabel yang sama dengan yang dihitung di atas
+  // 3. UPDATE GLOBAL STATE (DIPERBAIKI)
+  // Gunakan 'data' (sesuai variabel di atas), bukan 'dataCore'
   hilalDataFull = {
-    ...dataCore,
-    yallop: yallopVal, // Pastikan di sini 'yallop', bukan 'yallopVal'
+    alt: alt,
+    azi: azi,
+    elo: elo,
+    illumination: illumination, // Tambahkan ini agar tidak undefined
+    yallop: yallopVal,
     odeh: odehVal,
     age: age
   };
