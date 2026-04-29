@@ -1376,19 +1376,23 @@ function hitungMaghrib(lat, lon, customDate=null){
 
 // ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
-    // 1. Validasi minimal: Jika alt tidak ada, baru return null
     if (!data || typeof data.alt === 'undefined') return null;
 
-    // 2. Ambil data dengan Fallback agar tidak crash
-    const alt = Number(data.alt) || 0;
-    const azi = Number(data.azi) || 0;
-    const elo = Number(data.elo) || 0;
-    const age = Number(data.age) || 0;
-    const illumination = Number(data.illumination) || 0;
-    
-    // Gunakan strip (-) jika data benar-benar belum masuk dari fungsi hitung
-    const yallop = data.yallop || "-"; 
+    const yallop = data.yallop || "-";
     const odeh = data.odeh || "-";
+    
+    const yallopDesc = {
+        'A': 'Sangat Mudah dilihat dengan mata telanjang.',
+        'B': 'Mudah dilihat jika kondisi cuaca cerah.',
+        'C': 'Mungkin butuh alat optik untuk pencarian awal.',
+        'D': 'Hanya dapat dilihat dengan alat optik.',
+        'E': 'Mustahil dilihat secara visual.',
+        'F': 'Mustahil, bulan di bawah ufuk.',
+        'N/A': 'Sedang mengkalkulasi kriteria...',
+        '-': 'Menunggu sinkronisasi data...'
+    };
+
+    let ketYallop = yallopDesc[yallop] || "Mengevaluasi peluang...";
     
     const ijtimaNow = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : now;
 
@@ -2063,32 +2067,38 @@ function hitungHilal(lat, lon, customTime = null) {
   set("illum", illumination.toFixed(2) + "%");
 
   // === VISIBILITY ===
-  // 1. Pastikan angka sudah siap dan bertipe Number
-const altFix = Number(alt) || 0;
-const eloFix = Number(elo) || 0;
-const ageFix = Number(age) || 0;
+  // === 1. Pastikan angka murni (Fixing inputs) ===
+  const altFix = Number(alt) || 0;
+  const eloFix = Number(elo) || 0;
+  const ageFix = Number(age) || 0;
 
-// 2. Hitung Visibilitas (Gunakan variabel Fix di atas)
-const yallopVal = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(altFix, eloFix) : "N/A";
-const odehVal = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(altFix, eloFix) : "N/A";
-const vScoreVal = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(altFix, eloFix, ageFix) : 0;
+  // === 2. Hitung Visibilitas (Gunakan variabel lokal baru) ===
+  // Pastikan nama fungsi hitungVisibilitasYallop dsb sesuai dengan yang ada di script Anda
+  const yallopResult = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(altFix, eloFix) : "N/A";
+  const odehResult = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(altFix, eloFix) : "N/A";
+  const vScoreResult = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(altFix, eloFix, ageFix) : 0;
 
-// 3. Update UI Tabel (Langsung tampilkan)
-set("yallop", yallopVal);
-set("odeh", odehVal);
-set("visibility", vScoreVal + "%");
+  // === 3. Update UI tabel standar (jika ada) ===
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+  setVal("yallop", yallopResult);
+  setVal("odeh", odehResult);
+  setVal("visibility", vScoreResult + "%");
 
-// 4. UPDATE GLOBAL STATE (Inilah yang dibaca oleh getHijriInsight)
-hilalDataFull = {
+  // === 4. UPDATE GLOBAL STATE (Kunci Utama Sinkronisasi) ===
+  // Kita buat objek manual, jangan pakai ...dataCore agar tidak typo
+  hilalDataFull = {
     alt: altFix,
     azi: Number(azi) || 0,
     elo: eloFix,
     age: ageFix,
     illumination: Number(illumination) || 0,
-    yallop: yallopVal, // Sekarang pasti berisi A, B, C, atau N/A
-    odeh: odehVal,
-    vScore: vScoreVal
-};
+    yallop: yallopResult, // Mengirim hasil hitungan asli (A, B, C, atau N/A)
+    odeh: odehResult,
+    vScore: vScoreResult
+  };
   // Log ke konsol untuk memastikan data terisi (Hapus jika sudah lancar)
   console.log("Data Terupdate:", hilalDataFull.yallop, hilalDataFull.odeh);
 
