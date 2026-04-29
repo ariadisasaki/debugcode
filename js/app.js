@@ -1376,83 +1376,53 @@ function hitungMaghrib(lat, lon, customDate=null){
 
 // ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
+    // 1. Validasi awal agar tidak blank
     if (!data || typeof data.alt === 'undefined') return null;
 
+    // 2. Ambil data (Hanya satu kali deklarasi per variabel)
+    const alt = Number(data.alt) || 0;
+    const azi = Number(data.azi) || 0;
+    const elo = Number(data.elo) || 0;
+    const age = Number(data.age) || 0;
+    const illumination = Number(data.illumination) || 0;
     const yallop = data.yallop || "-";
     const odeh = data.odeh || "-";
     
-    const yallopDesc = {
-        'A': 'Sangat Mudah dilihat dengan mata telanjang.',
-        'B': 'Mudah dilihat jika kondisi cuaca cerah.',
-        'C': 'Mungkin butuh alat optik untuk pencarian awal.',
-        'D': 'Hanya dapat dilihat dengan alat optik.',
-        'E': 'Mustahil dilihat secara visual.',
-        'F': 'Mustahil, bulan di bawah ufuk.',
-        'N/A': 'Sedang mengkalkulasi kriteria...',
-        '-': 'Menunggu sinkronisasi data...'
-    };
-
-    let ketYallop = yallopDesc[yallop] || "Mengevaluasi peluang...";
-    
     const ijtimaNow = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : now;
 
-    // 2. Logika Narasi Dinamis
-    // --- Narasi Tinggi Bulan ---
-    let narasiAlt = alt > 3 ? 
-        `<span style="color:#4ade80">Sangat baik (di atas kriteria MABIMS 3°).</span>` : 
-        (alt > 0 ? `<span style="color:#fbbf24">Kritis (di atas ufuk tapi di bawah 3°).</span>` : 
-        `<span style="color:#f87171">Bulan di bawah ufuk (Mustahil rukyat).</span>`);
-
-    // --- Narasi Elongasi ---
-    let narasiElo = elo >= 6.4 ? 
-        `<span style="color:#4ade80">Memenuhi kriteria (min. 6.4°).</span>` : 
-        `<span style="color:#f87171">Belum memenuhi kriteria MABIMS.</span>`;
-
-    // --- Narasi Yallop (Kriteria Internasional) ---
+    // 3. Deskripsi Yallop (Ditambah agar tidak muncul "Data tidak tersedia")
     const yallopDesc = {
-        'A': 'Sangat Mudah dilihat dengan mata telanjang.',
-        'B': 'Mudah dilihat jika kondisi cuaca cerah.',
-        'C': 'Mungkin butuh alat optik untuk pencarian awal.',
-        'D': 'Hanya dapat dilihat dengan alat optik (Teleskop/Binokular).',
+        'A': 'Sangat Mudah dilihat telanjang.',
+        'B': 'Mudah dilihat jika cuaca cerah.',
+        'C': 'Mungkin butuh alat optik.',
+        'D': 'Hanya terlihat dengan alat optik.',
         'E': 'Mustahil dilihat secara visual.',
-        'F': 'Mustahil, bulan di bawah ufuk.'
+        'F': 'Mustahil, bulan di bawah ufuk.',
+        'N/A': 'Mengkalkulasi peluang...',
+        '-': 'Menunggu data...'
     };
-    let ketYallop = yallopDesc[yallop] || "Data tidak tersedia.";
+    let ketYallop = yallopDesc[yallop] || "Mengevaluasi...";
 
-    // --- Narasi Kesimpulan ---
-    let kesimpulan = (alt > 3 && elo >= 6.4) ? 
-        "<b>Kesimpulan:</b> Hilal kemungkinan besar berhasil dirukyat (Imkanur Rukyat)." : 
-        "<b>Kesimpulan:</b> Secara astronomis, hilal sangat sulit atau mustahil terlihat sore ini.";
+    // 4. Logika Narasi (Tinggi & Elongasi)
+    let narasiAlt = alt > 3 ? `<span style="color:#4ade80">Sangat baik (>3°).</span>` : (alt > 0 ? `<span style="color:#fbbf24">Kritis.</span>` : `<span style="color:#f87171">Bawah ufuk.</span>`);
+    let narasiElo = elo >= 6.4 ? `<span style="color:#4ade80">Lulus MABIMS.</span>` : `<span style="color:#f87171">Belum cukup.</span>`;
+    let kesimpulan = (alt > 3 && elo >= 6.4) ? "Hilal kemungkinan besar berhasil dirukyat." : "Hilal sangat sulit terlihat.";
 
-    // 3. Render Template UI
     return `
     <div style="line-height: 1.6; font-size: 0.95em; color: #e2e8f0;">
-        <p>🔭 <b>Tinggi Bulan:</b> <span style="font-family: monospace;">${alt.toFixed(2)}°</span><br>
-        Status: ${narasiAlt}</p>
-
-        <p>🧭 <b>Azimuth:</b> <span style="font-family: monospace;">${azi.toFixed(2)}°</span><br>
-        Posisi hilal berada di arah <b>${getArahMataAngin(azi)}</b>. Perhatikan jarak horizontalnya dari titik tenggelam Matahari.</p>
-
-        <p>📐 <b>Elongasi:</b> <span style="font-family: monospace;">${elo.toFixed(2)}°</span><br>
-        Status: ${narasiElo} Jarak sudut ini menentukan ketebalan sabit hilal.</p>
-
-        <p>💡 <b>Cahaya & Umur:</b><br>
-        Bulan saat ini berusia <b>${age.toFixed(1)} jam</b> dengan fraksi pencahayaan <b>${illumination.toFixed(2)}%</b>. Semakin tua umur bulan, semakin kuat pantulan cahayanya.</p>
-
-        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
-
-        <p>📊 <b>Analisis Metodologi:</b><br>
-        • <b>Metode Yallop (${yallop}):</b> ${ketYallop}<br>
-        • <b>Metode Odeh:</b> Fokus pada kontras latar langit. Status saat ini: <b>${odeh}</b>.</p>
-
-        <p>🌑 <b>Ijtima (Konjungsi):</b><br>
-        Terjadi pada <b>${ijtimaNow.toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</b>. Ini adalah titik nol bulan baru (New Moon) secara astronomis.</p>
-
-        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #3498db;">
-            ${kesimpulan}
+        <p>🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}° - ${narasiAlt}</p>
+        <p>🧭 <b>Azimuth:</b> ${azi.toFixed(2)}° (Arah ${getArahMataAngin(azi)})</p>
+        <p>📐 <b>Elongasi:</b> ${elo.toFixed(2)}° - ${narasiElo}</p>
+        <p>💡 <b>Umur & Cahaya:</b> ${age.toFixed(1)}j / ${illumination.toFixed(2)}%</p>
+        <hr style="border:0; border-top:1px solid #444;">
+        <p>📊 <b>Analisis:</b><br>
+        • Metode Yallop [${yallop}]: ${ketYallop}<br>
+        • Metode Odeh: ${odeh}</p>
+        <p>🌑 <b>Ijtima:</b> ${ijtimaNow.toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})} WIB</p>
+        <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; border-left:4px solid #3498db;">
+            <b>Kesimpulan:</b> ${kesimpulan}
         </div>
-    </div>
-    `;
+    </div>`;
 }
 
 // Fungsi pembantu untuk menentukan arah mata angin
@@ -2022,85 +1992,39 @@ function drawMoonRealistic(illumination){
 
 // ==== HITUNG HILAL ===
 function hitungHilal(lat, lon, customTime = null) {
-  const statusEl = document.getElementById('status');
-  const prediksiEl = document.getElementById('prediksi');
-
-  if (statusEl) statusEl.innerText = "⏳ Menghitung hilal...";
-  if (prediksiEl) prediksiEl.innerText = "";
-
-  // 1. Definisikan Waktu Referensi
   const now = customTime ? new Date(customTime) : new Date();
+  const ijtima = CACHED_IJTIMA || now; 
 
-  // 2. Gunakan CACHED_IJTIMA (pastikan sudah ada di baris paling atas script luar)
-  // Mencegah fungsi memanggil getLastIjtima() berulang kali yang bikin lag
-  const ijtima = CACHED_IJTIMA; 
-
-  // 3. Ambil data Kalender (jadi ringan karena pakai Cache)
-  const dataHisab = getHijriAstronomical(lat, lon);
-  const dataHybrid = getHijriHybrid(lat, lon);
-  
-  const hariHisab = dataHisab.d;
-  const hariHybrid = dataHybrid.d;
-
-  // 4. Hitung Data Astronomi Core
+  // Hitung Core
   const data = hitungHilalCore(lat, lon, now);
-  
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
   const illumination = Number(data.illumination) || 0;
-
-  // 5. HITUNG UMUR BULAN ===
-  // Rumus: (Waktu Sekarang - Waktu Ijtima) dalam jam
   const age = (now.getTime() - ijtima.getTime()) / 3600000;
 
-  // === UI ANGKA ===
-  const set = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.innerText = val;
-  };
+  // Hitung Visibilitas
+  const yallopVal = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(alt, elo) : "N/A";
+  const odehVal = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(alt, elo) : "N/A";
+  const vScoreVal = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(alt, elo, age) : 0;
 
+  // Update UI Angka Cepat
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
   set("alt", alt.toFixed(2) + "°");
-  set("azi", azi.toFixed(2) + "°");
-  set("elo", elo.toFixed(2) + "°");
-  set("age", age.toFixed(1) + " jam"); // Menampilkan age hasil hitungan di atas
-  set("illum", illumination.toFixed(2) + "%");
+  set("yallop", yallopVal);
+  set("odeh", odehVal);
 
-  // === VISIBILITY ===
-  // === 1. Pastikan angka murni (Fixing inputs) ===
-  const altFix = Number(alt) || 0;
-  const eloFix = Number(elo) || 0;
-  const ageFix = Number(age) || 0;
-
-  // === 2. Hitung Visibilitas (Gunakan variabel lokal baru) ===
-  // Pastikan nama fungsi hitungVisibilitasYallop dsb sesuai dengan yang ada di script Anda
-  const yallopResult = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(altFix, eloFix) : "N/A";
-  const odehResult = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(altFix, eloFix) : "N/A";
-  const vScoreResult = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(altFix, eloFix, ageFix) : 0;
-
-  // === 3. Update UI tabel standar (jika ada) ===
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.innerText = val;
-  };
-  setVal("yallop", yallopResult);
-  setVal("odeh", odehResult);
-  setVal("visibility", vScoreResult + "%");
-
-  // === 4. UPDATE GLOBAL STATE (Kunci Utama Sinkronisasi) ===
-  // Kita buat objek manual, jangan pakai ...dataCore agar tidak typo
+  // === UPDATE GLOBAL (PASTI JALAN) ===
   hilalDataFull = {
-    alt: altFix,
-    azi: Number(azi) || 0,
-    elo: eloFix,
-    age: ageFix,
-    illumination: Number(illumination) || 0,
-    yallop: yallopResult, // Mengirim hasil hitungan asli (A, B, C, atau N/A)
-    odeh: odehResult,
-    vScore: vScoreResult
+    alt: alt,
+    azi: azi,
+    elo: elo,
+    age: age,
+    illumination: illumination,
+    yallop: yallopVal,
+    odeh: odehVal,
+    vScore: vScoreVal
   };
-  // Log ke konsol untuk memastikan data terisi (Hapus jika sudah lancar)
-  console.log("Data Terupdate:", hilalDataFull.yallop, hilalDataFull.odeh);
 
   // === REFERENSI WAKTU ===
   // Menggunakan ijtima dari cache, bukan panggil fungsi baru
