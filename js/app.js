@@ -1374,87 +1374,83 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT (VERSI STABIL & INFORMATIF) =====
+// ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
-    // 1. Ambil data dengan proteksi (Default ke 0 atau "N/A" jika kosong)
+    // 1. Ambil & Validasi Data
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
     const elo = Number(data.elo) || 0;
     const age = Number(data.age) || 0;
-    const illum = Number(data.illumination) || 0;
+    const illumination = Number(data.illumination) || 0;
     const yallop = data.yallop || "N/A";
     const odeh = data.odeh || "N/A";
-    const vScore = data.vScore || 0;
     
-    // Ambil Ijtima dari cache atau gunakan 'now' sebagai fallback
-    const ijtimaTime = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) 
-                       ? CACHED_IJTIMA 
-                       : new Date();
+    const ijtimaNow = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : now;
 
-    // 2. Logika Narasi Dinamis Sederhana
-    const statusAlt = alt > 3 ? 
-        `<b style="color:#4ade80;">Sangat Baik (Sudah > 3°)</b>` : 
-        (alt > 0 ? `<b style="color:#fbbf24;">Rendah (Di bawah kriteria 3°)</b>` : `<b style="color:#f87171;">Negatif (Bawah Ufuk)</b>`);
+    // 2. Logika Narasi Dinamis
+    // --- Narasi Tinggi Bulan ---
+    let narasiAlt = alt > 3 ? 
+        `<span style="color:#4ade80">Sangat baik (di atas kriteria MABIMS 3°).</span>` : 
+        (alt > 0 ? `<span style="color:#fbbf24">Kritis (di atas ufuk tapi di bawah 3°).</span>` : 
+        `<span style="color:#f87171">Bulan di bawah ufuk (Mustahil rukyat).</span>`);
 
-    const statusElo = elo >= 6.4 ? 
-        `<span style="color:#4ade80;">Memenuhi syarat MABIMS (6.4°)</span>` : 
-        `<span style="color:#f87171;">Di bawah kriteria fisik hilal</span>`;
+    // --- Narasi Elongasi ---
+    let narasiElo = elo >= 6.4 ? 
+        `<span style="color:#4ade80">Memenuhi kriteria (min. 6.4°).</span>` : 
+        `<span style="color:#f87171">Belum memenuhi kriteria MABIMS.</span>`;
 
-    // Mapping Kategori Yallop
-    const yallopMap = {
-        'A': 'Sangat Mudah (Mata Telanjang)',
-        'B': 'Mudah (Jika langit sangat cerah)',
-        'C': 'Butuh Alat Optik (Teleskop/Binokular)',
-        'D': 'Hanya dengan alat (Sangat sulit visual)',
-        'E': 'Mustahil terlihat secara visual',
-        'F': 'Bulan di bawah ufuk'
+    // --- Narasi Yallop (Kriteria Internasional) ---
+    const yallopDesc = {
+        'A': 'Sangat Mudah dilihat dengan mata telanjang.',
+        'B': 'Mudah dilihat jika kondisi cuaca cerah.',
+        'C': 'Mungkin butuh alat optik untuk pencarian awal.',
+        'D': 'Hanya dapat dilihat dengan alat optik (Teleskop/Binokular).',
+        'E': 'Mustahil dilihat secara visual.',
+        'F': 'Mustahil, bulan di bawah ufuk.'
     };
+    let ketYallop = yallopDesc[yallop] || "Data tidak tersedia.";
 
-    // 3. Render HTML
+    // --- Narasi Kesimpulan ---
+    let kesimpulan = (alt > 3 && elo >= 6.4) ? 
+        "<b>Kesimpulan:</b> Hilal kemungkinan besar berhasil dirukyat (Imkanur Rukyat)." : 
+        "<b>Kesimpulan:</b> Secara astronomis, hilal sangat sulit atau mustahil terlihat sore ini.";
+
+    // 3. Render Template UI
     return `
-    <div style="line-height: 1.6; color: #f1f5f9; font-size: 0.95em;">
-        <p>🔭 <b>Tinggi Hilal:</b> <span style="font-family:monospace;">${alt.toFixed(2)}°</span><br>
-        Status: ${statusAlt}</p>
+    <div style="line-height: 1.6; font-size: 0.95em; color: #e2e8f0;">
+        <p>🔭 <b>Tinggi Bulan:</b> <span style="font-family: monospace;">${alt.toFixed(2)}°</span><br>
+        Status: ${narasiAlt}</p>
 
-        <p>🧭 <b>Arah (Azimuth):</b> <span style="font-family:monospace;">${azi.toFixed(2)}°</span><br>
-        Bulan berada di arah <b>${getArahMataAngin(azi)}</b>. Gunakan sudut ini untuk orientasi teleskop.</p>
+        <p>🧭 <b>Azimuth:</b> <span style="font-family: monospace;">${azi.toFixed(2)}°</span><br>
+        Posisi hilal berada di arah <b>${getArahMataAngin(azi)}</b>. Perhatikan jarak horizontalnya dari titik tenggelam Matahari.</p>
 
-        <p>📐 <b>Elongasi & Cahaya:</b><br>
-        Jarak sudut: <b>${elo.toFixed(2)}°</b> (${statusElo}).<br>
-        Intensitas cahaya (Fraksi): <b>${illum.toFixed(2)}%</b>.</p>
+        <p>📐 <b>Elongasi:</b> <span style="font-family: monospace;">${elo.toFixed(2)}°</span><br>
+        Status: ${narasiElo} Jarak sudut ini menentukan ketebalan sabit hilal.</p>
 
-        <p>🌙 <b>Umur Bulan:</b><br>
-        Sudah berjalan <b>${age.toFixed(1)} jam</b> sejak waktu Ijtima/Konjungsi.</p>
+        <p>💡 <b>Cahaya & Umur:</b><br>
+        Bulan saat ini berusia <b>${age.toFixed(1)} jam</b> dengan fraksi pencahayaan <b>${illumination.toFixed(2)}%</b>. Semakin tua umur bulan, semakin kuat pantulan cahayanya.</p>
 
-        <hr style="border:0; border-top:1px solid #475569; margin:15px 0;">
+        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
 
-        <p>📊 <b>Kriteria Internasional:</b><br>
-        • <b>Yallop:</b> Kategori [${yallop}] - ${yallopMap[yallop] || "Mengevaluasi..."}<br>
-        • <b>Odeh:</b> ${odeh}<br>
-        • <b>V-Score:</b> ${vScore}% Peluang terlihat</p>
+        <p>📊 <b>Analisis Metodologi:</b><br>
+        • <b>Metode Yallop (${yallop}):</b> ${ketYallop}<br>
+        • <b>Metode Odeh:</b> Fokus pada kontras latar langit. Status saat ini: <b>${odeh}</b>.</p>
 
-        <p>🌑 <b>Ijtima Terakhir:</b><br>
-        Terjadi pada pukul <b>${ijtimaTime.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB</b>.</p>
+        <p>🌑 <b>Ijtima (Konjungsi):</b><br>
+        Terjadi pada <b>${ijtimaNow.toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</b>. Ini adalah titik nol bulan baru (New Moon) secara astronomis.</p>
 
-        <div style="border-left:4px solid #3b82f6; background:rgba(59,130,246,0.1); padding:10px; border-radius:5px; margin-top:10px;">
-            <b>Analisis Ringkas:</b><br>
-            ${alt > 3 && elo >= 6.4 ? 
-                "Secara teknis, hilal sudah memenuhi kriteria Imkanur Rukyat (3°/6.4°). Peluang terlihat sangat besar jika cuaca cerah." : 
-                "Hilal masih sangat sulit atau belum mungkin terlihat berdasarkan kriteria astronomis saat ini."}
+        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #3498db;">
+            ${kesimpulan}
         </div>
-        
-        <p style="font-size:0.8em; color:#94a3b8; margin-top:15px; font-style:italic;">
-        *Keputusan resmi awal bulan tetap mengikuti hasil Sidang Isbat Pemerintah.
-        </p>
     </div>
     `;
 }
 
-// === ARAH MATA ANGIN ===
+// Fungsi pembantu untuk menentukan arah mata angin
 function getArahMataAngin(deg) {
     const directions = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
     const index = Math.round(deg / 45) % 8;
-    return directions[index] || "Barat";
+    return directions[index];
 }
 
 // === GPS LOKASI ===
