@@ -1374,62 +1374,68 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
+// ===== HIJRI INSIGHT =====
 function getHijriInsight(data, maghrib, now) {
-    // 1. Validasi awal agar tidak blank
-    if (!data || typeof data.alt === 'undefined') return null;
+  // 1. Ambil data dari parameter (pastikan data valid)
+  const alt = Number(data.alt) || 0;
+  const azi = Number(data.azi) || 0;
+  const elo = Number(data.elo) || 0;
+  const age = Number(data.age) || 0;
+  const illumination = Number(data.illumination) || 0;
 
-    // 2. Ambil data (Hanya satu kali deklarasi per variabel)
-    const alt = Number(data.alt) || 0;
-    const azi = Number(data.azi) || 0;
-    const elo = Number(data.elo) || 0;
-    const age = Number(data.age) || 0;
-    const illumination = Number(data.illumination) || 0;
-    const yallop = data.yallop || "-";
-    const odeh = data.odeh || "-";
-    
-    const ijtimaNow = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : now;
+  // 2. Gunakan CACHED_IJTIMA (Jangan hitung ulang agar tidak lag/glitch)
+  const ijtimaNow = typeof CACHED_IJTIMA !== 'undefined' ? CACHED_IJTIMA : new Date();
+  
+  // 3. Logika Penjelasan Dinamis
+  const deskripsiAlt = alt > 0 
+    ? `<span style="color:#4ade80">Bulan sudah di atas ufuk dan berpotensi terlihat.</span>` 
+    : `<span style="color:#f87171">Bulan masih di bawah ufuk sehingga tidak mungkin terlihat.</span>`;
+  
+  return `
+🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}°<br>
+Menunjukkan posisi bulan dari horizon. 
+${alt > 0 ? "Bulan sudah di atas ufuk dan berpotensi terlihat." : "Bulan masih di bawah ufuk sehingga tidak mungkin terlihat."}
+<br><br>
 
-    // 3. Deskripsi Yallop (Ditambah agar tidak muncul "Data tidak tersedia")
-    const yallopDesc = {
-        'A': 'Sangat Mudah dilihat telanjang.',
-        'B': 'Mudah dilihat jika cuaca cerah.',
-        'C': 'Mungkin butuh alat optik.',
-        'D': 'Hanya terlihat dengan alat optik.',
-        'E': 'Mustahil dilihat secara visual.',
-        'F': 'Mustahil, bulan di bawah ufuk.',
-        'N/A': 'Mengkalkulasi peluang...',
-        '-': 'Menunggu data...'
-    };
-    let ketYallop = yallopDesc[yallop] || "Mengevaluasi...";
+🧭 <b>Azimuth:</b> ${azi.toFixed(2)}°<br>
+Menunjukkan arah bulan dari utara (0° = Utara, 90° = Timur, 180° = Selatan, 270° = Barat).
+<br><br>
 
-    // 4. Logika Narasi (Tinggi & Elongasi)
-    let narasiAlt = alt > 3 ? `<span style="color:#4ade80">Sangat baik (>3°).</span>` : (alt > 0 ? `<span style="color:#fbbf24">Kritis.</span>` : `<span style="color:#f87171">Bawah ufuk.</span>`);
-    let narasiElo = elo >= 6.4 ? `<span style="color:#4ade80">Lulus MABIMS.</span>` : `<span style="color:#f87171">Belum cukup.</span>`;
-    let kesimpulan = (alt > 3 && elo >= 6.4) ? "Hilal kemungkinan besar berhasil dirukyat." : "Hilal sangat sulit terlihat.";
+📐 <b>Elongasi:</b> ${elo.toFixed(2)}°<br>
+Jarak sudut bulan terhadap matahari. 
+Semakin besar elongasi, semakin besar peluang hilal terlihat.
+<br><br>
 
-    return `
-    <div style="line-height: 1.6; font-size: 0.95em; color: #e2e8f0;">
-        <p>🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}° - ${narasiAlt}</p>
-        <p>🧭 <b>Azimuth:</b> ${azi.toFixed(2)}° (Arah ${getArahMataAngin(azi)})</p>
-        <p>📐 <b>Elongasi:</b> ${elo.toFixed(2)}° - ${narasiElo}</p>
-        <p>💡 <b>Umur & Cahaya:</b> ${age.toFixed(1)}j / ${illumination.toFixed(2)}%</p>
-        <hr style="border:0; border-top:1px solid #444;">
-        <p>📊 <b>Analisis:</b><br>
-        • Metode Yallop [${yallop}]: ${ketYallop}<br>
-        • Metode Odeh: ${odeh}</p>
-        <p>🌑 <b>Ijtima:</b> ${ijtimaNow.toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})} WIB</p>
-        <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; border-left:4px solid #3498db;">
-            <b>Kesimpulan:</b> ${kesimpulan}
-        </div>
-    </div>`;
-}
+💡 <b>Cahaya Bulan:</b> ${illumination.toFixed(2)}%<br>
+Menunjukkan fase bulan (semakin besar → semakin terang).
+<br><br>
 
-// Fungsi pembantu untuk menentukan arah mata angin
-function getArahMataAngin(deg) {
-    const directions = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
-    const index = Math.round(deg / 45) % 8;
-    return directions[index];
+🌙 <b>Umur Bulan:</b> ${age.toFixed(1)} jam (~${(age/24).toFixed(2)} hari astronomi)<br><br>
+
+<b>Perkiraan:</b><br>
+Sekitar ${(24 - (age % 24)).toFixed(1)} jam lagi menuju fase hari berikutnya. Perkiraan berdasarkan fase bulan, dapat berbeda dari waktu Maghrib lokal.
+<br><br>
+
+🔭 <b>Metode Yallop</b><br>
+Digunakan secara internasional untuk menentukan apakah hilal bisa terlihat.
+Kategori A–B mudah terlihat, sedangkan E berarti tidak mungkin terlihat.<br><br>
+
+🔭 <b>Metode Odeh</b><br>
+Metode modern yang mirip Yallop, digunakan dalam penelitian rukyat.
+Menunjukkan apakah hilal bisa dilihat dengan mata atau alat bantu.<br><br>
+
+📊 <b>Visibility Score</b><br>
+Persentase peluang terlihatnya hilal berdasarkan tinggi, elongasi, dan umur bulan.
+Semakin tinggi nilainya, semakin besar kemungkinan hilal terlihat.<br><br>
+
+🌑 <b>Ijtima (Konjungsi)</b><br>
+Adalah saat bulan dan matahari sejajar. Ini adalah awal fase bulan baru,
+tetapi hilal belum tentu langsung terlihat setelah ijtima.<br><br>
+
+<b>Kesimpulan:</b><br>
+Penentuan awal bulan Hijriah tidak hanya berdasarkan ijtima,
+tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
+`;
 }
 
 // === GPS LOKASI ===
@@ -1769,62 +1775,42 @@ function getCountdownMaghrib(now, maghrib){
   return `${jam} jam ${menit} menit lagi menuju Maghrib`;
 }
 
-// === RENDER UI (VERSI STABIL & ANTI-GLITCH) ====
+// === RENDER UI ====
 function renderUI() {
+    // 1. Pastikan koordinat tersedia (gunakan satu sumber kebenaran)
+    // Jika currentLat kosong, jangan render dulu agar tidak terjadi glitch angka lompat
     if (!currentLat || !currentLon) {
-        const insightEl = document.getElementById('insight');
-        if (insightEl) insightEl.innerHTML = "⏳ Menunggu koordinat GPS...";
+        document.getElementById('insight').innerHTML = "⏳ Menunggu koordinat GPS...";
         return;
     }
 
-    // DEBUG: Cek apakah data masuk atau tidak
-    // console.log("Isi hilalDataFull:", hilalDataFull);
-
-    if (!hilalDataFull || typeof hilalDataFull.alt === 'undefined') {
-      return; 
+    // 2. Cek data Hilal (sudah dihitung oleh interval utama belum?)
+    if (!hilalDataFull || typeof hilalDataFull.age === 'undefined') {
+        document.getElementById('insight').innerHTML = "⏳ Mengkalkulasi data astronomi...";
+        return;
     }
-  
+
     const now = new Date();
 
     try {
-        // 3. Ambil data Maghrib
+        // 3. Ambil data Maghrib (hanya panggil jika fungsinya ada)
         const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
         const maghrib = maghribData.decimal;
 
-        // 4. Update UI Insight (Hanya jika konten valid)
+        // 4. Update UI Insight (kirim hilalDataFull yang sudah matang)
+        // Pastikan Anda sudah mengupdate fungsi getHijriInsight seperti saran sebelumnya
         const insightHTML = getHijriInsight(hilalDataFull, maghrib, now);
         const insightElement = document.getElementById('insight');
-        
-        // --- LOGIKA PENGUNCIAN ---
-        if (insightElement && insightHTML !== null) {
-            // Hanya update jika konten berbeda (mencegah flicker)
-            if (insightElement.innerHTML !== insightHTML) {
-                insightElement.innerHTML = insightHTML;
-            }
+        if (insightElement) insightElement.innerHTML = insightHTML;
 
-            // --- PASTIKAN CARD HIDDEN TAMPIL ---
-            // Jika data sudah valid, kita pastikan Card ditampilkan
-            const cardHidden = document.getElementById('cardHidden'); // Pastikan ID sesuai di HTML Anda
-            if (cardHidden && cardHidden.style.display !== 'block') {
-                cardHidden.style.display = 'block';
-            }
-        }
-
-        // 5. Update Elemen Penunjang (Countdown & Progress)
+        // 5. Update Elemen Penunjang lainnya
         const countdownStr = typeof getCountdownMaghrib === 'function' ? getCountdownMaghrib(now, maghrib) : "--:--";
         const countdownElement = document.getElementById('countdownMaghrib');
-        if (countdownElement && countdownElement.innerText !== countdownStr) {
-            countdownElement.innerText = countdownStr;
-        }
+        if (countdownElement) countdownElement.innerText = countdownStr;
 
         const progressVal = typeof getProgressToMaghrib === 'function' ? getProgressToMaghrib(now, currentLat, currentLon) : 0;
         const progressBar = document.getElementById('progressBar');
-        if (progressBar) {
-            const widthStr = progressVal + "%";
-            if (progressBar.style.width !== widthStr) {
-                progressBar.style.width = widthStr;
-            }
-        }
+        if (progressBar) progressBar.style.width = progressVal + "%";
 
     } catch (err) {
         console.error("❌ Render UI Error:", err);
@@ -1992,39 +1978,56 @@ function drawMoonRealistic(illumination){
 
 // ==== HITUNG HILAL ===
 function hitungHilal(lat, lon, customTime = null) {
-  const now = customTime ? new Date(customTime) : new Date();
-  const ijtima = CACHED_IJTIMA || now; 
+  const statusEl = document.getElementById('status');
+  const prediksiEl = document.getElementById('prediksi');
 
-  // Hitung Core
+  if (statusEl) statusEl.innerText = "⏳ Menghitung hilal...";
+  if (prediksiEl) prediksiEl.innerText = "";
+
+  // 1. Definisikan Waktu Referensi
+  const now = customTime ? new Date(customTime) : new Date();
+
+  // 2. Gunakan CACHED_IJTIMA (pastikan sudah ada di baris paling atas script luar)
+  // Mencegah fungsi memanggil getLastIjtima() berulang kali yang bikin lag
+  const ijtima = CACHED_IJTIMA; 
+
+  // 3. Ambil data Kalender (jadi ringan karena pakai Cache)
+  const dataHisab = getHijriAstronomical(lat, lon);
+  const dataHybrid = getHijriHybrid(lat, lon);
+  
+  const hariHisab = dataHisab.d;
+  const hariHybrid = dataHybrid.d;
+
+  // 4. Hitung Data Astronomi Core
   const data = hitungHilalCore(lat, lon, now);
+  
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
   const illumination = Number(data.illumination) || 0;
+
+  // 5. HITUNG UMUR BULAN ===
+  // Rumus: (Waktu Sekarang - Waktu Ijtima) dalam jam
   const age = (now.getTime() - ijtima.getTime()) / 3600000;
 
-  // Hitung Visibilitas
-  const yallopVal = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(alt, elo) : "N/A";
-  const odehVal = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(alt, elo) : "N/A";
-  const vScoreVal = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(alt, elo, age) : 0;
-
-  // Update UI Angka Cepat
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-  set("alt", alt.toFixed(2) + "°");
-  set("yallop", yallopVal);
-  set("odeh", odehVal);
-
-  // === UPDATE GLOBAL (PASTI JALAN) ===
-  hilalDataFull = {
-    alt: alt,
-    azi: azi,
-    elo: elo,
-    age: age,
-    illumination: illumination,
-    yallop: yallopVal,
-    odeh: odehVal,
-    vScore: vScoreVal
+  // === UI ANGKA ===
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
   };
+
+  set("alt", alt.toFixed(2) + "°");
+  set("azi", azi.toFixed(2) + "°");
+  set("elo", elo.toFixed(2) + "°");
+  set("age", age.toFixed(1) + " jam"); // Menampilkan age hasil hitungan di atas
+  set("illum", illumination.toFixed(2) + "%");
+
+  // === VISIBILITY ===
+  const yallop = hitungVisibilitasYallop(alt, elo);
+  const odeh = hitungVisibilitasOdeh(alt, elo);
+  set("yallop", yallop);
+  set("odeh", odeh);
+  set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
 
   // === REFERENSI WAKTU ===
   // Menggunakan ijtima dari cache, bukan panggil fungsi baru
