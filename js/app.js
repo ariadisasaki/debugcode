@@ -2013,7 +2013,7 @@ function drawMoonRealistic(illumination){
   ctx.fill();
 }
 
-// ==== HITUNG HILAL ===
+// ==== HITUNG HILAL (REVISI FINAL) ===
 function hitungHilal(lat, lon, customTime = null) {
   const statusEl = document.getElementById('status');
   const prediksiEl = document.getElementById('prediksi');
@@ -2023,31 +2023,31 @@ function hitungHilal(lat, lon, customTime = null) {
 
   // 1. Definisikan Waktu Referensi
   const now = customTime ? new Date(customTime) : new Date();
-
-  // 2. Gunakan CACHED_IJTIMA (pastikan sudah ada di baris paling atas script luar)
-  // Mencegah fungsi memanggil getLastIjtima() berulang kali yang bikin lag
   const ijtima = CACHED_IJTIMA; 
 
-  // 3. Ambil data Kalender (jadi ringan karena pakai Cache)
+  // 2. Ambil data Kalender
   const dataHisab = getHijriAstronomical(lat, lon);
   const dataHybrid = getHijriHybrid(lat, lon);
-  
   const hariHisab = dataHisab.d;
   const hariHybrid = dataHybrid.d;
 
-  // 4. Hitung Data Astronomi Core
-  const data = hitungHilalCore(lat, lon, now);
+  // 3. Hitung Data Astronomi Core
+  const dataCore = hitungHilalCore(lat, lon, now);
   
-  const alt = Number(data.alt) || 0;
-  const azi = Number(data.azi) || 0;
-  const elo = Number(data.elo) || 0;
-  const illumination = Number(data.illumination) || 0;
+  const alt = Number(dataCore.alt) || 0;
+  const azi = Number(dataCore.azi) || 0;
+  const elo = Number(dataCore.elo) || 0;
+  const illumination = Number(dataCore.illumination) || 0;
 
-  // 5. HITUNG UMUR BULAN ===
-  // Rumus: (Waktu Sekarang - Waktu Ijtima) dalam jam
+  // 4. HITUNG UMUR BULAN
   const age = (now.getTime() - ijtima.getTime()) / 3600000;
 
-  // === UI ANGKA ===
+  // 5. VISIBILITY (Gunakan nama variabel yang konsisten)
+  const yallopVal = typeof hitungVisibilitasYallop === 'function' ? hitungVisibilitasYallop(alt, elo) : "N/A";
+  const odehVal = typeof hitungVisibilitasOdeh === 'function' ? hitungVisibilitasOdeh(alt, elo) : "N/A";
+  const vScore = typeof hitungVisibilityScore === 'function' ? hitungVisibilityScore(alt, elo, age) : 0;
+
+  // === UI ANGKA (Update Elemen HTML Langsung) ===
   const set = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.innerText = val;
@@ -2056,26 +2056,20 @@ function hitungHilal(lat, lon, customTime = null) {
   set("alt", alt.toFixed(2) + "°");
   set("azi", azi.toFixed(2) + "°");
   set("elo", elo.toFixed(2) + "°");
-  set("age", age.toFixed(1) + " jam"); // Menampilkan age hasil hitungan di atas
+  set("age", age.toFixed(1) + " jam");
   set("illum", illumination.toFixed(2) + "%");
-
-  // === VISIBILITY ===
-  const yallop = hitungVisibilitasYallop(alt, elo);
-  const odeh = hitungVisibilitasOdeh(alt, elo);
-  set("yallop", yallop);
-  set("odeh", odeh);
-  set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
-
-  // === REFERENSI WAKTU ===
-  // Menggunakan ijtima dari cache, bukan panggil fungsi baru
+  set("yallop", yallopVal);
+  set("odeh", odehVal);
+  set("visibility", vScore + "%");
   set("statusIjtima", now >= ijtima ? "Sudah Ijtima" : "Belum Ijtima");
 
+  // === LOGIKA PREDIKSI & MAGHRIB ===
   const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
   const jamNow = now.getHours() + now.getMinutes() / 60;
   const sebelumMaghrib = jamNow < maghrib;
   const imkan = (alt >= 3 && elo >= 6.4);
 
-  // === LOGIKA STATUS & PREDIKSI (UI DECISION) ===
+  // === LOGIKA STATUS & PREDIKSI (Sesuai kode asli Anda) ===
   if (alt < 0) {
     if (statusEl) statusEl.innerText = "Bulan di bawah ufuk";
     if (prediksiEl) prediksiEl.innerText = "Tidak dapat dilakukan observasi hilal";
@@ -2092,27 +2086,29 @@ function hitungHilal(lat, lon, customTime = null) {
     }
   } 
   else {
-    // === KONDISI SETELAH MAGHRIB ===
     if (hariHybrid === 29 || hariHybrid === 30 || hariHybrid === 1) {
       if (imkan) {
-        statusEl.innerText = "Hilal terlihat (Imkan Rukyat).";
-        prediksiEl.innerText = "Kriteria terpenuhi, awal bulan dimulai.";
+        if (statusEl) statusEl.innerText = "Hilal terlihat (Imkan Rukyat).";
+        if (prediksiEl) prediksiEl.innerText = "Kriteria terpenuhi, awal bulan dimulai.";
       } else {
-        statusEl.innerText = "Istikmal/Hilal tak terlihat.";
-        prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari sesuai kriteria.";
+        if (statusEl) statusEl.innerText = "Istikmal/Hilal tak terlihat.";
+        if (prediksiEl) prediksiEl.innerText = "Bulan digenapkan menjadi 30 hari sesuai kriteria.";
       }
-    } 
-    else {
+    } else {
       if (hariHisab === 15) {
-        statusEl.innerText = "Malam Purnama.";
-        prediksiEl.innerText = "Bulan tepat di titik oposisi 180°.";
+        if (statusEl) statusEl.innerText = "Malam Purnama.";
+        if (prediksiEl) prediksiEl.innerText = "Bulan tepat di titik oposisi 180°.";
       } else {
-        statusEl.innerText = `Malam ke-${hariHisab} Hijriah.`;
-        prediksiEl.innerText = hariHisab < 15 ? 
-          "Bulan menuju fase Purnama" : "Bulan menuju fase akhir bulan.";
+        if (statusEl) statusEl.innerText = `Malam ke-${hariHisab} Hijriah.`;
+        if (prediksiEl) prediksiEl.innerText = hariHisab < 15 ? "Bulan menuju fase Purnama" : "Bulan menuju fase akhir bulan.";
       }
     }
   }
+
+  // === PENTING: Update Sun Card agar data Matahari tidak hilang ===
+  if (typeof updateSunCard === 'function') updateSunCard();
+
+  // === RETURN DATA LENGKAP UNTUK GLOBAL STATE ===
   return {
     alt: alt,
     azi: azi,
@@ -2121,8 +2117,8 @@ function hitungHilal(lat, lon, customTime = null) {
     illumination: illumination,
     yallop: yallopVal,
     odeh: odehVal,
-    // Tambahkan data ijtima agar bisa dibaca UI lain
-    lastIjtima: CACHED_IJTIMA, 
+    vScore: vScore,
+    lastIjtima: ijtima, 
     nextIjtima: typeof NEXT_IJTIMA !== 'undefined' ? NEXT_IJTIMA : null 
   };
 }
