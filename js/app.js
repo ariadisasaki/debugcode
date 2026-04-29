@@ -1548,56 +1548,72 @@ async function updateAddress(lat, lon) {
     }
 }
 
-// === 3. INISIALISASI APLIKASI (CENTRALIZED VERSION) ===
+// === 3. INISIALISASI APLIKASI (VERSI STABIL) ===
 async function initApp(lat, lon) {
     if (!lat || !lon) return;
     locationInitialized = true;
     
+    console.log("🚀 Menyiapkan sistem navigasi hilal...");
+
     // A. Jalankan fungsi pendukung sekali di awal
     try {
         if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(lat, lon);
         if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
-    } catch (e) { console.warn("Pendukung gagal."); }
+    } catch (e) { 
+        console.warn("Layanan deklinasi/watcher belum aktif, menggunakan koordinat standar."); 
+    }
 
-    // B. Hitungan Pertama
+    // B. Hitungan Pertama (Initial Boot)
+    // Segera isi hilalDataFull agar renderUI pertama tidak mendapat objek kosong
     if (!CACHED_IJTIMA) refreshIjtimaData();
     hilalDataFull = hitungHilal(lat, lon);
 
     // ============================================================
-    // TIMER 1: Komputasi Berat (Tiap 5-10 Detik)
+    // TIMER 1: Otak Astronomi (Tiap 10 Detik)
+    // Fokus pada kalkulasi berat.
     // ============================================================
     setInterval(() => {
         if (currentLat && currentLon) {
-            hilalDataFull = hitungHilal(currentLat, currentLon);
+            // Update global state dengan data baru yang sudah lengkap (termasuk yallop/odeh)
+            const freshData = hitungHilal(currentLat, currentLon);
+            
+            // Validasi: Hanya timpa jika data baru benar-benar valid (bukan N/A)
+            if (freshData && freshData.yallop !== "N/A") {
+                hilalDataFull = freshData;
+            }
+            
             if (typeof updateSunCard === 'function') updateSunCard();
         }
     }, 10000); 
 
     // ============================================================
-    // TIMER 2: UI & Visual (Tiap 1 Detik)
+    // TIMER 2: Wajah Aplikasi (Tiap 1 Detik)
+    // Fokus pada kelancaran angka detik dan countdown.
     // ============================================================
     setInterval(() => {
-        // CUKUP PANGGIL renderUI() SAJA
-        // Semua urusan update teks, countdown, dan progress bar 
-        // harusnya sudah ada di dalam fungsi renderUI agar tidak tumpang tindih.
+        // renderUI akan mengurus Insight, Countdown, dan Progress Bar
         if (typeof renderUI === 'function') {
             renderUI(); 
         }
 
-        // Update fungsi visual lain yang tidak ada di renderUI
+        // Update visual sekunder
         if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
         if (typeof updateHilalAR === 'function') updateHilalAR();
     }, 1000);
 
     // ============================================================
-    // TIMER 3: Kalender (Tiap 2 Detik)
+    // TIMER 3: Kalender & Display (Tiap 2 Detik)
     // ============================================================
     setInterval(() => {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
 
-    // Eksekusi awal
-    setTimeout(() => { updateSunCard(); }, 0);
+    // Jalankan render awal secara instan setelah data pertama siap
+    setTimeout(() => { 
+        if (typeof renderUI === 'function') renderUI();
+        if (typeof updateSunCard === 'function') updateSunCard(); 
+    }, 100);
+
     debugHilal();
 }
 
