@@ -2102,7 +2102,16 @@ function hitungHilal(lat, lon, customTime = null) {
       }
     }
   }
-  return data;
+  return {
+    alt: alt,
+    azi: azi,
+    elo: elo,
+    age: age,
+    illumination: illumination,
+    yallop: yallopVal, // Data Yallop dikirim ke global
+    odeh: odehVal,     // Data Odeh dikirim ke global
+    vScore: vScore
+  };
 }
 
 // === DATA MATAHARI ===
