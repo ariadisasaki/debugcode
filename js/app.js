@@ -1450,6 +1450,13 @@ function getHijriInsight(data, maghrib, now) {
     `;
 }
 
+// === ARAH MATA ANGIN ===
+function getArahMataAngin(deg) {
+    const directions = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
+    const index = Math.round(deg / 45) % 8;
+    return directions[index] || "Barat";
+}
+
 // === GPS LOKASI ===
 function getLocation() {
     navigator.geolocation.getCurrentPosition(async (p) => {
