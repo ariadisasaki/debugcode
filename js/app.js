@@ -2077,11 +2077,14 @@ function hitungHilal(lat, lon, customTime = null) {
     alt: alt,
     azi: azi,
     elo: elo,
-    illumination: illumination, // Tambahkan ini agar tidak undefined
+    illumination: illumination,
     yallop: yallopVal,
     odeh: odehVal,
-    age: age
+    age: age,
+    vScore: vScoreVal
   };
+  // Log ke konsol untuk memastikan data terisi (Hapus jika sudah lancar)
+  console.log("Data Terupdate:", hilalDataFull.yallop, hilalDataFull.odeh);
 
   // === REFERENSI WAKTU ===
   // Menggunakan ijtima dari cache, bukan panggil fungsi baru
