@@ -1376,9 +1376,11 @@ function hitungMaghrib(lat, lon, customDate=null){
 
 // ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
-    if (!data || data.yallop === "N/A" || data.yallop === undefined) {
-      return null; 
-    }
+    if (!data || typeof data.alt === 'undefined') return null;
+
+    // Untuk yallop, berikan nilai default agar tidak macet
+    const yallop = data.yallop || "N/A";
+    const odeh = data.odeh || "N/A";
     // 1. Ambil & Validasi Data
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
@@ -1804,13 +1806,12 @@ function renderUI() {
         return;
     }
 
-    // 2. Cek data Hilal (Gunakan pengecekan ketat pada yallop)
-    // Jika hilalDataFull belum ada atau masih N/A, kita jangan render dulu
-    if (!hilalDataFull || hilalDataFull.yallop === "N/A" || hilalDataFull.yallop === undefined) {
-        // Jangan timpa innerHTML di sini agar teks "Mengkalkulasi" tidak berkedip
-        return;
+    // 2. Cek data Hilal (Versi Longgar agar UI tidak blank)
+    if (!hilalDataFull) {
+      console.warn("Menunggu hilalDataFull...");
+      return; // Berhenti jika objek benar-benar belum ada
     }
-
+  
     const now = new Date();
 
     try {
@@ -2077,12 +2078,10 @@ function hitungHilal(lat, lon, customTime = null) {
   // 3. UPDATE GLOBAL STATE (Kunci Utama Anti-Glitch)
   // Gunakan nama variabel yang sama dengan yang dihitung di atas
   hilalDataFull = {
-    ...dataCore, // Pastikan dataCore (alt, azi, elo) sudah ada
-    yallop: yallopVal,
+    ...dataCore,
+    yallop: yallopVal, // Pastikan di sini 'yallop', bukan 'yallopVal'
     odeh: odehVal,
-    vScore: vScoreVal,
-    age: age,
-    illumination: illumination
+    age: age
   };
 
   // === REFERENSI WAKTU ===
