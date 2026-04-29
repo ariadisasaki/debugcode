@@ -2108,9 +2108,11 @@ function hitungHilal(lat, lon, customTime = null) {
     elo: elo,
     age: age,
     illumination: illumination,
-    yallop: yallopVal, // Data Yallop dikirim ke global
-    odeh: odehVal,     // Data Odeh dikirim ke global
-    vScore: vScore
+    yallop: yallopVal,
+    odeh: odehVal,
+    // Tambahkan data ijtima agar bisa dibaca UI lain
+    lastIjtima: CACHED_IJTIMA, 
+    nextIjtima: typeof NEXT_IJTIMA !== 'undefined' ? NEXT_IJTIMA : null 
   };
 }
 
