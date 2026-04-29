@@ -1376,17 +1376,19 @@ function hitungMaghrib(lat, lon, customDate=null){
 
 // ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
-    // Penjaga: Jika data belum siap, jangan render dulu
+    // 1. Validasi minimal: Jika alt tidak ada, baru return null
     if (!data || typeof data.alt === 'undefined') return null;
 
-    // AMBIL DATA (Hanya satu kali deklarasi)
+    // 2. Ambil data dengan Fallback agar tidak crash
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
     const elo = Number(data.elo) || 0;
     const age = Number(data.age) || 0;
     const illumination = Number(data.illumination) || 0;
-    const yallop = data.yallop || "N/A";
-    const odeh = data.odeh || "N/A";
+    
+    // Gunakan strip (-) jika data benar-benar belum masuk dari fungsi hitung
+    const yallop = data.yallop || "-"; 
+    const odeh = data.odeh || "-";
     
     const ijtimaNow = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : now;
 
