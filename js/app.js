@@ -1374,68 +1374,94 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT =====
+// ===== HIJRI INSIGHT (VERSI DINAMIS & EDUKATIF) =====
 function getHijriInsight(data, maghrib, now) {
-  // 1. Ambil data dari parameter (pastikan data valid)
-  const alt = Number(data.alt) || 0;
-  const azi = Number(data.azi) || 0;
-  const elo = Number(data.elo) || 0;
-  const age = Number(data.age) || 0;
-  const illumination = Number(data.illumination) || 0;
+    // 1. Ambil & Validasi Data (Single Source of Truth)
+    const alt = Number(data.alt) || 0;
+    const azi = Number(data.azi) || 0;
+    const elo = Number(data.elo) || 0;
+    const age = Number(data.age) || 0;
+    const illumination = Number(data.illumination) || 0;
+    
+    // Ambil data metode (pastikan variabel ini ada di hitungHilal Anda)
+    const yallop = data.yallop || "N/A";
+    const odeh = data.odeh || "N/A";
+    
+    const ijtimaNow = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : now;
 
-  // 2. Gunakan CACHED_IJTIMA (Jangan hitung ulang agar tidak lag/glitch)
-  const ijtimaNow = typeof CACHED_IJTIMA !== 'undefined' ? CACHED_IJTIMA : new Date();
-  
-  // 3. Logika Penjelasan Dinamis
-  const deskripsiAlt = alt > 0 
-    ? `<span style="color:#4ade80">Bulan sudah di atas ufuk dan berpotensi terlihat.</span>` 
-    : `<span style="color:#f87171">Bulan masih di bawah ufuk sehingga tidak mungkin terlihat.</span>`;
-  
-  return `
-🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}°<br>
-Menunjukkan posisi bulan dari horizon. 
-${alt > 0 ? "Bulan sudah di atas ufuk dan berpotensi terlihat." : "Bulan masih di bawah ufuk sehingga tidak mungkin terlihat."}
-<br><br>
+    // 2. Logika Narasi Dinamis Berdasarkan Angka Real-time
+    
+    // --- Narasi Tinggi Hilal ---
+    let narasiAlt = "";
+    if (alt > 3) {
+        narasiAlt = `<span style="color:#4ade80; font-weight:bold;">Sangat Baik.</span> Posisi bulan sudah di atas kriteria MABIMS (3°), peluang terlihat sangat besar.`;
+    } else if (alt > 0) {
+        narasiAlt = `<span style="color:#fbbf24; font-weight:bold;">Kritis.</span> Bulan sudah di atas ufuk, namun di bawah kriteria 3°. Butuh alat optik dan cuaca sangat cerah.`;
+    } else {
+        narasiAlt = `<span style="color:#f87171; font-weight:bold;">Di Bawah Ufuk.</span> Hilal tidak mungkin terlihat karena posisi bulan masih di bawah cakrawala.`;
+    }
 
-🧭 <b>Azimuth:</b> ${azi.toFixed(2)}°<br>
-Menunjukkan arah bulan dari utara (0° = Utara, 90° = Timur, 180° = Selatan, 270° = Barat).
-<br><br>
+    // --- Narasi Elongasi ---
+    let narasiElo = elo >= 6.4 ? 
+        `<span style="color:#4ade80">Lulus kriteria (min. 6.4°).</span>` : 
+        `<span style="color:#f87171">Belum memenuhi kriteria fisik minimum.</span>`;
 
-📐 <b>Elongasi:</b> ${elo.toFixed(2)}°<br>
-Jarak sudut bulan terhadap matahari. 
-Semakin besar elongasi, semakin besar peluang hilal terlihat.
-<br><br>
+    // --- Narasi Kriteria Yallop ---
+    const yallopDesc = {
+        'A': 'Sangat Mudah dilihat mata telanjang.',
+        'B': 'Mudah dilihat mata jika langit cerah.',
+        'C': 'Mungkin butuh teleskop untuk mencari posisi awal.',
+        'D': 'Hanya terlihat dengan alat bantu optik.',
+        'E': 'Mustahil dilihat secara visual.',
+        'F': 'Mustahil, bulan di bawah ufuk.'
+    };
+    let ketYallop = yallopDesc[yallop] || "Mengkalkulasi peluang...";
 
-💡 <b>Cahaya Bulan:</b> ${illumination.toFixed(2)}%<br>
-Menunjukkan fase bulan (semakin besar → semakin terang).
-<br><br>
+    // --- Kesimpulan Akhir ---
+    let kesimpulanStatus = (alt > 3 && elo >= 6.4) ? 
+        `<div style="border-left:4px solid #27ae60; background:rgba(39,174,96,0.1); padding:10px; border-radius:5px;">
+            <b>Analisis Akhir:</b> Hilal memenuhi kriteria Imkanur Rukyat. Awal bulan baru kemungkinan besar jatuh esok hari.
+        </div>` : 
+        `<div style="border-left:4px solid #e74c3c; background:rgba(231,76,60,0.1); padding:10px; border-radius:5px;">
+            <b>Analisis Akhir:</b> Kriteria belum terpenuhi secara sempurna. Kemungkinan besar bulan berjalan (istikmal) digenapkan 30 hari.
+        </div>`;
 
-🌙 <b>Umur Bulan:</b> ${age.toFixed(1)} jam (~${(age/24).toFixed(2)} hari astronomi)<br><br>
+    // 3. Render HTML
+    return `
+    <div style="line-height: 1.6; color: #f1f5f9;">
+        <p>🔭 <b>Tinggi Bulan (Altitude):</b> <span style="font-family:monospace;">${alt.toFixed(2)}°</span><br>
+        ${narasiAlt}</p>
 
-<b>Perkiraan:</b><br>
-Sekitar ${(24 - (age % 24)).toFixed(1)} jam lagi menuju fase hari berikutnya. Perkiraan berdasarkan fase bulan, dapat berbeda dari waktu Maghrib lokal.
-<br><br>
+        <p>🧭 <b>Arah Bulan (Azimuth):</b> <span style="font-family:monospace;">${azi.toFixed(2)}°</span><br>
+        Bulan berada di arah <b>${getArahMataAngin(azi)}</b>. Perhatikan sudut ini untuk mengarahkan teleskop/kamera.</p>
 
-🔭 <b>Metode Yallop</b><br>
-Digunakan secara internasional untuk menentukan apakah hilal bisa terlihat.
-Kategori A–B mudah terlihat, sedangkan E berarti tidak mungkin terlihat.<br><br>
+        <p>📐 <b>Elongasi & Cahaya:</b><br>
+        Jarak sudut Matahari-Bulan adalah <b>${elo.toFixed(2)}°</b> (${narasiElo}). Intensitas cahaya hilal saat ini sekitar <b>${illumination.toFixed(2)}%</b>.</p>
 
-🔭 <b>Metode Odeh</b><br>
-Metode modern yang mirip Yallop, digunakan dalam penelitian rukyat.
-Menunjukkan apakah hilal bisa dilihat dengan mata atau alat bantu.<br><br>
+        <p>🌙 <b>Umur Bulan:</b><br>
+        Sudah berjalan <b>${age.toFixed(1)} jam</b> sejak waktu Ijtima/Konjungsi.</p>
 
-📊 <b>Visibility Score</b><br>
-Persentase peluang terlihatnya hilal berdasarkan tinggi, elongasi, dan umur bulan.
-Semakin tinggi nilainya, semakin besar kemungkinan hilal terlihat.<br><br>
+        <hr style="border:0; border-top:1px solid #475569; margin:15px 0;">
 
-🌑 <b>Ijtima (Konjungsi)</b><br>
-Adalah saat bulan dan matahari sejajar. Ini adalah awal fase bulan baru,
-tetapi hilal belum tentu langsung terlihat setelah ijtima.<br><br>
+        <p>📊 <b>Kriteria Internasional:</b><br>
+        • <b>Metode Yallop:</b> Kategori [${yallop}] - ${ketYallop}<br>
+        • <b>Metode Odeh:</b> ${odeh}<br>
+        • <b>Ijtima:</b> ${ijtimaNow.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} WIB/WITA</p>
 
-<b>Kesimpulan:</b><br>
-Penentuan awal bulan Hijriah tidak hanya berdasarkan ijtima,
-tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
-`;
+        ${kesimpulanStatus}
+        
+        <p style="font-size:0.85em; color:#94a3b8; margin-top:15px; font-style:italic;">
+        *Catatan: Ini adalah simulasi astronomis. Keputusan resmi tetap mengikuti hasil Sidang Isbat Pemerintah.
+        </p>
+    </div>
+    `;
+}
+
+// Fungsi pembantu menentukan arah
+function getArahMataAngin(deg) {
+    const directions = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
+    const index = Math.round(deg / 45) % 8;
+    return directions[index];
 }
 
 // === GPS LOKASI ===
