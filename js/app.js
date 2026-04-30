@@ -2940,7 +2940,6 @@ function debugHilal() {
             "Output Hybrid": `${hybrid.d} ${bulanIndo[hybrid.m] || ''} ${hybrid.y}`,
             "Ijtima Terakhir": CACHED_IJTIMA ? CACHED_IJTIMA.toLocaleString('id-ID') : "N/A",
             "Jarak ke Ijtima": CACHED_IJTIMA ? ((now - CACHED_IJTIMA) / (1000 * 3600 * 24)).toFixed(2) + " hari" : "N/A",
-            "Estimasi Maghrib": maghribData.decimal.toFixed(2)
         });
         console.groupEnd();
 
@@ -2979,4 +2978,4 @@ window.stopDebug = function() {
 
 // 4. JALANKAN INTERVAL
 if (typeof debugInterval !== 'undefined') clearInterval(debugInterval);
-debugInterval = setInterval(debugHilal, 30000);
+debugInterval = setInterval(debugHilal, 10000);
