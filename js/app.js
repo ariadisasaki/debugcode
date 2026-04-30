@@ -2847,29 +2847,26 @@ function toggleHijriMode() {
     updateHijriDisplay(); 
 }
 
-// === SISTEM AUDIT & DEBUG LOG ===
-// 1. FUNGSI AUDIT: Mencatat riwayat perubahan tanggal ke LocalStorage
+// === SISTEM AUDIT & DEBUG LOG (REVISED) ===
+// 1. FUNGSI AUDIT: Mencatat ke LocalStorage (Tanpa Log ke Console kecuali saat update)
 function logHijriAudit(data, mode) {
     try {
         let logs = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
         const dateString = `${data.d}-${data.m}-${data.y}`;
         
-        // Cek apakah entri terakhir berbeda dengan tanggal sekarang
         if (logs.length === 0 || logs[logs.length - 1].hijriDate !== dateString) {
             const newEntry = {
                 timestamp: new Date().toLocaleString('id-ID'),
                 mode: mode ? "HISAB" : "HYBRID",
                 hijriDate: dateString,
                 koordinat: `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`,
-                // Data Hilal saat perubahan terjadi
-                h_alt: hilalDataFull.alt.toFixed(2) + "°",
-                h_elo: hilalDataFull.elo.toFixed(2) + "°"
+                h_alt: (hilalDataFull.alt || 0).toFixed(2) + "°",
+                h_elo: (hilalDataFull.elo || 0).toFixed(2) + "°"
             };
-            
             logs.push(newEntry);
-            if (logs.length > 50) logs.shift(); // Simpan 50 record terakhir
+            if (logs.length > 50) logs.shift();
             localStorage.setItem("hijriAuditLogs", JSON.stringify(logs));
-            
+            // Hanya log ini yang muncul sesekali saat ada perubahan tanggal
             console.log("%c 📝 Audit Log Updated! ", "color: #2ecc71; font-weight: bold", newEntry);
         }
     } catch (e) {
@@ -2877,25 +2874,41 @@ function logHijriAudit(data, mode) {
     }
 }
 
-// 2. FUNGSI DEBUG: Dashboard Monitoring Lengkap
+// 2. FUNGSI DEBUG: Dashboard Monitoring
 function debugHilal() {
-    // Proteksi: Pastikan koordinat sudah ada
     if (typeof currentLat === "undefined" || currentLat === null) {
         console.warn("⏳ [Debug] Menunggu data lokasi/GPS...");
         return;
     }
 
     const now = new Date();
-
     try {
-        // 1. Pengambilan data (gunakan fallback agar tidak crash)
-        const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
+        const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18.1 };
         const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { alt: 0, azi: 0 };
-        const moon = hilalDataFull; // Mengambil state global
+        const moon = hilalDataFull; 
         const hisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(currentLat, currentLon) : {d:0,m:1,y:0};
         const hybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(currentLat, currentLon) : {d:0,m:1,y:0};
-        
         const bulanIndo = ["","Muharram","Safar","Rabiul Awal","Rabiul Akhir","Jumadil Awal","Jumadil Akhir","Rajab","Syaban","Ramadhan","Syawal","Zulkaidah","Zulhijjah"];
+
+        // --- LOGIKA KEPUTUSAN RUKYAT (FINAL DECISION) ---
+        let keputusanFinal = "BELUM DILAKUKAN RUKYAT";
+        let kColor = "background: #7f8c8d; color: white;";
+        const jamMaghrib = maghribData.decimal;
+        const jamSekarang = now.getHours() + (now.getMinutes() / 60);
+
+        if (hybrid.d === 29) {
+            if (jamSekarang < jamMaghrib) {
+                keputusanFinal = "FASE PERSIAPAN (Hasil sah setelah Maghrib sore ini)";
+                kColor = "background: #3498db; color: white;";
+            } else {
+                const lolos = (moon.alt >= 3 && moon.elo >= 6.4);
+                keputusanFinal = lolos ? "MASUK BULAN BARU (Hasil Rukyat Positif)" : "ISTIKMAL (Hasil Rukyat Negatif)";
+                kColor = lolos ? "background: #27ae60; color: white;" : "background: #e67e22; color: white;";
+            }
+        } else if (hybrid.d > 29 || hybrid.d === 1) {
+            keputusanFinal = "RUKYAT SELESAI (Siklus Baru)";
+            kColor = "background: #2c3e50; color: #bdc3c7;";
+        }
 
         console.clear();
         console.log(`%c 🌙 HILAL SYSTEM MONITOR - ${now.toLocaleTimeString('id-ID')} `, 'background: #2c3e50; color: #ecf0f1; font-weight: bold; padding: 5px; border-radius: 3px;');
@@ -2904,9 +2917,9 @@ function debugHilal() {
         console.group("⚙️ System Health");
         console.table({
             "Ijtima Cache": CACHED_IJTIMA ? "✅ Loaded" : "❌ MISSING",
-            "Hilal Data": (moon.alt !== 0) ? "✅ Active" : "⚠️ Still Zero/Loading",
+            "Hilal Data": (moon.alt !== 0) ? "✅ Active" : "⚠️ Loading",
             "GPS Status": locationInitialized ? "✅ Locked" : "⏳ Searching",
-            "Memory Logs": JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]").length + " entries"
+            "Saved Logs": JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]").length
         });
         console.groupEnd();
 
@@ -2924,40 +2937,32 @@ function debugHilal() {
         // DASHBOARD 3: KALENDER & IJTIMA
         console.group("📅 Calendar & Cycle");
         console.table({
-            "Mode Aktif": typeof modeHijri !== 'undefined' && modeHijri ? "HISAB (Astronomi)" : "HYBRID (MABIMS)",
-            "Output Hisab": `${hisab.d} ${bulanIndo[hisab.m] || ''} ${hisab.y}`,
-            "Output Hybrid": `${hybrid.d} ${bulanIndo[hybrid.m] || ''} ${hybrid.y}`,
-            "Ijtima Terakhir": CACHED_IJTIMA ? CACHED_IJTIMA.toLocaleString('id-ID') : "N/A",
+            "Mode Aktif": typeof modeHijri !== 'undefined' && modeHijri ? "HISAB" : "HYBRID",
+            "Output Hisab": `${hisab.d} ${bulanIndo[hisab.m]} ${hisab.y}`,
+            "Output Hybrid": `${hybrid.d} ${bulanIndo[hybrid.m]} ${hybrid.y}`,
             "Jarak ke Ijtima": CACHED_IJTIMA ? ((now - CACHED_IJTIMA) / (1000 * 3600 * 24)).toFixed(2) + " hari" : "N/A"
         });
         console.groupEnd();
 
-        // 1. Kesimpulan
+        // KESIMPULAN & KEPUTUSAN FINAL
         const statusWarna = (moon.alt >= 3 && moon.elo >= 6.4) ? 'color: #2ecc71' : 'color: #e74c3c';
         console.log(`%c KESIMPULAN: ${ (moon.alt >= 3 && moon.elo >= 6.4) ? "SUDAH IMKAN RUKYAT" : "BELUM IMKAN RUKYAT" }`, `font-weight: bold; font-size: 12px; ${statusWarna}`);
-        
-        // 2. RIWAYAT AUDIT (Otomatis tampil di bawah Dashboard)
-        const auditData = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
-        if (auditData.length > 0) {
-            console.log("%c 📑 RIWAYAT AUDIT TERAKHIR ", "background: #27ae60; color: white; padding: 2px; font-weight: bold;");
-            console.table(auditData);
-        }
+        console.log(`%c KEPUTUSAN RUKYAT: %c ${keputusanFinal} `, "font-weight: bold;", `padding: 4px; border-radius: 4px; ${kColor}`);
 
-        // 3. Stop Debugging
-        console.log("%c Ketik 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
-      
+        console.log("%c Ketik 'checkAudit()' untuk riwayat, 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
     } catch (err) {
         console.error("❌ Debug Dashboard Crash:", err);
     }
 }
 
-// 3. UTILTIES (Pengecekan Riwayat)
+// 3. UTILTIES (Hanya muncul saat dipanggil)
 window.checkAudit = function() {
     const data = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
+    console.clear();
     if (data.length === 0) {
-        console.log("%c Belum ada riwayat perubahan tanggal ditemukan di LocalStorage. ", "color: #f39c12");
+        console.log("%c Belum ada riwayat perubahan ditemukan. ", "color: #f39c12");
     } else {
-        console.log("%c 📑 RIWAYAT PERUBAHAN TANGGAL ", "background: #27ae60; color: white; padding: 3px;");
+        console.log("%c 📑 RIWAYAT PERUBAHAN TANGGAL (AUDIT LOG) ", "background: #27ae60; color: white; padding: 5px; font-weight: bold; display: block; width: 100%;");
         console.table(data);
     }
 };
@@ -2970,4 +2975,6 @@ window.stopDebug = function() {
 };
 
 // 4. JALANKAN INTERVAL (Setiap 30 detik)
+if (typeof debugInterval !== 'undefined') clearInterval(debugInterval);
 let debugInterval = setInterval(debugHilal, 30000);
+
