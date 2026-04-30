@@ -1374,68 +1374,83 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT =====
+// ===== HIJRI INSIGHT (DYNAMIC & PROFESSIONAL VERSION) =====
 function getHijriInsight(data, maghrib, now) {
-  // 1. Ambil data dari parameter (pastikan data valid)
-  const alt = Number(data.alt) || 0;
-  const azi = Number(data.azi) || 0;
-  const elo = Number(data.elo) || 0;
-  const age = Number(data.age) || 0;
-  const illumination = Number(data.illumination) || 0;
+    // 1. Ambil & Validasi Data
+    const alt = Number(data.alt) || 0;
+    const azi = Number(data.azi) || 0;
+    const elo = Number(data.elo) || 0;
+    const age = Number(data.age) || 0;
+    const illumination = Number(data.illumination) || 0;
+    const yallop = data.yallop || "N/A";
+    const odeh = data.odeh || "N/A";
+    
+    const ijtimaNow = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : now;
 
-  // 2. Gunakan CACHED_IJTIMA (Jangan hitung ulang agar tidak lag/glitch)
-  const ijtimaNow = typeof CACHED_IJTIMA !== 'undefined' ? CACHED_IJTIMA : new Date();
-  
-  // 3. Logika Penjelasan Dinamis
-  const deskripsiAlt = alt > 0 
-    ? `<span style="color:#4ade80">Bulan sudah di atas ufuk dan berpotensi terlihat.</span>` 
-    : `<span style="color:#f87171">Bulan masih di bawah ufuk sehingga tidak mungkin terlihat.</span>`;
-  
-  return `
-🔭 <b>Tinggi Bulan:</b> ${alt.toFixed(2)}°<br>
-Menunjukkan posisi bulan dari horizon. 
-${alt > 0 ? "Bulan sudah di atas ufuk dan berpotensi terlihat." : "Bulan masih di bawah ufuk sehingga tidak mungkin terlihat."}
-<br><br>
+    // 2. Logika Narasi Dinamis
+    // --- Narasi Tinggi Bulan ---
+    let narasiAlt = alt > 3 ? 
+        `<span style="color:#4ade80">Sangat baik (di atas kriteria MABIMS 3°).</span>` : 
+        (alt > 0 ? `<span style="color:#fbbf24">Kritis (di atas ufuk tapi di bawah 3°).</span>` : 
+        `<span style="color:#f87171">Bulan di bawah ufuk (Mustahil rukyat).</span>`);
 
-🧭 <b>Azimuth:</b> ${azi.toFixed(2)}°<br>
-Menunjukkan arah bulan dari utara (0° = Utara, 90° = Timur, 180° = Selatan, 270° = Barat).
-<br><br>
+    // --- Narasi Elongasi ---
+    let narasiElo = elo >= 6.4 ? 
+        `<span style="color:#4ade80">Memenuhi kriteria (min. 6.4°).</span>` : 
+        `<span style="color:#f87171">Belum memenuhi kriteria MABIMS.</span>`;
 
-📐 <b>Elongasi:</b> ${elo.toFixed(2)}°<br>
-Jarak sudut bulan terhadap matahari. 
-Semakin besar elongasi, semakin besar peluang hilal terlihat.
-<br><br>
+    // --- Narasi Yallop (Kriteria Internasional) ---
+    const yallopDesc = {
+        'A': 'Sangat Mudah dilihat dengan mata telanjang.',
+        'B': 'Mudah dilihat jika kondisi cuaca cerah.',
+        'C': 'Mungkin butuh alat optik untuk pencarian awal.',
+        'D': 'Hanya dapat dilihat dengan alat optik (Teleskop/Binokular).',
+        'E': 'Mustahil dilihat secara visual.',
+        'F': 'Mustahil, bulan di bawah ufuk.'
+    };
+    let ketYallop = yallopDesc[yallop] || "Data tidak tersedia.";
 
-💡 <b>Cahaya Bulan:</b> ${illumination.toFixed(2)}%<br>
-Menunjukkan fase bulan (semakin besar → semakin terang).
-<br><br>
+    // --- Narasi Kesimpulan ---
+    let kesimpulan = (alt > 3 && elo >= 6.4) ? 
+        "<b>Kesimpulan:</b> Hilal kemungkinan besar berhasil dirukyat (Imkanur Rukyat)." : 
+        "<b>Kesimpulan:</b> Secara astronomis, hilal sangat sulit atau mustahil terlihat sore ini.";
 
-🌙 <b>Umur Bulan:</b> ${age.toFixed(1)} jam (~${(age/24).toFixed(2)} hari astronomi)<br><br>
+    // 3. Render Template UI
+    return `
+    <div style="line-height: 1.6; font-size: 0.95em; color: #e2e8f0;">
+        <p>🔭 <b>Tinggi Bulan:</b> <span style="font-family: monospace;">${alt.toFixed(2)}°</span><br>
+        Status: ${narasiAlt}</p>
 
-<b>Perkiraan:</b><br>
-Sekitar ${(24 - (age % 24)).toFixed(1)} jam lagi menuju fase hari berikutnya. Perkiraan berdasarkan fase bulan, dapat berbeda dari waktu Maghrib lokal.
-<br><br>
+        <p>🧭 <b>Azimuth:</b> <span style="font-family: monospace;">${azi.toFixed(2)}°</span><br>
+        Posisi hilal berada di arah <b>${getArahMataAngin(azi)}</b>. Perhatikan jarak horizontalnya dari titik tenggelam Matahari.</p>
 
-🔭 <b>Metode Yallop</b><br>
-Digunakan secara internasional untuk menentukan apakah hilal bisa terlihat.
-Kategori A–B mudah terlihat, sedangkan E berarti tidak mungkin terlihat.<br><br>
+        <p>📐 <b>Elongasi:</b> <span style="font-family: monospace;">${elo.toFixed(2)}°</span><br>
+        Status: ${narasiElo} Jarak sudut ini menentukan ketebalan sabit hilal.</p>
 
-🔭 <b>Metode Odeh</b><br>
-Metode modern yang mirip Yallop, digunakan dalam penelitian rukyat.
-Menunjukkan apakah hilal bisa dilihat dengan mata atau alat bantu.<br><br>
+        <p>💡 <b>Cahaya & Umur:</b><br>
+        Bulan saat ini berusia <b>${age.toFixed(1)} jam</b> dengan fraksi pencahayaan <b>${illumination.toFixed(2)}%</b>. Semakin tua umur bulan, semakin kuat pantulan cahayanya.</p>
 
-📊 <b>Visibility Score</b><br>
-Persentase peluang terlihatnya hilal berdasarkan tinggi, elongasi, dan umur bulan.
-Semakin tinggi nilainya, semakin besar kemungkinan hilal terlihat.<br><br>
+        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
 
-🌑 <b>Ijtima (Konjungsi)</b><br>
-Adalah saat bulan dan matahari sejajar. Ini adalah awal fase bulan baru,
-tetapi hilal belum tentu langsung terlihat setelah ijtima.<br><br>
+        <p>📊 <b>Analisis Metodologi:</b><br>
+        • <b>Metode Yallop (${yallop}):</b> ${ketYallop}<br>
+        • <b>Metode Odeh:</b> Fokus pada kontras latar langit. Status saat ini: <b>${odeh}</b>.</p>
 
-<b>Kesimpulan:</b><br>
-Penentuan awal bulan Hijriah tidak hanya berdasarkan ijtima,
-tetapi juga kemungkinan hilal dapat dirukyat saat Maghrib.
-`;
+        <p>🌑 <b>Ijtima (Konjungsi):</b><br>
+        Terjadi pada <b>${ijtimaNow.toLocaleString('id-ID', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</b>. Ini adalah titik nol bulan baru (New Moon) secara astronomis.</p>
+
+        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #3498db;">
+            ${kesimpulan}
+        </div>
+    </div>
+    `;
+}
+
+// Fungsi pembantu untuk menentukan arah mata angin
+function getArahMataAngin(deg) {
+    const directions = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
+    const index = Math.round(deg / 45) % 8;
+    return directions[index];
 }
 
 // === GPS LOKASI ===
@@ -2847,25 +2862,29 @@ function toggleHijriMode() {
     updateHijriDisplay(); 
 }
 
-// === SISTEM AUDIT & DEBUG LOG === 
-
+// === SISTEM AUDIT & DEBUG LOG ===
 // 1. FUNGSI AUDIT: Mencatat riwayat perubahan tanggal ke LocalStorage
 function logHijriAudit(data, mode) {
     try {
         let logs = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
         const dateString = `${data.d}-${data.m}-${data.y}`;
+        
+        // Cek apakah entri terakhir berbeda dengan tanggal sekarang
         if (logs.length === 0 || logs[logs.length - 1].hijriDate !== dateString) {
             const newEntry = {
                 timestamp: new Date().toLocaleString('id-ID'),
                 mode: mode ? "HISAB" : "HYBRID",
                 hijriDate: dateString,
                 koordinat: `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`,
+                // Data Hilal saat perubahan terjadi
                 h_alt: hilalDataFull.alt.toFixed(2) + "°",
                 h_elo: hilalDataFull.elo.toFixed(2) + "°"
             };
+            
             logs.push(newEntry);
-            if (logs.length > 50) logs.shift();
+            if (logs.length > 50) logs.shift(); // Simpan 50 record terakhir
             localStorage.setItem("hijriAuditLogs", JSON.stringify(logs));
+            
             console.log("%c 📝 Audit Log Updated! ", "color: #2ecc71; font-weight: bold", newEntry);
         }
     } catch (e) {
@@ -2875,38 +2894,23 @@ function logHijriAudit(data, mode) {
 
 // 2. FUNGSI DEBUG: Dashboard Monitoring Lengkap
 function debugHilal() {
+    // Proteksi: Pastikan koordinat sudah ada
     if (typeof currentLat === "undefined" || currentLat === null) {
         console.warn("⏳ [Debug] Menunggu data lokasi/GPS...");
         return;
     }
 
     const now = new Date();
+
     try {
+        // 1. Pengambilan data (gunakan fallback agar tidak crash)
         const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
         const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { alt: 0, azi: 0 };
-        const moon = hilalDataFull; 
+        const moon = hilalDataFull; // Mengambil state global
         const hisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(currentLat, currentLon) : {d:0,m:1,y:0};
         const hybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(currentLat, currentLon) : {d:0,m:1,y:0};
+        
         const bulanIndo = ["","Muharram","Safar","Rabiul Awal","Rabiul Akhir","Jumadil Awal","Jumadil Akhir","Rajab","Syaban","Ramadhan","Syawal","Zulkaidah","Zulhijjah"];
-
-        // --- LOGIKA KEPUTUSAN RUKYAT ---
-        let keputusanFinal = "BELUM DILAKUKAN RUKYAT";
-        let kWarna = "background: #7f8c8d; color: white;";
-        const jamSekarang = now.getHours() + (now.getMinutes() / 60);
-
-        if (hybrid.d === 29) {
-            if (jamSekarang < maghribData.decimal) {
-                keputusanFinal = "FASE PERSIAPAN (Tunggu Maghrib)";
-                kWarna = "background: #3498db; color: white;";
-            } else {
-                const lolos = (moon.alt >= 3 && moon.elo >= 6.4);
-                keputusanFinal = lolos ? "MASUK BULAN BARU (Hasil Rukyat Positif)" : "ISTIKMAL (Hasil Rukyat Negatif)";
-                kWarna = lolos ? "background: #27ae60; color: white;" : "background: #e67e22; color: white;";
-            }
-        } else if (hybrid.d > 29 || hybrid.d === 1) {
-            keputusanFinal = "SIKLUS BULAN BARU SUDAH BERJALAN";
-            kWarna = "background: #2c3e50; color: #bdc3c7;";
-        }
 
         console.clear();
         console.log(`%c 🌙 HILAL SYSTEM MONITOR - ${now.toLocaleTimeString('id-ID')} `, 'background: #2c3e50; color: #ecf0f1; font-weight: bold; padding: 5px; border-radius: 3px;');
@@ -2939,21 +2943,24 @@ function debugHilal() {
             "Output Hisab": `${hisab.d} ${bulanIndo[hisab.m] || ''} ${hisab.y}`,
             "Output Hybrid": `${hybrid.d} ${bulanIndo[hybrid.m] || ''} ${hybrid.y}`,
             "Ijtima Terakhir": CACHED_IJTIMA ? CACHED_IJTIMA.toLocaleString('id-ID') : "N/A",
-            "Jarak ke Ijtima": CACHED_IJTIMA ? ((now - CACHED_IJTIMA) / (1000 * 3600 * 24)).toFixed(2) + " hari" : "N/A",
-            "Estimasi Maghrib": maghribData.decimal.toFixed(2)
+            "Jarak ke Ijtima": CACHED_IJTIMA ? ((now - CACHED_IJTIMA) / (1000 * 3600 * 24)).toFixed(2) + " hari" : "N/A"
         });
         console.groupEnd();
 
-        // 1. Kesimpulan Imkan Rukyat
+        // 1. Kesimpulan
         const statusWarna = (moon.alt >= 3 && moon.elo >= 6.4) ? 'color: #2ecc71' : 'color: #e74c3c';
         console.log(`%c KESIMPULAN: ${ (moon.alt >= 3 && moon.elo >= 6.4) ? "SUDAH IMKAN RUKYAT" : "BELUM IMKAN RUKYAT" }`, `font-weight: bold; font-size: 12px; ${statusWarna}`);
         
-        // 2. Logika Keputusan Rukyat (Final)
-        console.log(`%c KEPUTUSAN RUKYAT: %c ${keputusanFinal} `, "font-weight: bold;", `padding: 4px; border-radius: 4px; ${kWarna}`);
+        // 2. RIWAYAT AUDIT (Otomatis tampil di bawah Dashboard)
+        const auditData = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
+        if (auditData.length > 0) {
+            console.log("%c 📑 RIWAYAT AUDIT TERAKHIR ", "background: #27ae60; color: white; padding: 2px; font-weight: bold;");
+            console.table(auditData);
+        }
 
-        // Catatan: Riwayat Audit dipindahkan ke fungsi checkAudit() agar layar tidak penuh
-        console.log("%c Ketik 'checkAudit()' untuk melihat riwayat, 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
-
+        // 3. Stop Debugging
+        console.log("%c Ketik 'stopDebug()' untuk berhenti. ", 'color: #3498db; font-style: italic;');
+      
     } catch (err) {
         console.error("❌ Debug Dashboard Crash:", err);
     }
@@ -2963,9 +2970,9 @@ function debugHilal() {
 window.checkAudit = function() {
     const data = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
     if (data.length === 0) {
-        console.log("%c Belum ada riwayat ditemukan. ", "color: #f39c12");
+        console.log("%c Belum ada riwayat perubahan tanggal ditemukan di LocalStorage. ", "color: #f39c12");
     } else {
-        console.log("%c 📑 RIWAYAT PERUBAHAN TANGGAL ", "background: #27ae60; color: white; padding: 3px; font-weight: bold;");
+        console.log("%c 📑 RIWAYAT PERUBAHAN TANGGAL ", "background: #27ae60; color: white; padding: 3px;");
         console.table(data);
     }
 };
@@ -2977,6 +2984,5 @@ window.stopDebug = function() {
     }
 };
 
-// 4. JALANKAN INTERVAL
-if (typeof debugInterval !== 'undefined') clearInterval(debugInterval);
-debugInterval = setInterval(debugHilal, 30000);
+// 4. JALANKAN INTERVAL (Setiap 30 detik)
+let debugInterval = setInterval(debugHilal, 30000);
