@@ -1374,19 +1374,24 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT =====
+// ===== HIJRI INSIGHT (REVISED: TIME-AWARE LOGIC) =====
 function getHijriInsight(data, maghrib, now) {
-  // 1. Ambil Data Numerik
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
   const age = Number(data.age) || 0;
   const illumination = Number(data.illumination) || 0;
   
-  // 2. Data Matahari untuk Referensi Navigasi
-  // Menggunakan currentLat/Lon jika tersedia, atau default ke data yang ada
-  const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { azi: 270 };
+  // Data Matahari
+  const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { azi: 270, alt: 0 };
+  const maghribDec = maghrib?.decimal || 18;
+  const jamSekarang = now.getHours() + now.getMinutes() / 60;
 
+  // 1. LOGIKA PEMBEDA WAKTU (Focus Point)
+  // Kita anggap "fase persiapan sore" dimulai 2 jam sebelum maghrib (misal jam 16.00)
+  const isSore = jamSekarang >= (maghribDec - 2); 
+  const referensiWaktu = isSore ? "terbenam" : "saat ini";
+  
   const getArah = (az) => {
     const sektor = ["Utara", "Timur Laut", "Timur", "Tenggara", "Selatan", "Barat Daya", "Barat", "Barat Laut"];
     return sektor[Math.round(az / 45) % 8];
@@ -1394,13 +1399,10 @@ function getHijriInsight(data, maghrib, now) {
 
   const selisihAzi = azi - sun.azi;
   const posisiHorisontal = selisihAzi > 0 ? "sebelah kiri (Selatan)" : "sebelah kanan (Utara)";
-  const jamSekarang = now.getHours() + now.getMinutes() / 60;
-  const maghribDec = maghrib?.decimal || 18;
 
-  // 3. Output Narasi Sesuai Permintaan Anda
   return `
 🧭 <b>INSTRUKSI ORIENTASI LAPANGAN:</b><br>
-Gunakan posisi Matahari terbenam di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.
+Gunakan posisi Matahari <b>${referensiWaktu}</b> di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.
 <br><br>
 📐 <b>POSISI TEKNIS TERHADAP UFUK:</b><br>
 Saat ini, objek berada pada ketinggian <b>${alt.toFixed(2)}°</b> di atas ufuk. ${alt > 0 ? "Kondisi objek sudah di atas cakrawala." : "Objek masih berada di bawah garis cakrawala."} Jarak sudut pemisah dari Matahari (Elongasi) tercatat sebesar <b>${elo.toFixed(1)}°</b>.
