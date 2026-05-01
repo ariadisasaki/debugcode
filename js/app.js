@@ -1374,21 +1374,21 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT (REVISED: TIME-AWARE LOGIC) =====
+// ===== HIJRI INSIGHT (VERSI FINAL & LOGIS) =====
 function getHijriInsight(data, maghrib, now) {
+  // 1. Ambil Data Numerik
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
   const age = Number(data.age) || 0;
   const illumination = Number(data.illumination) || 0;
   
-  // Data Matahari
+  // 2. Data Matahari untuk Referensi Navigasi
   const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { azi: 270, alt: 0 };
   const maghribDec = maghrib?.decimal || 18;
   const jamSekarang = now.getHours() + now.getMinutes() / 60;
 
-  // 1. LOGIKA PEMBEDA WAKTU (Focus Point)
-  // Kita anggap "fase persiapan sore" dimulai 2 jam sebelum maghrib (misal jam 16.00)
+  // Logika pembawa waktu: jika 2 jam sebelum maghrib, gunakan referensi "terbenam"
   const isSore = jamSekarang >= (maghribDec - 2); 
   const referensiWaktu = isSore ? "terbenam" : "saat ini";
   
@@ -1397,15 +1397,30 @@ function getHijriInsight(data, maghrib, now) {
     return sektor[Math.round(az / 45) % 8];
   };
 
-  const selisihAzi = azi - sun.azi;
-  const posisiHorisontal = selisihAzi > 0 ? "sebelah kiri (Selatan)" : "sebelah kanan (Utara)";
+  // ================= KOREKSI LOGIKA NAVIGASI =================
+  // Hitung selisih azimuth secara melingkar
+  let selisihAzi = azi - sun.azi;
+
+  // Normalisasi sudut agar selalu di antara -180° dan +180°
+  if (selisihAzi > 180) selisihAzi -= 360;
+  if (selisihAzi < -180) selisihAzi += 360;
+
+  // Menentukan arah berdasarkan tanda (+ atau -)
+  const posisiHorisontal = selisihAzi > 0 ? "sebelah kanan" : "sebelah kiri";
+  // ===========================================================
+
+  // ================= KOREKSI LOGIKA UFUK =====================
+  const posisiUfuk = alt >= 0 ? "di atas ufuk" : "di bawah ufuk";
+  const statusCakrawala = alt >= 0 ? "Kondisi objek sudah di atas cakrawala." : "Objek masih berada di bawah garis cakrawala.";
+  const tinggiTampilan = alt >= 0 ? alt.toFixed(2) : Math.abs(alt).toFixed(2);
+  // ===========================================================
 
   return `
 🧭 <b>INSTRUKSI ORIENTASI LAPANGAN:</b><br>
 Gunakan posisi Matahari <b>${referensiWaktu}</b> di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.
 <br><br>
 📐 <b>POSISI TEKNIS TERHADAP UFUK:</b><br>
-Saat ini, objek berada pada ketinggian <b>${alt.toFixed(2)}°</b> di atas ufuk. ${alt > 0 ? "Kondisi objek sudah di atas cakrawala." : "Objek masih berada di bawah garis cakrawala."} Jarak sudut pemisah dari Matahari (Elongasi) tercatat sebesar <b>${elo.toFixed(1)}°</b>.
+Saat ini, objek berada pada ketinggian <b>${tinggiTampilan}° ${posisiUfuk}</b>. ${statusCakrawala} Jarak sudut pemisah dari Matahari (Elongasi) tercatat sebesar <b>${elo.toFixed(1)}°</b>.
 <br><br>
 🔆 <b>KONDISI FISIK & UMUR HILAL:</b><br>
 Bulan telah berusia <b>${age.toFixed(1)} jam</b> dengan ketebalan cahaya (Iluminasi) sebesar <b>${illumination.toFixed(2)}%</b>. Semakin besar angka ini, semakin mudah sabit hilal dibedakan dari cahaya latar langit senja.
