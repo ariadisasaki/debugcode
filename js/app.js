@@ -1258,51 +1258,68 @@ async function initApp(lat, lon) {
     if (!lat || !lon) return;
     locationInitialized = true;
     
-    // A. Jalankan fungsi pendukung sekali di awal
+    // A. Jalankan fungsi pendukung sekali di awal secara aman
     try {
         if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(lat, lon);
         if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
-    } catch (e) { console.warn("Pendukung gagal."); }
+    } catch (e) { console.warn("Fungsi pendukung belum dimuat:", e); }
 
     // B. Hitungan Pertama
-    if (typeof refreshIjtimaData === 'function' && !CACHED_IJTIMA) refreshIjtimaData();
-    hilalDataFull = hitungHilal(lat, lon);
+    try {
+        if (typeof refreshIjtimaData === 'function' && typeof CACHED_IJTIMA !== 'undefined' && !CACHED_IJTIMA) {
+            refreshIjtimaData();
+        }
+        
+        // Cek apakah fungsi hitungHilal tersedia
+        if (typeof hitungHilal === 'function') {
+            hilalDataFull = hitungHilal(lat, lon);
+        }
+    } catch (e) { console.error("Gagal melakukan hitungan pertama:", e); }
 
-    // Bersihkan interval debug lama jika ada
+    // Bersihkan interval lama
     if (debugInterval) clearInterval(debugInterval);
 
     // ============================================================
-    // TIMER 1: Komputasi Berat & Auto-Debug (Setiap 10 Detik)
+    // TIMER 1: Komputasi Berat & Auto-Debug
     // ============================================================
     debugInterval = setInterval(() => {
         if (currentLat && currentLon) {
-            hilalDataFull = hitungHilal(currentLat, currentLon);
-            if (typeof updateSunCard === 'function') updateSunCard();
-            
-            // Tampilkan debug monitor ke Console log secara berkala
-            debugHilal(); 
+            try {
+                if (typeof hitungHilal === 'function') hilalDataFull = hitungHilal(currentLat, currentLon);
+                if (typeof updateSunCard === 'function') updateSunCard();
+                if (typeof debugHilal === 'function') debugHilal();
+            } catch (e) { console.warn("Gagal memperbarui data interval 10s:", e); }
         }
     }, 10000); 
 
     // ============================================================
-    // TIMER 2: UI & Visual (Setiap 1 Detik)
+    // TIMER 2: UI & Visual (Tiap 1 Detik)
     // ============================================================
     setInterval(() => {
-        if (typeof renderUI === 'function') renderUI(); 
-        if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
-        if (typeof updateHilalAR === 'function') updateHilalAR();
+        try {
+            if (typeof renderUI === 'function') renderUI(); 
+            if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
+            if (typeof updateHilalAR === 'function') updateHilalAR();
+        } catch (e) { console.warn("Gagal merender UI:", e); }
     }, 1000);
 
     // ============================================================
-    // TIMER 3: Kalender (Setiap 2 Detik)
+    // TIMER 3: Kalender (Tiap 2 Detik)
     // ============================================================
     setInterval(() => {
-        if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
+        try {
+            if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
+        } catch (e) { console.warn("Gagal memperbarui kalender:", e); }
     }, 2000);
 
     // Eksekusi tampilan awal secara instan
-    setTimeout(() => { if (typeof updateSunCard === 'function') updateSunCard(); }, 0);
-    debugHilal(); 
+    setTimeout(() => { 
+        try {
+            if (typeof updateSunCard === 'function') updateSunCard(); 
+        } catch (e) {}
+    }, 0);
+    
+    if (typeof debugHilal === 'function') debugHilal(); 
 }
 
 // ============================================================
