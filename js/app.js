@@ -1993,14 +1993,14 @@ function hitungHilal(lat, lon, customTime = null) {
   const imkan = (alt >= 3 && elo >= 6.4);
 
   // === REVISI NARASI VERSI 2 (TEKNIS & INSTRUKTIF) ===
-  
+  // === REVISI NARASI VERSI 2 (FIXED) ===
   if (alt < 0) {
     statusEl.innerHTML = `STATUS: <span style="color:#f87171">NON-OBSERVABLE</span>`;
     prediksiEl.innerText = `Posisi objek saat ini ${Math.abs(alt).toFixed(2)}° di bawah ufuk. Menunggu objek terbit melewati garis cakrawala.`;
   } 
   else if (sebelumMaghrib) {
-    if (dataHisab.d < 29) {
-      statusEl.innerText = `Fase Konvensional (H-${dataHisab.d})`;
+    if (hariHisab < 29) {
+      statusEl.innerText = `Fase Konvensional (H-${hariHisab})`;
       prediksiEl.innerText = `Objek berada pada ketinggian ${alt.toFixed(1)}°. Lunasi bulan berjalan normal, belum memasuki jendela waktu rukyat.`;
     } else {
       statusEl.innerHTML = `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT (H-29)</span>`;
@@ -2012,8 +2012,7 @@ function hitungHilal(lat, lon, customTime = null) {
     }
   } 
   else {
-    // === KONDISI PASCA MAGHRIB ===
-    if (dataHybrid.d === 29 || dataHybrid.d === 30 || dataHybrid.d === 1) {
+    if (hariHybrid === 29 || hariHybrid === 30 || hariHybrid === 1) {
       statusEl.innerHTML = imkan 
         ? `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` 
         : `STATUS: <span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`;
@@ -2023,14 +2022,17 @@ function hitungHilal(lat, lon, customTime = null) {
         : `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari.`;
     } 
     else {
-      statusEl.innerText = `Laporan Malam ke-${dataHisab.d} Hijriah`;
+      statusEl.innerText = `Laporan Malam ke-${hariHisab} Hijriah`;
+      // Perbaikan: Pastikan variabel arahBulan terdefinisi
       const arahBulan = azi > 180 ? "Barat/Barat Daya" : "Timur/Timur Laut";
-      prediksiEl.innerText = `Objek terpantau di arah ${arahBrah} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`;
+      prediksiEl.innerText = `Objek terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`;
     }
   }
 
-  // Finalize data sisa
-  set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
+  // Finalisasi Update UI lainnya
+  if (typeof hitungVisibilityScore === 'function') {
+    set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
+  }
   set("statusIjtima", now >= ijtima ? "Siklus Baru Dimulai" : "Menunggu Ijtima");
 
   return data;
