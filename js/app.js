@@ -1959,9 +1959,6 @@ function drawMoonRealistic(illumination){
 function hitungHilal(lat, lon, customTime = null) {
   const statusEl = document.getElementById('status');
   const prediksiEl = document.getElementById('prediksi');
-  
-  // ✅ SESUAIKAN DENGAN HTML ANDA:
-  const cardEl = document.getElementById('insightCard'); 
   const insightTextEl = document.getElementById('insight');
 
   try {
@@ -1972,6 +1969,7 @@ function hitungHilal(lat, lon, customTime = null) {
     const dataHybrid = getHijriHybrid(lat, lon);
     const data = hitungHilalCore(lat, lon, now);
     
+    // Data dasar
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
     const elo = Number(data.elo) || 0;
@@ -1984,22 +1982,22 @@ function hitungHilal(lat, lon, customTime = null) {
       if (el) el.innerText = val;
     };
 
-    // 1. Update Tabel Data
+    // Update Tabel Hilal
     set("alt", alt.toFixed(2) + "°");
     set("azi", azi.toFixed(2) + "°");
     set("elo", elo.toFixed(2) + "°");
     set("age", age.toFixed(1) + " jam");
     set("illum", illumination.toFixed(2) + "%");
 
-    // Update Yallop & Odeh (Agar tidak kosong lagi)
+    // Update Yallop & Odeh (Agar data muncul kembali)
     if (typeof hitungVisibilitasYallop === 'function') {
-        set("yallop", hitungVisibilitasYallop(alt, elo));
+      set("yallop", hitungVisibilitasYallop(alt, elo));
     }
     if (typeof hitungVisibilitasOdeh === 'function') {
-        set("odeh", hitungVisibilitasOdeh(alt, elo));
+      set("odeh", hitungVisibilitasOdeh(alt, elo));
     }
 
-    // 2. Logika Status & Prediksi (Versi 2)
+    // Narasi Status & Prediksi
     const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
     const sebelumMaghrib = jamNow < maghrib;
@@ -2010,26 +2008,19 @@ function hitungHilal(lat, lon, customTime = null) {
       prediksiEl.innerText = `Objek berada ${Math.abs(alt).toFixed(1)}° di bawah ufuk.`;
     } else if (sebelumMaghrib) {
       statusEl.innerHTML = hariHisab < 29 ? `FASE NORMAL (${hariHisab} H)` : `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT</span>`;
-      prediksiEl.innerText = `Tinggi: ${alt.toFixed(1)}°. ${imkan ? 'Memenuhi kriteria MABIMS.' : 'Di bawah kriteria.'}`;
+      prediksiEl.innerText = `Tinggi: ${alt.toFixed(1)}°. ${imkan ? 'Memenuhi kriteria.' : 'Di bawah kriteria.'}`;
     } else {
       statusEl.innerHTML = imkan ? `<span style="color:#4ade80">IMKAN RUKYAT</span>` : `<span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`;
-      prediksiEl.innerText = imkan ? `Awal bulan baru dapat dimulai.` : `Bulan digenapkan (30 hari).`;
+      prediksiEl.innerText = imkan ? `Awal bulan baru dimulai.` : `Bulan digenapkan (30 hari).`;
     }
 
-    // 3. MEMUNCULKAN CARD & ISI PENJELASAN (HIJRI INSIGHT)
+    // ISI PENJELASAN (Tanpa paksa display:block agar tidak kacau)
     if (insightTextEl && typeof getHijriInsight === 'function') {
-      // Masukkan narasi ke dalam div #insight
       insightTextEl.innerHTML = getHijriInsight(data, { decimal: maghrib }, now);
-      
-      // Hapus class 'insight-hidden' agar kartu muncul otomatis
-      if (cardEl) {
-        cardEl.classList.remove('insight-hidden');
-        cardEl.style.display = 'block'; 
-      }
     }
 
   } catch (err) {
-    console.error("Render UI Error Detail:", err.message);
+    console.error("Render UI Error:", err.message);
   }
   return data;
 }
