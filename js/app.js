@@ -1374,7 +1374,7 @@ function hitungMaghrib(lat, lon, customDate=null){
   };
 }
 
-// ===== HIJRI INSIGHT (VERSI FINAL & LOGIS) =====
+// ===== HIJRI INSIGHT (VERSI FINAL REVISI) =====
 function getHijriInsight(data, maghrib, now) {
   // 1. Ambil Data Numerik
   const alt = Number(data.alt) || 0;
@@ -1385,8 +1385,15 @@ function getHijriInsight(data, maghrib, now) {
   
   // 2. Data Matahari untuk Referensi Navigasi
   const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { azi: 270, alt: 0 };
-  const maghribDec = maghrib?.decimal || 18;
   const jamSekarang = now.getHours() + now.getMinutes() / 60;
+
+  // --- KOREKSI PEMBACAAN DATA MAGHRIB ---
+  let maghribDec = 18; // Default cadangan
+  if (typeof maghrib === 'number') {
+    maghribDec = maghrib;
+  } else if (maghrib && typeof maghrib === 'object') {
+    maghribDec = Number(maghrib.decimal) || 18;
+  }
 
   // Logika pembawa waktu: jika 2 jam sebelum maghrib, gunakan referensi "terbenam"
   const isSore = jamSekarang >= (maghribDec - 2); 
@@ -1415,6 +1422,14 @@ function getHijriInsight(data, maghrib, now) {
   const tinggiTampilan = alt >= 0 ? alt.toFixed(2) : Math.abs(alt).toFixed(2);
   // ===========================================================
 
+  // ================= FUNGSI FORMAT WAKTU INTERNAL ============
+  const formatWaktu = (decimalHour) => {
+    const hours = Math.floor(decimalHour);
+    const minutes = Math.round((decimalHour - hours) * 60);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+  // ===========================================================
+
   return `
 🧭 <b>INSTRUKSI ORIENTASI LAPANGAN:</b><br>
 Gunakan posisi Matahari <b>${referensiWaktu}</b> di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.
@@ -1427,7 +1442,7 @@ Bulan telah berusia <b>${age.toFixed(1)} jam</b> dengan ketebalan cahaya (Ilumin
 <br><br>
 ⏱️ <b>WAKTU KRITIS PENGAMATAN:</b><br>
 ${jamSekarang < maghribDec 
-  ? `Lakukan kalibrasi alat sekarang. Pengamatan visual dimulai saat Maghrib tiba (estimasi pukul <b>${typeof formatJamMenitSafe === 'function' ? formatJamMenitSafe(maghribDec) : maghribDec.toFixed(2)}</b>).` 
+  ? `Lakukan kalibrasi alat sekarang. Pengamatan visual dimulai saat Maghrib tiba (estimasi pukul <b>${formatWaktu(maghribDec)}</b>).` 
   : `<b>Waktu Emas:</b> Matahari telah terbenam. Optimalkan pencarian sebelum Bulan ikut terbenam ke bawah ufuk.`}
 <br><br>
 📢 <b>HASIL ANALISIS KRITERIA (MABIMS):</b><br>
