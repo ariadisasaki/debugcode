@@ -1375,61 +1375,50 @@ function hitungMaghrib(lat, lon, customDate=null){
 }
 
 // ===== HIJRI INSIGHT =====
-function getHijriInsight(data, maghribObj, now) {
-  // 1. Ambil data numerik
+function getHijriInsight(data, maghrib, now) {
+  // 1. Ambil Data Numerik
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
   const age = Number(data.age) || 0;
   const illumination = Number(data.illumination) || 0;
   
-  // 2. Tentukan variabel pendukung
-  const imkan = (alt >= 3 && elo >= 6.4);
-  const selisihAlt = (3 - alt).toFixed(1);
-  const statusWarna = imkan ? "#4ade80" : "#f87171";
-  
-  // Tentukan arah berdasarkan Azimuth (Contoh sederhana)
-  const mataAngin = azi > 180 && azi < 360 ? "Barat Daya/Barat" : "Timur/Timur Laut";
+  // 2. Data Matahari untuk Referensi Navigasi
+  // Menggunakan currentLat/Lon jika tersedia, atau default ke data yang ada
+  const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { azi: 270 };
 
-  // 3. Bangun Narasi Dinamis Versi 2
-  let narasiUtama = "";
-  let rekomendasi = "";
+  const getArah = (az) => {
+    const sektor = ["Utara", "Timur Laut", "Timur", "Tenggara", "Selatan", "Barat Daya", "Barat", "Barat Laut"];
+    return sektor[Math.round(az / 45) % 8];
+  };
 
-  if (alt < 0) {
-    narasiUtama = `STATUS: <span style="color:#f87171">NON-OBSERVABLE</span>`;
-    rekomendasi = `Objek berada ${Math.abs(alt).toFixed(2)}° di bawah ufuk. Menunggu objek terbit melewati garis cakrawala untuk memulai pelacakan.`;
-  } else {
-    narasiUtama = imkan 
-      ? `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` 
-      : `STATUS: <span style="color:#fbbf24">NON-IMKAN (DI BAWAH KRITERIA)</span>`;
-    
-    rekomendasi = imkan 
-      ? `Parameter MABIMS terpenuhi. Posisi hilal ideal pada tinggi ${alt.toFixed(1)}°. Lakukan kalibrasi optik pada azimuth ${azi.toFixed(1)}°.` 
-      : `Tinggi saat ini ${alt.toFixed(1)}°. Masih butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`;
-  }
+  const selisihAzi = azi - sun.azi;
+  const posisiHorisontal = selisihAzi > 0 ? "sebelah kiri (Selatan)" : "sebelah kanan (Utara)";
+  const jamSekarang = now.getHours() + now.getMinutes() / 60;
+  const maghribDec = maghrib?.decimal || 18;
 
+  // 3. Output Narasi Sesuai Permintaan Anda
   return `
-    <div style="font-family: monospace; font-size: 0.95em; line-height: 1.5; color: #e5e7eb;">
-      <div style="border-left: 3px solid ${statusWarna}; padding-left: 10px; margin-bottom: 15px;">
-        <b style="font-size: 1.1em; letter-spacing: 1px;">${narasiUtama}</b><br>
-        <small>LOG OPERASIONAL: ${now.toLocaleTimeString('id-ID')} WIB</small>
-      </div>
-
-      <b>DATA TEKNIS OBJEK:</b><br>
-      • Ketinggian: ${alt.toFixed(2)}°<br>
-      • Azimuth: ${azi.toFixed(2)}° (${mataAngin})<br>
-      • Elongasi: ${elo.toFixed(2)}°<br>
-      • Umur Bulan: ${age.toFixed(1)} Jam<br>
-      • Iluminasi: ${illumination.toFixed(2)}%<br><br>
-
-      <b>ANALISIS PREDIKSI:</b><br>
-      ${rekomendasi}<br><br>
-      
-      <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; font-size: 0.85em;">
-        <i>Catatan: Gunakan posisi Matahari terbenam sebagai referensi titik nol untuk pencarian visual.</i>
-      </div>
-    </div>
-  `;
+🧭 <b>INSTRUKSI ORIENTASI LAPANGAN:</b><br>
+Gunakan posisi Matahari terbenam di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.
+<br><br>
+📐 <b>POSISI TEKNIS TERHADAP UFUK:</b><br>
+Saat ini, objek berada pada ketinggian <b>${alt.toFixed(2)}°</b> di atas ufuk. ${alt > 0 ? "Kondisi objek sudah di atas cakrawala." : "Objek masih berada di bawah garis cakrawala."} Jarak sudut pemisah dari Matahari (Elongasi) tercatat sebesar <b>${elo.toFixed(1)}°</b>.
+<br><br>
+🔆 <b>KONDISI FISIK & UMUR HILAL:</b><br>
+Bulan telah berusia <b>${age.toFixed(1)} jam</b> dengan ketebalan cahaya (Iluminasi) sebesar <b>${illumination.toFixed(2)}%</b>. Semakin besar angka ini, semakin mudah sabit hilal dibedakan dari cahaya latar langit senja.
+<br><br>
+⏱️ <b>WAKTU KRITIS PENGAMATAN:</b><br>
+${jamSekarang < maghribDec 
+  ? `Lakukan kalibrasi alat sekarang. Pengamatan visual dimulai saat Maghrib tiba (estimasi pukul <b>${typeof formatJamMenitSafe === 'function' ? formatJamMenitSafe(maghribDec) : maghribDec.toFixed(2)}</b>).` 
+  : `<b>Waktu Emas:</b> Matahari telah terbenam. Optimalkan pencarian sebelum Bulan ikut terbenam ke bawah ufuk.`}
+<br><br>
+📢 <b>HASIL ANALISIS KRITERIA (MABIMS):</b><br>
+Syarat Minimal: Tinggi 3° & Elongasi 6.4°<br>
+${(alt >= 3 && elo >= 6.4) 
+  ? `<b style="color:#4ade80">Lolos Kriteria: Potensi hilal terlihat (Imkan Rukyat) secara astronomis sangat besar.</b>` 
+  : `<b style="color:#f87171">Belum Lolos Kriteria: Secara teknis posisi hilal masih terlalu rendah atau terlalu dekat dengan matahari.</b>`}
+`;
 }
 
 // === GPS LOKASI ===
@@ -1981,21 +1970,24 @@ function hitungHilal(lat, lon, customTime = null) {
     const ijtima = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : new Date(); 
 
     const dataHisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(lat, lon) : {d:0};
+    const dataHybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(lat, lon) : {d:0};
     const data = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, now) : {};
     
+    // Variabel Pendukung
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
     const elo = Number(data.elo) || 0;
     const illumination = Number(data.illumination) || 0;
     const age = (now.getTime() - ijtima.getTime()) / 3600000;
     const hariHisab = dataHisab.d || 0;
+    const hariHybrid = dataHybrid.d || 0;
 
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.innerText = val;
     };
 
-    // Update Angka Tabel
+    // Update Tabel Data Utama
     set("alt", alt.toFixed(2) + "°");
     set("azi", azi.toFixed(2) + "°");
     set("elo", elo.toFixed(2) + "°");
@@ -2004,43 +1996,57 @@ function hitungHilal(lat, lon, customTime = null) {
 
     if (typeof hitungVisibilitasYallop === 'function') set("yallop", hitungVisibilitasYallop(alt, elo));
     if (typeof hitungVisibilitasOdeh === 'function') set("odeh", hitungVisibilitasOdeh(alt, elo));
-    if (typeof hitungVisibilityScore === 'function') set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
 
-    // --- LOGIKA NARASI DINAMIS VERSI 2 ---
-    const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18;
+    // Penentuan Waktu Maghrib & Kondisi Imkan
+    const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18.0) : 18.0;
     const jamNow = now.getHours() + now.getMinutes() / 60;
     const sebelumMaghrib = jamNow < maghrib;
     const imkan = (alt >= 3 && elo >= 6.4);
 
+    // === REVISI NARASI VERSI 2 (FIXED - SESUAI REQUEST ANDA) ===
     if (alt < 0) {
       statusEl.innerHTML = `STATUS: <span style="color:#f87171">NON-OBSERVABLE</span>`;
-      prediksiEl.innerText = `Posisi objek saat ini ${Math.abs(alt).toFixed(2)}° di bawah ufuk. Menunggu objek terbit melewati cakrawala.`;
+      prediksiEl.innerText = `Posisi objek saat ini ${Math.abs(alt).toFixed(2)}° di bawah ufuk. Menunggu objek terbit melewati garis cakrawala.`;
     } 
     else if (sebelumMaghrib) {
       if (hariHisab < 29) {
         statusEl.innerText = `Fase Konvensional (H-${hariHisab})`;
-        prediksiEl.innerText = `Objek berada pada ketinggian ${alt.toFixed(1)}°. Lunasi bulan berjalan normal, belum memasuki jendela rukyat.`;
+        prediksiEl.innerText = `Objek berada pada ketinggian ${alt.toFixed(1)}°. Lunasi bulan berjalan normal, belum memasuki jendela waktu rukyat.`;
       } else {
         statusEl.innerHTML = `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT (H-29)</span>`;
         const selisihAlt = (3 - alt).toFixed(1);
-        prediksiEl.innerText = imkan 
-          ? `Parameter MABIMS terpenuhi. Siapkan observasi pada sektor ${azi.toFixed(1)}° saat matahari terbenam.` 
-          : `Tinggi saat ini ${alt.toFixed(1)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal 3°.`;
+        const pesanPrediksi = imkan 
+          ? `Parameter MABIMS terpenuhi. Siapkan observasi pada sektor ${azi.toFixed(1)}° (Azimuth) saat matahari terbenam.` 
+          : `Tinggi saat ini ${alt.toFixed(1)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`;
+        prediksiEl.innerText = pesanPrediksi;
       }
     } 
     else {
-      statusEl.innerHTML = imkan 
-        ? `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` 
-        : `STATUS: <span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`;
-      
-      prediksiEl.innerText = imkan 
-        ? `Hasil: Hilal berada di posisi ideal (${alt.toFixed(1)}°). Secara astronomis, kriteria awal bulan divalidasi.` 
-        : `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari.`;
+      if (hariHybrid === 29 || hariHybrid === 30 || hariHybrid === 1) {
+        statusEl.innerHTML = imkan 
+          ? `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` 
+          : `STATUS: <span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`;
+        
+        prediksiEl.innerText = imkan 
+          ? `Hasil: Hilal berada di posisi ideal (${alt.toFixed(1)}°). Secara astronomis, kriteria awal bulan telah divalidasi.` 
+          : `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari.`;
+      } 
+      else {
+        statusEl.innerText = `Laporan Malam ke-${hariHisab} Hijriah`;
+        const arahBulan = azi > 180 ? "Barat/Barat Daya" : "Timur/Timur Laut";
+        prediksiEl.innerText = `Objek terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`;
+      }
     }
 
-    // Update Hidden Card Insight
+    // Finalisasi Update UI lainnya
+    if (typeof hitungVisibilityScore === 'function') {
+      set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
+    }
+    set("statusIjtima", now >= ijtima ? "Siklus Baru Dimulai" : "Menunggu Ijtima");
+
+    // Update Insight Card (Tetap menggunakan fungsi insight Anda)
     if (insightTextEl && typeof getHijriInsight === 'function') {
-      insightTextEl.innerHTML = getHijriInsight(data, { decimal: maghrib }, now, age);
+        insightTextEl.innerHTML = getHijriInsight(data, { decimal: maghrib }, now, age);
     }
 
     return data;
