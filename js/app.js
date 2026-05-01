@@ -1375,46 +1375,38 @@ function hitungMaghrib(lat, lon, customDate=null){
 }
 
 // ===== HIJRI INSIGHT =====
-function getHijriInsight(data, maghrib, now) {
+function getHijriInsight(data, maghribObj, now) {
+  // Pastikan data tersedia agar tidak error saat toFixed
   const alt = Number(data.alt) || 0;
   const azi = Number(data.azi) || 0;
   const elo = Number(data.elo) || 0;
   const age = Number(data.age) || 0;
   const illumination = Number(data.illumination) || 0;
-  
-  const sun = typeof hitungMatahari === 'function' ? hitungMatahari(currentLat, currentLon) : { azi: 270 };
 
-  const getArah = (az) => {
-    const sektor = ["Utara", "Timur Laut", "Timur", "Tenggara", "Selatan", "Barat Daya", "Barat", "Barat Laut"];
-    return sektor[Math.round(az / 45) % 8];
-  };
+  // Logika sederhana untuk navigasi
+  const imkan = (alt >= 3 && elo >= 6.4);
+  const statusWarna = imkan ? "#4ade80" : "#f87171";
 
-  const selisihAzi = azi - sun.azi;
-  const posisiHorisontal = selisihAzi > 0 ? "sebelah kiri (Selatan)" : "sebelah kanan (Utara)";
-  const jamSekarang = now.getHours() + now.getMinutes()/60;
-  const maghribDec = maghrib?.decimal || 18;
-
+  // Kembalikan HTML yang rapi
   return `
-🧭 <b>INSTRUKSI ORIENTASI LAPANGAN:</b><br>
-Gunakan posisi Matahari terbenam di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.
-<br><br>
-📐 <b>POSISI TEKNIS TERHADAP UFUK:</b><br>
-Saat ini, objek berada pada ketinggian <b>${alt.toFixed(2)}°</b> di atas ufuk. ${alt > 0 ? "Kondisi objek sudah di atas cakrawala." : "Objek masih berada di bawah garis cakrawala."} Jarak sudut pemisah dari Matahari (Elongasi) tercatat sebesar <b>${elo.toFixed(1)}°</b>.
-<br><br>
-🔆 <b>KONDISI FISIK & UMUR HILAL:</b><br>
-Bulan telah berusia <b>${age.toFixed(1)} jam</b> dengan ketebalan cahaya (Iluminasi) sebesar <b>${illumination.toFixed(2)}%</b>. Semakin besar angka ini, semakin mudah sabit hilal dibedakan dari cahaya latar langit senja.
-<br><br>
-⏱️ <b>WAKTU KRITIS PENGAMATAN:</b><br>
-${jamSekarang < maghribDec 
-  ? `Lakukan kalibrasi alat sekarang. Pengamatan visual dimulai saat Maghrib tiba (estimasi pukul <b>${formatJamMenitSafe(maghribDec)}</b>).` 
-  : `<b>Waktu Emas:</b> Matahari telah terbenam. Optimalkan pencarian sebelum Bulan ikut terbenam ke bawah ufuk.`}
-<br><br>
-📢 <b>HASIL ANALISIS KRITERIA (MABIMS):</b><br>
-Syarat Minimal: Tinggi 3° & Elongasi 6.4°<br>
-${(alt >= 3 && elo >= 6.4) 
-  ? `<b style="color:#4ade80">Lolos Kriteria: Potensi hilal terlihat (Imkan Rukyat) secara astronomis sangat besar.</b>` 
-  : `<b style="color:#f87171">Belum Lolos Kriteria: Secara teknis posisi hilal masih terlalu rendah atau terlalu dekat dengan matahari.</b>`}
-`;
+    <div style="font-family: 'Poppins', sans-serif; font-size: 0.9em; line-height: 1.6;">
+      <b style="color: ${statusWarna}; font-size: 1.1em;">
+        ${imkan ? '✅ MEMENUHI KRITERIA MABIMS' : '❌ BELUM MEMENUHI KRITERIA'}
+      </b><br>
+      <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
+      
+      <b>📍 Analisis Posisi:</b><br>
+      Hilal berada pada ketinggian <b>${alt.toFixed(2)}°</b> dengan sudut elongasi <b>${elo.toFixed(2)}°</b>. 
+      Secara astronomis, objek berjarak ${age.toFixed(1)} jam dari titik konjungsi (Ijtima).<br><br>
+      
+      <b>💡 Penjelasan:</b><br>
+      ${imkan 
+        ? "Karena tinggi sudah di atas 3° dan elongasi di atas 6.4°, hilal memiliki potensi besar untuk terlihat menggunakan alat bantu optik maupun mata telanjang jika cuaca cerah." 
+        : "Posisi hilal masih terlalu rendah atau terlalu dekat dengan Matahari, sehingga cahaya senja (glare) kemungkinan besar masih menutupi sabit hilal yang tipis."}
+      <br><br>
+      <small><i>*Data diperbarui secara real-time mengikuti pergerakan benda langit.</i></small>
+    </div>
+  `;
 }
 
 // === GPS LOKASI ===
