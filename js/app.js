@@ -1381,7 +1381,7 @@ function hitungHilal(lat, lon, customTime = null) {
       else {
         if (statusEl) statusEl.innerText = `Laporan Malam ke-${hariHisab} Hijriah`;
         const arahBulan = azi > 180 ? "Barat/Barat Daya" : "Timur/Timur Laut";
-        if (prediksiEl) prediksiEl.innerText = `Objek terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`;
+        if (prediksiEl) prediksiEl.innerText = `Hilal terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`;
       }
     }
 
