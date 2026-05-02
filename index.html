@@ -201,17 +201,17 @@
     </div>
 
     <!-- TOGGLE PENJELASAN -->
-    <div class="toggle-wrapper">
-      <button id="toggleInsightBtn" onclick="toggleInsight()">
-        🔽 Tampilkan Penjelasan
-      </button>
+    <div class="card">
+      <div class="hijri-toggle-wrapper" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleInsight()">
+        <h3 style="margin: 0; color: var(--accent-gold);">🌙 Tampilkan Penjelasan</h3>
+        <span id="insightToggleIcon" style="color: var(--accent-cyan); font-size: 18px;">▼</span>
+      </div>
+      <div id="insightCard" class="insight-hidden" style="text-align: justify; line-height: 1.6; font-size: 14px;">
+        <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 12px 0;">
+        <div id="insight" class="insight-text"></div>
+      </div>
     </div>
-    
-    <!-- ANALISIS (TOGGLE) -->
-    <div id="insightCard" class="card insight-hidden">
-      <div id="insight" class="insight-text"></div>
-    </div>
-    
+
     <!-- PLANETARIUM -->
     <div class="card">
       <h3>🌌 Planetarium Hilal</h3>
