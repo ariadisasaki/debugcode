@@ -40,9 +40,9 @@
 
     <!-- TOGGLE INFORMASI -->
     <div class="card">
-      <div class="hijri-toggle-wrapper" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleHijriInfo()">
-        <h3 style="margin: 0; color: var(--accent-gold);">ℹ️ Informasi Sistem</h3>
-        <span id="hijriToggleIcon" style="color: var(--accent-cyan); font-size: 18px;">🔽</span>
+      <div class="hijri-toggle-wrapper" style="display: flex; justify-content: center; align-items: center; gap: 10px; cursor: pointer;" onclick="toggleHijriInfo()">
+        <h3 style="margin: 0; color: var(--accent-gold); text-align: center;">ℹ️ Informasi Sistem</h3>
+        <span id="hijriToggleIcon" style="color: var(--accent-cyan); font-size: 18px;">▼</span>
       </div>
       
       <div id="hijriInfoCard" class="info-hijri insight-hidden" style="text-align: justify; line-height: 1.6; font-size: 14px;">
@@ -202,10 +202,11 @@
 
     <!-- TOGGLE PENJELASAN -->
     <div class="card">
-      <div class="hijri-toggle-wrapper" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleInsight()">
-        <h3 style="margin: 0; color: var(--accent-gold);">🌙 Tampilkan Penjelasan</h3>
+      <div class="hijri-toggle-wrapper" style="display: flex; justify-content: center; align-items: center; gap: 10px; cursor: pointer;" onclick="toggleInsight()">
+        <h3 style="margin: 0; color: var(--accent-gold); text-align: center;">🌙 Tampilkan Penjelasan</h3>
         <span id="insightToggleIcon" style="color: var(--accent-cyan); font-size: 18px;">▼</span>
       </div>
+      
       <div id="insightCard" class="insight-hidden" style="text-align: justify; line-height: 1.6; font-size: 14px;">
         <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 12px 0;">
         <div id="insight" class="insight-text"></div>
