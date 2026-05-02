@@ -225,24 +225,24 @@ html, body{
   box-sizing: border-box;
 }
 
+/* KONDISI SAAT SEMBUNYI */
 .insight-hidden {
   max-height: 0;
   opacity: 0;
   overflow: hidden;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   margin: 0 !important; 
-  padding: 0 !important;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0, 1, 0, 1);
 }
 
+/* KONDISI SAAT MUNCUL */
 .insight-show {
-  max-height: 2000px;
+  max-height: 2500px; /* Nilai besar agar teks tidak terpotong saat memanjang */
   opacity: 1;
-  padding: 15px 20px;
-  margin-bottom: 10px;
-}
-
-.toggle-wrapper, .hijri-toggle-wrapper {
-  margin: 2px auto 8px;
+  padding-top: 10px !important;
+  padding-bottom: 5px !important;
+  transition: all 0.4s ease-in-out;
 }
 
 /* === PROGRESS BAR === */
