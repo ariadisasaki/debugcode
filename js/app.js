@@ -2562,6 +2562,24 @@ function updatePrediksiCard(){
     getCountdownIjtima(now, ijtimaNext);
 }
 
+// === TOGGLE HIJRI INFO ===
+function toggleHijriInfo() {
+  const infoEl = document.getElementById('hijriInfoCard');
+  const iconEl = document.getElementById('hijriToggleIcon');
+  
+  if (!infoEl) return;
+
+  if (infoEl.classList.contains('insight-hidden')) {
+    infoEl.classList.remove('insight-hidden');
+    infoEl.classList.add('insight-show');
+    if (iconEl) iconEl.innerText = "▲";
+  } else {
+    infoEl.classList.remove('insight-show');
+    infoEl.classList.add('insight-hidden');
+    if (iconEl) iconEl.innerText = "▼";
+  }
+}
+
 // === TOMBOL INSIGHT ====
 function toggleInsight(){
   const card = document.getElementById("insightCard");
