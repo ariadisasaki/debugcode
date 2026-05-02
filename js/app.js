@@ -600,38 +600,56 @@ function raDecToAltAz(ra, dec, lat, lon, date){
 function altAzToXY(alt, azi) {
   if (alt === undefined || azi === undefined || isNaN(alt) || isNaN(azi)) return null;
 
-  const now = new Date();
-  const hour = now.getHours();
+  // === 1. MENENTUKAN OBJEK UTAMA UNTUK DIBIDIK ===
+  let targetAzi = 270; // Default Barat
+
+  // Ambil data posisi objek dari variabel global aplikasi Anda
+  const moonAlt = (typeof hilalDataFull !== 'undefined' && hilalDataFull.alt !== undefined) ? hilalDataFull.alt : -99;
+  const moonAzi = (typeof hilalDataFull !== 'undefined' && hilalDataFull.azi !== undefined) ? hilalDataFull.azi : 270;
   
-  // === 1. MENENTUKAN ARAH BIDIK KAMERA (Target Azimuth) ===
-  let targetAzi = 270; // Default: Barat untuk rukyat
-  
-  if (hour >= 5 && hour <= 11) {
-    // Pagi hari: Kamera menoleh ke arah Timur (90°) untuk melihat matahari terbit
-    targetAzi = 90;
-  } else if (typeof hilalDataFull !== 'undefined' && hilalDataFull.azi) {
-    // Sore/Malam hari: Kamera otomatis membidik azimuth posisi Bulan
-    targetAzi = hilalDataFull.azi;
+  const sunAlt = (typeof sunCache !== 'undefined' && sunCache.alt !== undefined) ? sunCache.alt : -99;
+  const sunAzi = (typeof sunCache !== 'undefined' && sunCache.azi !== undefined) ? sunCache.azi : 90;
+
+  // LOGIKA KAMERA CERDAS:
+  if (moonAlt >= -5 && sunAlt >= -5) {
+    // A. Jika keduanya sedang di atas ufuk, bidik titik tengah antara Bulan dan Matahari
+    let diff = ((sunAzi - moonAzi + 180) % 360 + 360) % 360 - 180;
+    targetAzi = (moonAzi + diff / 2 + 360) % 360;
+  } else if (moonAlt >= -5) {
+    // B. Jika hanya Bulan yang di atas ufuk (sore hari/rukyat), kamera mengunci Bulan
+    targetAzi = moonAzi;
+  } else if (sunAlt >= -5) {
+    // C. Jika hanya Matahari yang di atas ufuk (pagi/siang), kamera mengunci Matahari
+    targetAzi = sunAzi;
+  } else {
+    // D. Jika keduanya sudah terbenam (malam hari), kamera default mengunci posisi Bulan
+    targetAzi = moonAzi;
   }
 
-  // === 2. BIDANG PANDANG TERFOKUS (Field of View) ===
-  const FOV_X = 60; // Rentang pandang horizontal selebar 60°
-  const FOV_Y = 30; // Rentang pandang vertikal setinggi 30° saja (Sangat detail di dekat ufuk)
+  // === 2. BIDANG PANDANG (FOV) ===
+  const FOV_X = 80; // Diperlebar menjadi 80° agar cakupan pandangan lebih luas
+  const FOV_Y = 60; // Tinggi pandangan 60°
 
-  // Hitung selisih azimuth objek dengan arah bidik kamera
+  // Hitung selisih azimuth objek terhadap arah bidik kamera
   let diffAzi = azi - targetAzi;
   diffAzi = ((diffAzi + 180) % 360 + 360) % 360 - 180;
 
-  // Batasi jangkauan pandangan visual
-  // Hanya menampilkan objek dari -5° di bawah ufuk sampai 25° di atas ufuk
-  if (Math.abs(diffAzi) > FOV_X / 2 || alt > 25 || alt < -5) return null;
+  // Jika objek terlalu jauh ke samping dari arah kamera, jangan digambar
+  if (Math.abs(diffAzi) > FOV_X / 2) return null;
 
-  // === 3. PEMETAAN KE PIKSEL CANVAS ===
-  // Memetakan posisi X secara horizontal
+  // === 3. PEMETAAN KOORDINAT X ===
   const x = canvas.width - ((diffAzi + (FOV_X / 2)) / FOV_X) * canvas.width;
 
-  // Memetakan posisi Y secara vertikal (Ufuk diletakkan sedikit di bawah tengah canvas)
-  const y = canvas.height - ((alt + 5) / FOV_Y) * canvas.height;
+  // === 4. PEMETAAN KOORDINAT Y (Ketinggian) ===
+  let y;
+  if (alt >= 0) {
+    // Objek di atas ufuk: dipetakan dari 0° sampai 90°
+    y = canvas.height - (alt / 90) * (canvas.height * 0.8);
+  } else {
+    // Objek di bawah ufuk (terbenam): tetap digambar tipis di bagian paling bawah layar
+    y = canvas.height - (alt / -90) * (canvas.height * 0.2);
+    y = Math.min(y, canvas.height - 5); // Beri jarak 5px agar tidak keluar dari canvas
+  }
 
   return { x, y };
 }
