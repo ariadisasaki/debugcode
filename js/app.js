@@ -2562,7 +2562,7 @@ function updatePrediksiCard(){
     getCountdownIjtima(now, ijtimaNext);
 }
 
-// === TOGGLE HIJRI INFO ===
+// === TOMBOL HIJRI INFO ===
 function toggleHijriInfo() {
   const infoEl = document.getElementById('hijriInfoCard');
   const iconEl = document.getElementById('hijriToggleIcon');
@@ -2581,40 +2581,20 @@ function toggleHijriInfo() {
 }
 
 // === TOMBOL INSIGHT ====
-function toggleInsight(){
-  const card = document.getElementById("insightCard");
-  const btn = document.getElementById("toggleInsightBtn");
+function toggleInsight() {
+  const insightEl = document.getElementById('insightCard');
+  const iconEl = document.getElementById('insightToggleIcon');
+  
+  if (!insightEl) return;
 
-  if(card.classList.contains("insight-hidden")){
-    card.classList.remove("insight-hidden");
-    card.classList.add("insight-show");
-    btn.innerText = "❌ Sembunyikan Penjelasan";
+  if (insightEl.classList.contains('insight-hidden')) {
+    insightEl.classList.remove('insight-hidden');
+    insightEl.classList.add('insight-show');
+    if (iconEl) iconEl.innerText = "▲";
   } else {
-    card.classList.remove("insight-show");
-    card.classList.add("insight-hidden");
-    btn.innerText = "🔽 Tampilkan Penjelasan";
-  }
-}
-
-// === TOMBOL PENJELASAN ===
-function toggleHijriInfo(){
-  const card = document.getElementById("hijriInfoCard");
-  const btn = document.getElementById("toggleHijriBtn");
-
-  if(card.classList.contains("insight-hidden")){
-    // buka
-    card.classList.remove("insight-hidden");
-
-    // set tinggi sesuai isi
-    card.style.maxHeight = card.scrollHeight + "px";
-
-    btn.innerText = "❌ Tutup Informasi";
-  } else {
-    // tutup
-    card.style.maxHeight = "0px";
-    card.classList.add("insight-hidden");
-
-    btn.innerText = "🔽 Tampilkan Informasi";
+    insightEl.classList.remove('insight-show');
+    insightEl.classList.add('insight-hidden');
+    if (iconEl) iconEl.innerText = "▼";
   }
 }
 
