@@ -2847,6 +2847,115 @@ function toggleHijriMode() {
     updateHijriDisplay(); 
 }
 
+// === CETAK LAPORAN PDF ===
+function generatePDFReport() {
+  try {
+    // 1. Ambil data log audit dari LocalStorage
+    const logs = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
+    
+    if (logs.length === 0) {
+      alert("Belum ada data riwayat audit yang tersimpan untuk dicetak.");
+      return;
+    }
+
+    // 2. Inisialisasi jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const now = new Date();
+    const timestampCetak = now.toLocaleString('id-ID');
+
+    // === HEADER DOKUMEN ===
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(11, 26, 58); // Warna biru gelap sesuai tema aplikasi
+    doc.text("HILAL CHECKER SYSTEM", 14, 20);
+
+    doc.setFontSize(12);
+    doc.setFont("Helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+    doc.text("Laporan Audit & Riwayat Perubahan Tanggal", 14, 26);
+
+    // Garis pemisah header
+    doc.setDrawColor(250, 204, 21); // Warna emas/kuning aksen
+    doc.setLineWidth(1);
+    doc.line(14, 29, 196, 29);
+
+    // === METADATA LAPORAN ===
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Dicetak pada: ${timestampCetak}`, 14, 36);
+    doc.text(`Total Entri Log: ${logs.length} data`, 14, 41);
+
+    // === TABEL DATA AUDIT ===
+    // Mengubah data log lokal menjadi bentuk baris untuk tabel PDF
+    const tableRows = logs.map((log, index) => [
+      index + 1,
+      log.timestamp || "-",
+      log.mode || "HYBRID",
+      log.hijriDate || "-",
+      log.koordinat || "-",
+      log.h_alt || "0°",
+      log.h_elo || "0°"
+    ]);
+
+    // Membuat tabel otomatis di PDF
+    doc.autoTable({
+      startY: 46,
+      head: [['No', 'Waktu Audit', 'Mode', 'Tanggal Hijriah', 'Koordinat GPS', 'Tinggi Hilal', 'Elongasi']],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [11, 26, 58], // Biru gelap
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        valign: 'middle'
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 10 },
+        1: { halign: 'center', cellWidth: 40 },
+        2: { halign: 'center', cellWidth: 22 },
+        3: { halign: 'center', cellWidth: 32 },
+        4: { halign: 'center', cellWidth: 34 },
+        5: { halign: 'center', cellWidth: 22 },
+        6: { halign: 'center', cellWidth: 22 }
+      },
+      didDrawPage: function (data) {
+        // Footer halaman
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          "Dokumen ini digenerate secara otomatis oleh Hilal Checker App.",
+          14,
+          doc.internal.pageSize.height - 10
+        );
+        doc.text(
+          `Halaman ${data.pageNumber}`,
+          doc.internal.pageSize.width - 25,
+          doc.internal.pageSize.height - 10
+        );
+      }
+    });
+
+    // 3. Simpan / Unduh file PDF
+    const fileTimestamp = now.toISOString().split('T')[0];
+    doc.save(`Hilal_Audit_Log_${fileTimestamp}.pdf`);
+
+  } catch (error) {
+    console.error("Gagal mencetak PDF:", error);
+    alert("Terjadi kesalahan teknis saat membuat laporan PDF.");
+  }
+}
+
 // ============================================================
 // BAGIAN 3: SISTEM AUDIT & DEBUGGING
 // ============================================================
