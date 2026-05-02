@@ -616,37 +616,18 @@ function altAzToXY(alt, azi){
 }
     
 // === BACKGROUND LANGIT ===
-function drawSkyBackground() {
-  // 1. Mengambil data ketinggian matahari secara realtime
-  let sunAlt = (typeof sunCache !== 'undefined' && sunCache) ? sunCache.alt : -5;
-  
-  // 2. Membuat gradasi warna vertikal pada canvas
-  let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+function drawSkyBackground(){
 
-  // === KONDISI SIANG HARI ===
-  if (sunAlt > 5) {
-    // Gradasi langit biru cerah khas siang hari
-    gradient.addColorStop(0, '#1e3c72');
-    gradient.addColorStop(1, '#2a5298');
+  let sun = sunCache;
+  let vf = getVisibilityFactor(sun.alt);
 
-  // === KONDISI SENJA / MAGHRIB ===
-  } else if (sunAlt > -6 && sunAlt <= 5) {
-    // Warna oranye/kuning di dekat ufuk bawah, dan biru gelap di atas langit
-    gradient.addColorStop(0, '#0c1b33');  // Atas: Biru gelap
-    gradient.addColorStop(0.5, '#2c3e50'); // Tengah: Biru redup
-    gradient.addColorStop(0.8, '#e67e22'); // Bawah: Oranye senja
-    gradient.addColorStop(1, '#f1c40f');   // Ufuk: Kuning matahari terbenam
+  let r = Math.floor(10 + (135 * (1 - vf)));
+  let g = Math.floor(10 + (206 * (1 - vf)));
+  let b = Math.floor(30 + (235 * (1 - vf)));
 
-  // === KONDISI MALAM HARI ===
-  } else {
-    // Warna langit malam sangat gelap (night mode)
-    gradient.addColorStop(0, '#020611');
-    gradient.addColorStop(1, '#0b1528');
-  }
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  // 3. Mengisi canvas dengan warna gradasi dinamis tersebut
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 // === POSISI PLANET ===
@@ -1373,7 +1354,7 @@ function hitungHilal(lat, lon, customTime = null) {
     else if (sebelumMaghrib) {
       if (hariHisab < 29) {
         if (statusEl) statusEl.innerText = `Fase Konvensional (H-${hariHisab})`;
-        if (prediksiEl) prediksiEl.innerText = `Hilal berada pada ketinggian ${alt.toFixed(1)}°. Lunasi hilal berjalan normal, belum memasuki jendela waktu rukyat.`;
+        if (prediksiEl) prediksiEl.innerText = `Hilal berada pada ketinggian ${alt.toFixed(1)}°. Fase hilal berjalan normal, belum memasuki jendela waktu rukyat.`;
       } else {
         if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT (H-29)</span>`;
         const selisihAlt = (3 - alt).toFixed(1);
