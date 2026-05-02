@@ -600,25 +600,38 @@ function raDecToAltAz(ra, dec, lat, lon, date){
 function altAzToXY(alt, azi) {
   if (alt === undefined || azi === undefined || isNaN(alt) || isNaN(azi)) return null;
 
-  // Fokus pandangan ke arah Barat (270°) tempat hilal biasanya dipantau
-  const targetAzi = 270; 
-  const FOV_X = 60; // Rentang sudut horizontal (60 derajat)
-  const FOV_Y = 45; // Rentang sudut vertikal (45 derajat)
-
-  // Hitung selisih azimuth objek dengan arah pandang kamera
-  let diffAzi = azi - targetAzi;
+  const now = new Date();
+  const hour = now.getHours();
   
-  // Normalisasi sudut ke rentang -180 sampai 180 derajat
+  // === 1. MENENTUKAN ARAH BIDIK KAMERA (Target Azimuth) ===
+  let targetAzi = 270; // Default: Barat untuk rukyat
+  
+  if (hour >= 5 && hour <= 11) {
+    // Pagi hari: Kamera menoleh ke arah Timur (90°) untuk melihat matahari terbit
+    targetAzi = 90;
+  } else if (typeof hilalDataFull !== 'undefined' && hilalDataFull.azi) {
+    // Sore/Malam hari: Kamera otomatis membidik azimuth posisi Bulan
+    targetAzi = hilalDataFull.azi;
+  }
+
+  // === 2. BIDANG PANDANG TERFOKUS (Field of View) ===
+  const FOV_X = 60; // Rentang pandang horizontal selebar 60°
+  const FOV_Y = 30; // Rentang pandang vertikal setinggi 30° saja (Sangat detail di dekat ufuk)
+
+  // Hitung selisih azimuth objek dengan arah bidik kamera
+  let diffAzi = azi - targetAzi;
   diffAzi = ((diffAzi + 180) % 360 + 360) % 360 - 180;
 
-  // Jika objek di luar jangkauan horizontal atau vertikal, jangan digambar
-  if (Math.abs(diffAzi) > FOV_X / 2 || alt > FOV_Y || alt < -10) return null;
+  // Batasi jangkauan pandangan visual
+  // Hanya menampilkan objek dari -5° di bawah ufuk sampai 25° di atas ufuk
+  if (Math.abs(diffAzi) > FOV_X / 2 || alt > 25 || alt < -5) return null;
 
-  // Petakan koordinat X (kiri ke kanan)
+  // === 3. PEMETAAN KE PIKSEL CANVAS ===
+  // Memetakan posisi X secara horizontal
   const x = canvas.width - ((diffAzi + (FOV_X / 2)) / FOV_X) * canvas.width;
 
-  // Petakan koordinat Y (bawah ke atas, ufuk di bagian bawah layar)
-  const y = canvas.height - ((alt + 10) / (FOV_Y + 10)) * canvas.height;
+  // Memetakan posisi Y secara vertikal (Ufuk diletakkan sedikit di bawah tengah canvas)
+  const y = canvas.height - ((alt + 5) / FOV_Y) * canvas.height;
 
   return { x, y };
 }
