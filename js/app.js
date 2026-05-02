@@ -596,6 +596,67 @@ function raDecToAltAz(ra, dec, lat, lon, date){
   return { alt, azi };
 }
 
+// === ALTAZ TO XY ===
+function altAzToXY(alt, azi) {
+  if (alt === undefined || azi === undefined || isNaN(alt) || isNaN(azi)) return null;
+
+  // Fokus pandangan ke arah Barat (270°) tempat hilal biasanya dipantau
+  const targetAzi = 270; 
+  const FOV_X = 60; // Rentang sudut horizontal (60 derajat)
+  const FOV_Y = 45; // Rentang sudut vertikal (45 derajat)
+
+  // Hitung selisih azimuth objek dengan arah pandang kamera
+  let diffAzi = azi - targetAzi;
+  
+  // Normalisasi sudut ke rentang -180 sampai 180 derajat
+  diffAzi = ((diffAzi + 180) % 360 + 360) % 360 - 180;
+
+  // Jika objek di luar jangkauan horizontal atau vertikal, jangan digambar
+  if (Math.abs(diffAzi) > FOV_X / 2 || alt > FOV_Y || alt < -10) return null;
+
+  // Petakan koordinat X (kiri ke kanan)
+  const x = canvas.width - ((diffAzi + (FOV_X / 2)) / FOV_X) * canvas.width;
+
+  // Petakan koordinat Y (bawah ke atas, ufuk di bagian bawah layar)
+  const y = canvas.height - ((alt + 10) / (FOV_Y + 10)) * canvas.height;
+
+  return { x, y };
+}
+    
+// === BACKGROUND LANGIT ===
+function drawSkyBackground() {
+  // 1. Mengambil data ketinggian matahari secara realtime
+  let sunAlt = (typeof sunCache !== 'undefined' && sunCache) ? sunCache.alt : -5;
+  
+  // 2. Membuat gradasi warna vertikal pada canvas
+  let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+
+  // === KONDISI SIANG HARI ===
+  if (sunAlt > 5) {
+    // Gradasi langit biru cerah khas siang hari
+    gradient.addColorStop(0, '#1e3c72');
+    gradient.addColorStop(1, '#2a5298');
+
+  // === KONDISI SENJA / MAGHRIB ===
+  } else if (sunAlt > -6 && sunAlt <= 5) {
+    // Warna oranye/kuning di dekat ufuk bawah, dan biru gelap di atas langit
+    gradient.addColorStop(0, '#0c1b33');  // Atas: Biru gelap
+    gradient.addColorStop(0.5, '#2c3e50'); // Tengah: Biru redup
+    gradient.addColorStop(0.8, '#e67e22'); // Bawah: Oranye senja
+    gradient.addColorStop(1, '#f1c40f');   // Ufuk: Kuning matahari terbenam
+
+  // === KONDISI MALAM HARI ===
+  } else {
+    // Warna langit malam sangat gelap (night mode)
+    gradient.addColorStop(0, '#020611');
+    gradient.addColorStop(1, '#0b1528');
+  }
+
+  // 3. Mengisi canvas dengan warna gradasi dinamis tersebut
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 // === POSISI PLANET ===
 function getPlanetPosition(name, date){
 
@@ -651,40 +712,6 @@ function getPlanetPosition(name, date){
   const dec = rad2deg(Math.atan2(ze, Math.sqrt(xe*xe + ye*ye)));
 
   return { ra, dec };
-}
-
-// === ALTAZ TO XY ===
-function altAzToXY(alt, azi){
-
-  if(alt === undefined || azi === undefined) return null;
-  if(isNaN(alt) || isNaN(azi)) return null;
-  if(alt < 0) return null;
-
-  // === NORMALISASI ===
-  azi = (azi + 360) % 360;
-
-  // === BALIK ARAH AZIMUTH ===
-  let x = ((360 - azi) / 360) * canvas.width;
-
-  // === ALTITUDE TETAP ===
-  let y = canvas.height - (alt / 90) * canvas.height;
-
-  return { x, y };
-}
-    
-// === BACKGROUND LANGIT ===
-function drawSkyBackground(){
-
-  let sun = sunCache;
-  let vf = getVisibilityFactor(sun.alt);
-
-  let r = Math.floor(10 + (135 * (1 - vf)));
-  let g = Math.floor(10 + (206 * (1 - vf)));
-  let b = Math.floor(30 + (235 * (1 - vf)));
-
-  ctx.fillStyle = `rgb(${r},${g},${b})`;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
 }
 
 // === GAMBAR BULAN ===
