@@ -1265,6 +1265,9 @@ async function initApp(lat, lon) {
     if (typeof refreshIjtimaData === 'function' && !CACHED_IJTIMA) refreshIjtimaData();
     hilalDataFull = hitungHilal(lat, lon);
 
+    // Eksekusi tampilan awal secara instan (agar UI langsung terisi data)
+    if (typeof renderIjtimaUI === 'function') renderIjtimaUI();
+
     // Bersihkan interval debug lama jika ada
     if (debugInterval) clearInterval(debugInterval);
 
@@ -1288,6 +1291,9 @@ async function initApp(lat, lon) {
         if (typeof renderUI === 'function') renderUI(); 
         if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
         if (typeof updateHilalAR === 'function') updateHilalAR();
+        
+        // PANGGIL DI SINI: Update waktu dan countdown ijtima secara berkala
+        if (typeof renderIjtimaUI === 'function') renderIjtimaUI();
     }, 1000);
 
     // ============================================================
