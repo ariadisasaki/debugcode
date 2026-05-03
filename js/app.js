@@ -45,11 +45,11 @@ const deg = 180 / Math.PI;
 // === HITUNG SEKALI SAJA SAAT APLIKASI DIBUKA ===
 let CACHED_IJTIMA = null; 
 function refreshIjtimaData() {
-    // Gunakan getNextIjtima() untuk mendapatkan waktu konjungsi berikutnya
+    // Ambil waktu konjungsi yang akan datang
     if (typeof getNextIjtima === 'function') {
         CACHED_IJTIMA = getNextIjtima();
     } else {
-        CACHED_IJTIMA = new Date(); // fallback jika fungsi belum siap
+        CACHED_IJTIMA = new Date();
     }
 }
 
@@ -1263,14 +1263,13 @@ async function initApp(lat, lon) {
         if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
     } catch (e) { console.warn("Pendukung gagal."); }
 
-    // B. Hitungan Pertama
-    if (typeof refreshIjtimaData === 'function' && !CACHED_IJTIMA) refreshIjtimaData();
+    // B. Hitungan Pertama (Abaikan cache lama dan paksa kalkulasi ulang)
+    if (typeof refreshIjtimaData === 'function') refreshIjtimaData();
     hilalDataFull = hitungHilal(lat, lon);
 
-    // Eksekusi tampilan awal secara instan (agar UI langsung terisi data)
+    // Eksekusi tampilan awal secara instan
     if (typeof renderIjtimaUI === 'function') renderIjtimaUI();
 
-    // Bersihkan interval debug lama jika ada
     if (debugInterval) clearInterval(debugInterval);
 
     // ============================================================
@@ -1280,8 +1279,6 @@ async function initApp(lat, lon) {
         if (currentLat && currentLon) {
             hilalDataFull = hitungHilal(currentLat, currentLon);
             if (typeof updateSunCard === 'function') updateSunCard();
-            
-            // Tampilkan debug monitor ke Console log secara berkala
             debugHilal(); 
         }
     }, 10000); 
@@ -1305,7 +1302,6 @@ async function initApp(lat, lon) {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
 
-    // Eksekusi tampilan awal secara instan
     setTimeout(() => { if (typeof updateSunCard === 'function') updateSunCard(); }, 0);
     debugHilal(); 
 }
@@ -1672,6 +1668,7 @@ function getLastIjtima() {
     }
     let ijtimaMillis = hitung(k);
     
+    // Jika hasil hitungan k ternyata di masa depan, mundurkan k sekali
     if (ijtimaMillis > now.getTime()) {
         ijtimaMillis = hitung(k - 1);
     }
@@ -1721,9 +1718,12 @@ function koreksiParallax(alt) {
 }
 
 // === UPDATE UI IJTIMAK SECARA DINAMIS ===
+// === UPDATE TANGGAL & COUNTDOWN IJTIMA DI UI SECARA DINAMIS ===
 function renderIjtimaUI() {
   const now = new Date();
-  const nextIjtimaDate = getNextIjtima();
+  
+  // Ambil waktu ijtima yang akan datang
+  const nextIjtimaDate = typeof getNextIjtima === 'function' ? getNextIjtima() : new Date();
 
   // Opsi format tanggal lokal bahasa Indonesia
   const options = {
@@ -1737,16 +1737,16 @@ function renderIjtimaUI() {
     hour12: false
   };
 
-  // 1. Tampilkan tanggal lengkap konjungsi berikutnya sesuai zona waktu lokal
-  const ijtimaFormatString = nextIjtimaDate.toLocaleString('id-ID', options) + " WIB/WITA/WIT";
+  // Otomatis menyesuaikan dengan zona waktu lokal (WIB/WITA/WIT)
+  const ijtimaFormatString = nextIjtimaDate.toLocaleString('id-ID', options);
+  
   const ijtimaTimeElement = document.getElementById('ijtimaTime');
   if (ijtimaTimeElement) {
     ijtimaTimeElement.innerText = ijtimaFormatString;
   }
 
-  // 2. Tampilkan countdown/hitung mundurnya secara dinamis
   const countdownElement = document.getElementById('ijtimaCountdown');
-  if (countdownElement) {
+  if (countdownElement && typeof getCountdownIjtima === 'function') {
     countdownElement.innerText = getCountdownIjtima(now, nextIjtimaDate);
   }
 }
@@ -2688,14 +2688,14 @@ function nextMonth(current){
 function getHijriAstronomical(lat, lon, customDate = null) { 
     const now = customDate ? new Date(customDate) : new Date();
     
-    // GUNAKAN CACHE
-    const ijtima = CACHED_IJTIMA; 
+    // PENGAMAN: Jika CACHED_IJTIMA kosong, hitung langsung menggunakan getLastIjtima()
+    const ijtima = CACHED_IJTIMA || (typeof getLastIjtima === 'function' ? getLastIjtima() : now); 
 
     const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate());
 
     let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000);
-    const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
+    const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
     
     let d = diffDays;
@@ -2703,6 +2703,8 @@ function getHijriAstronomical(lat, lon, customDate = null) {
 
     const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
     const cycle = Math.floor(ageTotal / 29.530588853);
+    
+    // Koreksi siklus untuk penentuan bulan Zulkaidah 1447 H
     let m = ((11 - 1 + cycle) % 12) + 1;
     let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
 
@@ -2714,28 +2716,31 @@ let statusHilal = "-";
 function getHijriHybrid(lat, lon, customDate = null) {
     const now = customDate ? new Date(customDate) : new Date();
     
-    // 1. Ambil data hisab (Sekarang sudah ringan)
     const hisab = getHijriAstronomical(lat, lon, now);
     
-    // 2. Gunakan Cache Ijtima
-    const ijtima = CACHED_IJTIMA;
+    // PENGAMAN: Pastikan ijtima selalu terdefinisi
+    const ijtima = CACHED_IJTIMA || (typeof getLastIjtima === 'function' ? getLastIjtima() : now);
     const tglPenentuan = new Date(ijtima);
     tglPenentuan.setHours(18, 15, 0, 0);
 
-    // 3. Panggil core (hitung posisi hilal)
-    const hilal = hitungHilalCore(lat, lon, tglPenentuan);
+    const hilal = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, tglPenentuan) : { alt: 0, elo: 0 };
     const imkanRukyat = (hilal.alt >= 3 && hilal.elo >= 6.4);
 
     let d = hisab.d;
     let m = hisab.m;
     let y = hisab.y;
 
-    if (!imkanRukyat) d -= 1;
-
-    if (d < 1) {
-        d = 30; m -= 1;
+    // Logika Imkan Rukyat & Istikmal
+    if (!imkanRukyat && d === 1) {
+        d = 30; 
+        m -= 1;
         if (m < 1) { m = 12; y--; }
+    } else if (imkanRukyat && d > 29) {
+        d = 1; 
+        m += 1;
+        if (m > 12) { m = 1; y++; }
     }
+
     return { d, m, y };
 }
 
@@ -2755,8 +2760,7 @@ function resetHybridDaily(){
 function updateHijriDisplay(){
     if(!currentLat || !currentLon) return;
 
-    // Ambil hasil akhir dari seleksi mode
-    const data = getHijriFinal(currentLat, currentLon);
+    const data = typeof getHijriFinal === 'function' ? getHijriFinal(currentLat, currentLon) : null;
 
     const bulan = [
         "Muharram","Safar","Rabiul Awal","Rabiul Akhir",
@@ -2765,14 +2769,21 @@ function updateHijriDisplay(){
     ];
     
     const el = document.getElementById("hijri");
-    if(el && data) {
+    if(el && data && data.d && data.m && data.y) {
         el.innerText = `${data.d} ${bulan[data.m - 1]} ${data.y} H`;
+        
+        // Sinkronisasi state global agar tidak terjadi glitch mundur bulan
+        if (typeof hijriState !== 'undefined') {
+            hijriState.d = data.d;
+            hijriState.m = data.m;
+            hijriState.y = data.y;
+        }
     }
   
-  if (typeof logHijriAudit === "function" && locationInitialized) {
-        // Ambil data tanggal yang sedang tampil
+    if (typeof logHijriAudit === "function" && locationInitialized && typeof hijriState !== 'undefined') {
         const dataTanggal = { d: hijriState.d, m: hijriState.m, y: hijriState.y }; 
-        logHijriAudit(dataTanggal, modeHijri);
+        const currentMode = typeof modeHijri !== 'undefined' ? modeHijri : 'default';
+        logHijriAudit(dataTanggal, currentMode);
     }
 }
 
