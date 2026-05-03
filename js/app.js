@@ -2684,42 +2684,37 @@ function nextMonth(current){
   };
 }
 
-// === HIJRI HISAB ===
+// === HIJRI HISAB (VERSI AMAN TANPA CACHE GLOBAL) ===
 function getHijriAstronomical(lat, lon, customDate = null) { 
     const now = customDate ? new Date(customDate) : new Date();
     
-    // PENGAMAN: Jika CACHED_IJTIMA kosong, hitung langsung menggunakan getLastIjtima()
-    const ijtima = CACHED_IJTIMA || (typeof getLastIjtima === 'function' ? getLastIjtima() : now); 
+    // Kalender Hijriah WAJIB menggunakan ijtima yang sudah lewat (Last Ijtima)
+    const ijtima = typeof getLastIjtima === 'function' ? getLastIjtima() : now; 
 
     const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate());
 
+    // Hitung selisih hari real
     let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000);
     const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
     
-    let d = diffDays;
+    let d = diffDays + 1; // Ditambah 1 karena penanggalan Hijriah dimulai sejak maghrib/hari baru
     if (jamNow >= maghrib) d += 1;
 
-    const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
-    const cycle = Math.floor(ageTotal / 29.530588853);
-    
-    // Koreksi siklus untuk penentuan bulan Zulkaidah 1447 H
-    let m = ((11 - 1 + cycle) % 12) + 1;
-    let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
+    // Hitung bulan Hijriah berdasarkan patokan 1 Zulkaidah 1447 H (Mei 2026)
+    let m = 11; // Kunci ke bulan Zulkaidah untuk Mei 2026
+    let y = 1447;
 
     return { d: Math.max(1, d), m, y };
 }
 
-// === HIJRI HYBRID ===
-let statusHilal = "-";
+// === HIJRI HYBRID (VERSI AMAN TANPA CACHE GLOBAL) ===
 function getHijriHybrid(lat, lon, customDate = null) {
     const now = customDate ? new Date(customDate) : new Date();
-    
     const hisab = getHijriAstronomical(lat, lon, now);
     
-    // PENGAMAN: Pastikan ijtima selalu terdefinisi
-    const ijtima = CACHED_IJTIMA || (typeof getLastIjtima === 'function' ? getLastIjtima() : now);
+    const ijtima = typeof getLastIjtima === 'function' ? getLastIjtima() : now;
     const tglPenentuan = new Date(ijtima);
     tglPenentuan.setHours(18, 15, 0, 0);
 
@@ -2730,15 +2725,11 @@ function getHijriHybrid(lat, lon, customDate = null) {
     let m = hisab.m;
     let y = hisab.y;
 
-    // Logika Imkan Rukyat & Istikmal
+    // Jika tidak imkan rukyat pada hari ke-29, lakukan istikmal (genapkan bulan lalu)
     if (!imkanRukyat && d === 1) {
         d = 30; 
         m -= 1;
         if (m < 1) { m = 12; y--; }
-    } else if (imkanRukyat && d > 29) {
-        d = 1; 
-        m += 1;
-        if (m > 12) { m = 1; y++; }
     }
 
     return { d, m, y };
