@@ -45,11 +45,13 @@ const deg = 180 / Math.PI;
 // === HITUNG SEKALI SAJA SAAT APLIKASI DIBUKA ===
 let CACHED_IJTIMA = null; 
 function refreshIjtimaData() {
-    // Panggil fungsi berat Anda hanya di sini
-    CACHED_IJTIMA = getLastIjtima();
+    // Gunakan getNextIjtima() untuk mendapatkan waktu konjungsi berikutnya
+    if (typeof getNextIjtima === 'function') {
+        CACHED_IJTIMA = getNextIjtima();
+    } else {
+        CACHED_IJTIMA = new Date(); // fallback jika fungsi belum siap
+    }
 }
-// === JALANKAN SAAT STARTUP ===
-refreshIjtimaData();
 
 const SYNODIC_MONTH = 29.530588;
 const DAY_MS = 86400000;
@@ -1883,14 +1885,13 @@ function getCountdownMaghrib(now, maghrib){
 
 // === RENDER UI ====
 function renderUI() {
-    // 1. Pastikan koordinat tersedia (gunakan satu sumber kebenaran)
-    // Jika currentLat kosong, jangan render dulu agar tidak terjadi glitch angka lompat
+    // 1. Pastikan koordinat tersedia
     if (!currentLat || !currentLon) {
         document.getElementById('insight').innerHTML = "⏳ Menunggu koordinat GPS...";
         return;
     }
 
-    // 2. Cek data Hilal (sudah dihitung oleh interval utama belum?)
+    // 2. Cek data Hilal
     if (!hilalDataFull || typeof hilalDataFull.age === 'undefined') {
         document.getElementById('insight').innerHTML = "⏳ Mengkalkulasi data astronomi...";
         return;
@@ -1899,13 +1900,22 @@ function renderUI() {
     const now = new Date();
 
     try {
-        // 3. Ambil data Maghrib (hanya panggil jika fungsinya ada)
+        // === SINKRONISASI DATA IJTIMA ===
+        // Jika CACHED_IJTIMA masih kosong atau tidak ada, ambil data baru
+        if (!CACHED_IJTIMA && typeof refreshIjtimaData === 'function') {
+            refreshIjtimaData();
+        }
+
+        // 3. Ambil data Maghrib
         const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
         const maghrib = maghribData.decimal;
 
-        // 4. Update UI Insight (kirim hilalDataFull yang sudah matang)
-        // Pastikan Anda sudah mengupdate fungsi getHijriInsight seperti saran sebelumnya
-        const insightHTML = getHijriInsight(hilalDataFull, maghrib, now);
+        // 4. Update UI Insight
+        // Di dalam getHijriInsight, pastikan logika membaca CACHED_IJTIMA yang sudah diperbarui
+        const insightHTML = typeof getHijriInsight === 'function' 
+            ? getHijriInsight(hilalDataFull, maghrib, now) 
+            : "Data insight belum tersedia";
+            
         const insightElement = document.getElementById('insight');
         if (insightElement) insightElement.innerHTML = insightHTML;
 
