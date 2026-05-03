@@ -1473,7 +1473,6 @@ function getHijriInsight(data, maghrib, now) {
 }
 
 // === HITUNG HILAL CORE ===
-// === HITUNG HILAL CORE ===
 function hitungHilalCore(lat, lon, customTime = null) {
   const now = customTime ? new Date(customTime) : new Date();
   
@@ -1644,6 +1643,118 @@ function hitungMaghrib(lat, lon, customDate = null) {
   };
 }
 
+// === DELTA TIME ===
+function getDeltaT() {
+  const year = new Date().getFullYear();
+  const t = (year - 2000) / 100;
+  return 64.7 + 64.5 * t + 0.21 * t * t;
+}
+
+// === IJTIMA TERAKHIR ===
+function getLastIjtima() {
+    const now = new Date();
+    const JD = (now.getTime() / 86400000) + 2440587.5;
+    
+    let k = Math.floor((JD - 2451550.09765) / 29.530588853);
+    
+    function hitung(k) {
+        const T = k / 1236.85;
+        const JDE = 2451550.09765 + 29.530588853 * k + 0.0001337 * T * T;
+        return (JDE - 2440587.5) * 86400000;
+    }
+    let ijtimaMillis = hitung(k);
+    
+    if (ijtimaMillis > now.getTime()) {
+        ijtimaMillis = hitung(k - 1);
+    }
+    return new Date(ijtimaMillis);
+}
+
+// === IJTIMA BERIKUTNYA ===
+function getNextIjtima() {
+  const now = new Date();
+  const JD = (now.getTime() / 86400000) + 2440587.5;
+  let k = Math.floor((JD - 2451550.09765) / 29.530588853);
+  
+  function hitungIjtima(k) {
+    const T = k / 1236.85;
+    return 2451550.09765
+      + 29.530588853 * k
+      + 0.0001337 * T * T
+      - 0.000000150 * T * T * T
+      + 0.00000000073 * T * T * T * T;
+  }
+  
+  let JDE = hitungIjtima(k);
+  
+  // Jika JDE di masa lalu atau sedang berlangsung, ambil siklus berikutnya
+  if (JDE <= JD) {
+    k++;
+    JDE = hitungIjtima(k);
+  }
+  const millis = (JDE - 2440587.5) * 86400000;
+  return new Date(millis);
+}
+
+// === KOREKSI REFRACTION & PARALLAX ===
+function koreksiRefraction(alt) {
+  if (alt > -1) {
+    const R = (1.02 / Math.tan((alt + 10.3 / (alt + 5.11)) * rad)) + 0.0019;
+    return alt + (R / 60);
+  }
+  return alt;
+}
+
+function koreksiParallax(alt) {
+  const pi = 0.9507;
+  const altRad = alt * rad;
+  const correction = Math.asin(Math.sin(pi * rad) * Math.cos(altRad));
+  return alt - (correction * deg);
+}
+
+// === UPDATE UI IJTIMAK SECARA DINAMIS ===
+function renderIjtimaUI() {
+  const now = new Date();
+  const nextIjtimaDate = getNextIjtima();
+
+  // Opsi format tanggal lokal bahasa Indonesia
+  const options = {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  };
+
+  // 1. Tampilkan tanggal lengkap konjungsi berikutnya sesuai zona waktu lokal
+  const ijtimaFormatString = nextIjtimaDate.toLocaleString('id-ID', options) + " WIB/WITA/WIT";
+  const ijtimaTimeElement = document.getElementById('ijtimaTime');
+  if (ijtimaTimeElement) {
+    ijtimaTimeElement.innerText = ijtimaFormatString;
+  }
+
+  // 2. Tampilkan countdown/hitung mundurnya secara dinamis
+  const countdownElement = document.getElementById('ijtimaCountdown');
+  if (countdownElement) {
+    countdownElement.innerText = getCountdownIjtima(now, nextIjtimaDate);
+  }
+}
+
+// === HITUNG MUNDUR IJTIMA ===
+function getCountdownIjtima(now, target) {
+  let diff = target - now;
+  if (diff <= 0) return "Sedang berlangsung / sudah lewat";
+  
+  const jam = Math.floor(diff / 3600000);
+  const menit = Math.floor((diff % 3600000) / 60000);
+  const detik = Math.floor((diff % 60000) / 1000);
+  
+  return `${jam} jam ${menit} menit ${detik} detik`;
+}
+
 // === SENSOR ===
 function initSensor(){
 
@@ -1738,118 +1849,6 @@ function formatTanggalIndonesia(date){
   const detik = String(date.getSeconds()).padStart(2,'0');
 
   return `${d} ${m} ${y} - Pkl. ${jam}:${menit}:${detik}`;
-}
-
-// === IJTIMA TERAKHIR ===
-function getLastIjtima() {
-    const now = new Date();
-    const JD = (now.getTime() / 86400000) + 2440587.5;
-    
-    let k = Math.floor((JD - 2451550.09765) / 29.530588853);
-    
-    function hitung(k) {
-        const T = k / 1236.85;
-        const JDE = 2451550.09765 + 29.530588853 * k + 0.0001337 * T * T;
-        return (JDE - 2440587.5) * 86400000;
-    }
-    let ijtimaMillis = hitung(k);
-    
-    if (ijtimaMillis > now.getTime()) {
-        ijtimaMillis = hitung(k - 1);
-    }
-    return new Date(ijtimaMillis);
-}
-
-// === IJTIMA BERIKUTNYA ===
-function getNextIjtima() {
-  const now = new Date();
-  const JD = (now.getTime() / 86400000) + 2440587.5;
-  let k = Math.floor((JD - 2451550.09765) / 29.530588853);
-  
-  function hitungIjtima(k) {
-    const T = k / 1236.85;
-    return 2451550.09765
-      + 29.530588853 * k
-      + 0.0001337 * T * T
-      - 0.000000150 * T * T * T
-      + 0.00000000073 * T * T * T * T;
-  }
-  
-  let JDE = hitungIjtima(k);
-  
-  // Jika JDE di masa lalu atau sedang berlangsung, ambil siklus berikutnya
-  if (JDE <= JD) {
-    k++;
-    JDE = hitungIjtima(k);
-  }
-  const millis = (JDE - 2440587.5) * 86400000;
-  return new Date(millis);
-}
-
-// === HITUNG MUNDUR IJTIMA ===
-function getCountdownIjtima(now, target) {
-  let diff = target - now;
-  if (diff <= 0) return "Sedang berlangsung / sudah lewat";
-  
-  const jam = Math.floor(diff / 3600000);
-  const menit = Math.floor((diff % 3600000) / 60000);
-  const detik = Math.floor((diff % 60000) / 1000);
-  
-  return `${jam} jam ${menit} menit ${detik} detik`;
-}
-
-// === UPDATE UI IJTIMAK SECARA DINAMIS ===
-function renderIjtimaUI() {
-  const now = new Date();
-  const nextIjtimaDate = getNextIjtima();
-
-  // Opsi format tanggal lokal bahasa Indonesia
-  const options = {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  };
-
-  // 1. Tampilkan tanggal lengkap konjungsi berikutnya sesuai zona waktu lokal
-  const ijtimaFormatString = nextIjtimaDate.toLocaleString('id-ID', options) + " WIB/WITA/WIT";
-  const ijtimaTimeElement = document.getElementById('ijtimaTime');
-  if (ijtimaTimeElement) {
-    ijtimaTimeElement.innerText = ijtimaFormatString;
-  }
-
-  // 2. Tampilkan countdown/hitung mundurnya secara dinamis
-  const countdownElement = document.getElementById('ijtimaCountdown');
-  if (countdownElement) {
-    countdownElement.innerText = getCountdownIjtima(now, nextIjtimaDate);
-  }
-}
-
-// === KOREKSI REFRACTION & PARALLAX ===
-function koreksiRefraction(alt) {
-  if (alt > -1) {
-    const R = (1.02 / Math.tan((alt + 10.3 / (alt + 5.11)) * rad)) + 0.0019;
-    return alt + (R / 60);
-  }
-  return alt;
-}
-
-function koreksiParallax(alt) {
-  const pi = 0.9507;
-  const altRad = alt * rad;
-  const correction = Math.asin(Math.sin(pi * rad) * Math.cos(altRad));
-  return alt - (correction * deg);
-}
-
-// === DELTA TIME ===
-function getDeltaT() {
-  const year = new Date().getFullYear();
-  const t = (year - 2000) / 100;
-  return 64.7 + 64.5 * t + 0.21 * t * t;
 }
 
 // === HIJRI PROGRESS ===
