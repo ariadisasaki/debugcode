@@ -2685,28 +2685,77 @@ function nextMonth(current){
 }
 
 // === HIJRI HISAB (VERSI AMAN TANPA CACHE GLOBAL) ===
+// === HIJRI HISAB (ALGORITMA TABULAR STABIL) ===
 function getHijriAstronomical(lat, lon, customDate = null) { 
     const now = customDate ? new Date(customDate) : new Date();
     
-    // Kalender Hijriah WAJIB menggunakan ijtima yang sudah lewat (Last Ijtima)
-    const ijtima = typeof getLastIjtima === 'function' ? getLastIjtima() : now; 
+    // Ambil tahun, bulan, tanggal masehi saat ini
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
 
-    const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate());
+    // Algoritma konversi Masehi ke Julian Day
+    let m = month;
+    let y = year;
+    if (m <= 2) {
+        y -= 1;
+        m += 12;
+    }
+    const a = Math.floor(y / 100);
+    const b = 2 - a + Math.floor(a / 4);
+    const jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + b - 1524.5;
 
-    // Hitung selisih hari real
-    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000);
+    // Konversi Julian Day ke Kalender Hijriah (Tabular Base 1447)
+    const baseJD = 1948439.5; // JD 1 Muharram 1 H
+    const totalDays = jd - baseJD;
+    
+    // 1 Tahun Hijriah = 354.367056 hari
+    const cycles = Math.floor(totalDays / 10631);
+    const remainingDays = totalDays - (cycles * 10631);
+    
+    let yearInCycle = Math.floor(remainingDays / 354.367);
+    if (yearInCycle > 29) yearInCycle = 29;
+    
+    // Cari hari yang tersisa di tahun tersebut
+    const daysBeforeYear = Math.floor(yearInCycle * 354.367056 + 0.5);
+    let dayOfYear = Math.floor(remainingDays - daysBeforeYear);
+
+    // Array akumulasi hari di setiap bulan Hijriah
+    const monthDays = [0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325];
+    
+    let monthH = 12;
+    for (let i = 11; i >= 0; i--) {
+        if (dayOfYear > monthDays[i]) {
+            monthH = i + 1;
+            dayOfYear -= monthDays[i];
+            break;
+        }
+    }
+
+    let dayH = dayOfYear + 1;
+    let yearH = cycles * 30 + yearInCycle + 1;
+
+    // Koreksi setelah waktu Maghrib (pergantian hari Hijriah)
     const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18;
     const jamNow = now.getHours() + now.getMinutes() / 60;
     
-    let d = diffDays + 1; // Ditambah 1 karena penanggalan Hijriah dimulai sejak maghrib/hari baru
-    if (jamNow >= maghrib) d += 1;
+    if (jamNow >= maghrib) {
+        dayH += 1;
+        // Jika melebihi jumlah hari dalam bulan tersebut
+        const isLeapYear = ((yearH % 30) === 2 || (yearH % 30) === 5 || (yearH % 30) === 7 || (yearH % 30) === 10 || (yearH % 30) === 13 || (yearH % 30) === 16 || (yearH % 30) === 18 || (yearH % 30) === 21 || (yearH % 30) === 24 || (yearH % 30) === 26 || (yearH % 30) === 29);
+        const maxDays = (monthH === 12) ? (isLeapYear ? 30 : 29) : (monthH % 2 === 1 ? 30 : 29);
+        
+        if (dayH > maxDays) {
+            dayH = 1;
+            monthH += 1;
+            if (monthH > 12) {
+                monthH = 1;
+                yearH += 1;
+            }
+        }
+    }
 
-    // Hitung bulan Hijriah berdasarkan patokan 1 Zulkaidah 1447 H (Mei 2026)
-    let m = 11; // Kunci ke bulan Zulkaidah untuk Mei 2026
-    let y = 1447;
-
-    return { d: Math.max(1, d), m, y };
+    return { d: dayH, m: monthH, y: yearH };
 }
 
 // === HIJRI HYBRID (VERSI AMAN TANPA CACHE GLOBAL) ===
