@@ -29,7 +29,6 @@ let lastTriggeredDate = "";
 let locationInitialized = false;
 let currentLat = null;
 let currentLon = null;
-let currentAlt = 0;
 let debugInterval = null;
 let hilalDataFull = { alt: 0, azi: 0, elo: 0, age: 0, illumination: 0 };
 let hijriState = {
@@ -1249,80 +1248,54 @@ async function updateAddress(lat, lon) {
 
 // 3. Fungsi Inisialisasi Utama Aplikasi
 async function initApp(lat, lon) {
-  if (!lat || !lon) return;
-
-  if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        currentLat = position.coords.latitude;
-        currentLon = position.coords.longitude;
-        currentAlt = position.coords.altitude || 0; // Elevasi otomatis tersimpan
-
-        console.log(`[GPS AKTIF] Lat: ${currentLat}, Lon: ${currentLon}, Elevasi: ${currentAlt}m`);
-        locationInitialized = true;
-        eksekusiKalkulasiPertama();
-      },
-      (error) => {
-        console.warn("[GPS ERROR/DITOLAK] Menggunakan lokasi default bawaan. Pesan:", error.message);
-        currentLat = lat;
-        currentLon = lon;
-        currentAlt = 0; 
-
-        locationInitialized = true;
-        eksekusiKalkulasiPertama();
-      },
-      { enableHighAccuracy: true }
-    );
-  } else {
-    console.warn("[BROWSER JADUL] Geolocation tidak didukung.");
-    currentLat = lat;
-    currentLon = lon;
-    currentAlt = 0;
-
+    if (!lat || !lon) return;
     locationInitialized = true;
-    eksekusiKalkulasiPertama();
-  }
-
-  async function eksekusiKalkulasiPertama() {
+    
+    // A. Jalankan fungsi pendukung sekali di awal
     try {
-      if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(currentLat, currentLon);
-      if (typeof startMaghribWatcher === 'function') startMaghribWatcher(currentLat, currentLon);
-    } catch (e) {
-      console.warn("Fungsi pendukung gagal dimuat.");
-    }
+        if (typeof getMagneticDeclination === 'function') await getMagneticDeclination(lat, lon);
+        if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
+    } catch (e) { console.warn("Pendukung gagal."); }
 
+    // B. Hitungan Pertama
     if (typeof refreshIjtimaData === 'function' && !CACHED_IJTIMA) refreshIjtimaData();
-    hilalDataFull = hitungHilal(currentLat, currentLon);
+    hilalDataFull = hitungHilal(lat, lon);
 
+    // Bersihkan interval debug lama jika ada
     if (debugInterval) clearInterval(debugInterval);
 
-    // TIMER 1: Komputasi & Auto-Debug (10 detik)
+    // ============================================================
+    // TIMER 1: Komputasi Berat & Auto-Debug (Setiap 10 Detik)
+    // ============================================================
     debugInterval = setInterval(() => {
-      if (currentLat && currentLon) {
-        hilalDataFull = hitungHilal(currentLat, currentLon);
-        if (typeof updateSunCard === 'function') updateSunCard();
-        if (typeof debugHilal === 'function') debugHilal();
-      }
-    }, 10000);
+        if (currentLat && currentLon) {
+            hilalDataFull = hitungHilal(currentLat, currentLon);
+            if (typeof updateSunCard === 'function') updateSunCard();
+            
+            // Tampilkan debug monitor ke Console log secara berkala
+            debugHilal(); 
+        }
+    }, 10000); 
 
-    // TIMER 2: UI & Visual (1 detik)
+    // ============================================================
+    // TIMER 2: UI & Visual (Setiap 1 Detik)
+    // ============================================================
     setInterval(() => {
-      if (typeof renderUI === 'function') renderUI();
-      if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
-      if (typeof updateHilalAR === 'function') updateHilalAR();
+        if (typeof renderUI === 'function') renderUI(); 
+        if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
+        if (typeof updateHilalAR === 'function') updateHilalAR();
     }, 1000);
 
-    // TIMER 3: Kalender (2 detik)
+    // ============================================================
+    // TIMER 3: Kalender (Setiap 2 Detik)
+    // ============================================================
     setInterval(() => {
-      if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
+        if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
 
-    setTimeout(() => {
-      if (typeof updateSunCard === 'function') updateSunCard();
-    }, 0);
-
-    if (typeof debugHilal === 'function') debugHilal();
-  }
+    // Eksekusi tampilan awal secara instan
+    setTimeout(() => { if (typeof updateSunCard === 'function') updateSunCard(); }, 0);
+    debugHilal(); 
 }
 
 // =================================
@@ -1332,14 +1305,16 @@ function hitungHilal(lat, lon, customTime = null) {
   const statusEl = document.getElementById('status');
   const prediksiEl = document.getElementById('prediksi');
   const insightTextEl = document.getElementById('insight');
-  
+
   try {
     const now = customTime ? new Date(customTime) : new Date();
-    const ijtima = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : new Date();
+    const ijtima = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : new Date(); 
+
     const dataHisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(lat, lon) : {d:0};
     const dataHybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(lat, lon) : {d:0};
     const data = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, now) : {};
-
+    
+    // Variabel Pendukung Asli
     const alt = Number(data.alt) || 0;
     const azi = Number(data.azi) || 0;
     const elo = Number(data.elo) || 0;
@@ -1362,15 +1337,12 @@ function hitungHilal(lat, lon, customTime = null) {
     if (typeof hitungVisibilitasYallop === 'function') set("yallop", hitungVisibilitasYallop(alt, elo));
     if (typeof hitungVisibilitasOdeh === 'function') set("odeh", hitungVisibilitasOdeh(alt, elo));
 
-    // AMBIL ELEVASI DARI GLOBAL
-    const elevation = (typeof currentAlt !== 'undefined') ? currentAlt : 0;
-    const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(lat, lon, elevation, now) : { decimal: 18.0 };
-    const maghrib = maghribData?.decimal ?? 18.0;
-
+    const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18.0) : 18.0;
     const jamNow = now.getHours() + now.getMinutes() / 60;
     const sebelumMaghrib = jamNow < maghrib;
     const imkan = (alt >= 3 && elo >= 6.4);
 
+    // KOREKSI LOGIKA UFUK (Untuk Status Utama)
     const posisiUfukUtama = alt >= 0 ? "di atas ufuk" : "di bawah ufuk";
     const aksiCakrawala = alt >= 0 ? "Hilal sudah berada di atas cakrawala." : "Menunggu hilal terbit melewati garis cakrawala.";
     const tinggiTampilanUtama = alt >= 0 ? alt.toFixed(2) : Math.abs(alt).toFixed(2);
@@ -1378,25 +1350,35 @@ function hitungHilal(lat, lon, customTime = null) {
     if (alt < 0) {
       if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#f87171">NON-OBSERVABLE</span>`;
       if (prediksiEl) prediksiEl.innerText = `Posisi hilal saat ini ${tinggiTampilanUtama}° ${posisiUfukUtama}. ${aksiCakrawala}`;
-    } else if (sebelumMaghrib) {
+    } 
+    else if (sebelumMaghrib) {
       if (hariHisab < 29) {
         if (statusEl) statusEl.innerText = `Fase Konvensional (H-${hariHisab})`;
         if (prediksiEl) prediksiEl.innerText = `Hilal berada pada ketinggian ${alt.toFixed(1)}°. Fase hilal berjalan normal, belum memasuki jendela waktu rukyat.`;
       } else {
         if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT (H-29)</span>`;
         const selisihAlt = (3 - alt).toFixed(1);
-        const pesanPrediksi = imkan ? `Parameter MABIMS terpenuhi. Siapkan observasi pada sektor ${azi.toFixed(1)}° (Azimuth) saat matahari terbenam.` : `Tinggi saat ini ${alt.toFixed(1)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`;
+        const pesanPrediksi = imkan 
+          ? `Parameter MABIMS terpenuhi. Siapkan observasi pada sektor ${azi.toFixed(1)}° (Azimuth) saat matahari terbenam.` 
+          : `Tinggi saat ini ${alt.toFixed(1)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`;
         if (prediksiEl) prediksiEl.innerText = pesanPrediksi;
       }
-    } else {
+    } 
+    else {
       if (hariHybrid === 29 || hariHybrid === 30 || hariHybrid === 1) {
         if (statusEl) {
-          statusEl.innerHTML = imkan ? `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` : `STATUS: <span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`;
+          statusEl.innerHTML = imkan 
+            ? `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` 
+            : `STATUS: <span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`;
         }
+        
         if (prediksiEl) {
-          prediksiEl.innerText = imkan ? `Hasil: Hilal berada di posisi ideal (${alt.toFixed(1)}°). Secara astronomis, kriteria awal bulan telah divalidasi.` : `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari.`;
+          prediksiEl.innerText = imkan 
+            ? `Hasil: Hilal berada di posisi ideal (${alt.toFixed(1)}°). Secara astronomis, kriteria awal bulan telah divalidasi.` 
+            : `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari.`;
         }
-      } else {
+      } 
+      else {
         if (statusEl) statusEl.innerText = `Laporan Malam ke-${hariHisab} Hijriah`;
         const arahBulan = azi > 180 ? "Barat/Barat Daya" : "Timur/Timur Laut";
         if (prediksiEl) prediksiEl.innerText = `Hilal terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`;
@@ -1409,7 +1391,7 @@ function hitungHilal(lat, lon, customTime = null) {
     set("statusIjtima", now >= ijtima ? "Siklus Baru Dimulai" : "Menunggu Ijtima");
 
     if (insightTextEl && typeof getHijriInsight === 'function') {
-      insightTextEl.innerHTML = getHijriInsight(data, { decimal: maghrib }, now, age);
+        insightTextEl.innerHTML = getHijriInsight(data, { decimal: maghrib }, now, age);
     }
 
     return data;
@@ -1417,7 +1399,6 @@ function hitungHilal(lat, lon, customTime = null) {
     console.error("Critical Render Error:", err);
   }
 }
-
 
 function getHijriInsight(data, maghrib, now) {
   // SINKRONISASI DATA ASLI (Mencegah Glitch Negatif)
@@ -1639,52 +1620,51 @@ function hitungHilalCore(lat, lon, customTime=null){
 }
 
 // === HITUNG MAGHRIB ===
-function hitungMaghrib(lat, lon, elevation = 0, customDate = null) {
+function hitungMaghrib(lat, lon, customDate=null){
   const now = customDate ? new Date(customDate) : new Date();
   const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const JD = (date.getTime() / 86400000) + 2440587.5;
-  const T = (JD - 2451545) / 36525;
   
-  const epsilon = 23.439291 - 0.0130042 * T;
-  const L0 = (280.46646 + 36000.76983 * T) % 360;
-  const M = 357.52911 + 35999.05029 * T;
-  const C = (1.914602 - 0.004817 * T) * Math.sin(M * rad) + 
-            (0.019993 - 0.000101 * T) * Math.sin(2 * M * rad) + 
-            0.000289 * Math.sin(3 * M * rad);
+  const JD = (date.getTime()/86400000)+2440587.5;
+  const T = (JD-2451545)/36525;
+
+  const epsilon = 23.439291 - 0.0130042*T;
+  const L0 = (280.46646 + 36000.76983*T)%360;
+  const M = 357.52911 + 35999.05029*T;
+
+  const C = (1.914602 - 0.004817*T)*Math.sin(M*rad)
+          + (0.019993 - 0.000101*T)*Math.sin(2*M*rad)
+          + 0.000289*Math.sin(3*M*rad);
+
   const lambda = L0 + C;
-  const delta = Math.asin(Math.sin(epsilon * rad) * Math.sin(lambda * rad));
-  
-  const y = Math.tan((epsilon / 2) * rad) ** 2;
+  const delta = Math.asin(Math.sin(epsilon*rad)*Math.sin(lambda*rad));
+  const y = Math.tan((epsilon/2)*rad)**2;
+
   const EoT = 4 * deg * (
-    y * Math.sin(2 * L0 * rad) - 
-    2 * 0.0167 * Math.sin(M * rad) + 
-    4 * 0.0167 * y * Math.sin(M * rad) * Math.cos(2 * L0 * rad) - 
-    0.5 * y * y * Math.sin(4 * L0 * rad) - 
-    1.25 * 0.0167 * 0.0167 * Math.sin(2 * M * rad)
+    y*Math.sin(2*L0*rad)
+    - 2*0.0167*Math.sin(M*rad)
+    + 4*0.0167*y*Math.sin(M*rad)*Math.cos(2*L0*rad)
+    - 0.5*y*y*Math.sin(4*L0*rad)
+    - 1.25*0.0167*0.0167*Math.sin(2*M*rad)
   );
 
-  // === KOREKSI TINGGI TEMPAT PADA UFUK (h0) ===
-  const baseH0 = -0.8333;
-  const dipOfHorizon = 0.0347 * Math.sqrt(elevation);
-  const h0 = (baseH0 - dipOfHorizon) * rad; 
+  const h0 = -0.833 * rad; 
+  const cosH = (Math.sin(h0) - Math.sin(lat*rad)*Math.sin(delta)) /
+               (Math.cos(lat*rad)*Math.cos(delta));
 
-  const cosH = (Math.sin(h0) - Math.sin(lat * rad) * Math.sin(delta)) / 
-               (Math.cos(lat * rad) * Math.cos(delta));
-  
   let H;
-  if (cosH < -1) H = 180;
-  else if (cosH > 1) H = 0;
-  else H = Math.acos(cosH) * deg;
+  if(cosH < -1) H = 180;
+  else if(cosH > 1) H = 0;
+  else H = Math.acos(cosH)*deg;
 
-  const timezone = -now.getTimezoneOffset() / 60;
-  const solarNoon = 12 + timezone - (lon / 15) - (EoT / 60);
-  
-  const sunrise = solarNoon - (H / 15);
-  const sunset = solarNoon + (H / 15);
+  const timezone = -now.getTimezoneOffset()/60;
+  const solarNoon = 12 + timezone - (lon/15) - (EoT/60);
+
+  const sunrise = solarNoon - (H/15); // Terbit (Noon dikurang Hour Angle)
+  const sunset = solarNoon + (H/15);  // Terbenam (Noon ditambah Hour Angle)
 
   return { 
-    sunrise: sunrise,
-    decimal: sunset, 
+    sunrise: sunrise, 
+    decimal: sunset, // Tetap gunakan nama 'decimal' agar tidak merusak kode lama Anda
     noon: solarNoon 
   };
 }
@@ -1742,20 +1722,28 @@ function initSensor(){
 }
 
 // === DEKLINASI ===
-async function getMagneticDeclination(lat, lon) {
+async function getMagneticDeclination(lat, lon){
+
   try {
+
+    // coba API (kalau ada key di masa depan)
     const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=${lat}&lon1=${lon}&resultFormat=json`;
+
     const res = await fetch(url);
     const data = await res.json();
-    if (data?.result?.[0]?.declination !== undefined) {
+
+    if(data?.result?.[0]?.declination !== undefined){
       declinationGlobal = data.result[0].declination;
       return declinationGlobal;
     }
-  } catch (e) {
-    console.warn("Pemanggilan API deklinasi gagal, beralih ke kalkulasi offline.");
+
+  } catch(e){
+    console.warn("Pemanggilan API deklinasi gagal, diubah pakai offline");
   }
+
   // === FALLBACK OFFLINE ===
   declinationGlobal = (lon - 110) * 0.05;
+
   return declinationGlobal;
 }
 
@@ -1892,38 +1880,46 @@ function getCountdownMaghrib(now, maghrib){
   return `${jam} jam ${menit} menit lagi menuju Maghrib`;
 }
 
-// === RENDER UI ===
+// === RENDER UI ====
 function renderUI() {
-  if (!currentLat || !currentLon) {
-    document.getElementById('insight').innerHTML = "⏳ Menunggu koordinat GPS...";
-    return;
-  }
+    // 1. Pastikan koordinat tersedia (gunakan satu sumber kebenaran)
+    // Jika currentLat kosong, jangan render dulu agar tidak terjadi glitch angka lompat
+    if (!currentLat || !currentLon) {
+        document.getElementById('insight').innerHTML = "⏳ Menunggu koordinat GPS...";
+        return;
+    }
 
-  if (!hilalDataFull || typeof hilalDataFull.age === 'undefined') {
-    document.getElementById('insight').innerHTML = "⏳ Mengkalkulasi data astronomi...";
-    return;
-  }
+    // 2. Cek data Hilal (sudah dihitung oleh interval utama belum?)
+    if (!hilalDataFull || typeof hilalDataFull.age === 'undefined') {
+        document.getElementById('insight').innerHTML = "⏳ Mengkalkulasi data astronomi...";
+        return;
+    }
 
-  const now = new Date();
-  try {
-    const elevation = typeof currentAlt !== 'undefined' ? currentAlt : 0;
-    const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon, elevation) : { decimal: 18 };
-    const maghrib = maghribData.decimal;
+    const now = new Date();
 
-    const insightHTML = getHijriInsight(hilalDataFull, maghrib, now);
-    const insightElement = document.getElementById('insight');
-    if (insightElement) insightElement.innerHTML = insightHTML;
+    try {
+        // 3. Ambil data Maghrib (hanya panggil jika fungsinya ada)
+        const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
+        const maghrib = maghribData.decimal;
 
-    const countdownStr = typeof getCountdownMaghrib === 'function' ? getCountdownMaghrib(now, maghrib) : "--:--";
-    const countdownElement = document.getElementById('countdownMaghrib');
-    if (countdownElement) countdownElement.innerText = countdownStr;
+        // 4. Update UI Insight (kirim hilalDataFull yang sudah matang)
+        // Pastikan Anda sudah mengupdate fungsi getHijriInsight seperti saran sebelumnya
+        const insightHTML = getHijriInsight(hilalDataFull, maghrib, now);
+        const insightElement = document.getElementById('insight');
+        if (insightElement) insightElement.innerHTML = insightHTML;
 
-    const progressVal = typeof getProgressToMaghrib === 'function' ? getProgressToMaghrib(now, currentLat, currentLon) : 0;
-    const progressBar = document.getElementById('progressBar');
-    if (progressBar) progressBar.style.width = progressVal + "%";
-  } catch (err) {
-    console.error("❌ Render UI Error:", err);
-  }
+        // 5. Update Elemen Penunjang lainnya
+        const countdownStr = typeof getCountdownMaghrib === 'function' ? getCountdownMaghrib(now, maghrib) : "--:--";
+        const countdownElement = document.getElementById('countdownMaghrib');
+        if (countdownElement) countdownElement.innerText = countdownStr;
+
+        const progressVal = typeof getProgressToMaghrib === 'function' ? getProgressToMaghrib(now, currentLat, currentLon) : 0;
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) progressBar.style.width = progressVal + "%";
+
+    } catch (err) {
+        console.error("❌ Render UI Error:", err);
+    }
 }
 
 // === PRELOAD HIJRI ===
