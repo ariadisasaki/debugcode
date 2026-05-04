@@ -348,7 +348,7 @@ let lastRender = {
   time: 0
 };
   
-// === INIT ===
+// === WINDOW ONLOAD ===
 window.onload = () => {
   preloadHijri();
   startClock();
@@ -454,7 +454,7 @@ function drawLabel(text, x, y, color="white"){
 
   ctx.font = "12px Arial";
 
-  // 🔥 KUNCI CENTER ATAS
+  // === KUNCI CENTER ATAS ===
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
 
@@ -490,7 +490,7 @@ function drawSkyGrid(pitch, heading){
 
   const FOV = 60;
 
-  // MODE AGAR TIDAK RAMAI
+  // === MODE AGAR TIDAK RAMAI ===
   const minimal = true;
 
   let altSteps = minimal ? [0] : [-30,-15,0,15,30];
@@ -1177,7 +1177,7 @@ function startClock(){
 // ======================================
 // MANAJEMEN GPS, TIMER, & INISIALISASI
 // ======================================
-// 1. Fungsi Mengambil Koordinat dari GPS/Browser
+// 1. Ambil Koordinat dari GPS/Browser
 function getLocation() {
     navigator.geolocation.getCurrentPosition(async (p) => {
         currentLat = p.coords.latitude;
@@ -1205,7 +1205,7 @@ function getLocation() {
     }, { enableHighAccuracy: true, timeout: 15000 });
 }
 
-// 2. Fungsi Pengambilan Nama Alamat (Reverse Geocoding)
+// 2. Ambil Nama Alamat (Reverse Geocoding)
 async function updateAddress(lat, lon) {
     const locEl = document.getElementById('loc');
     const lokasiEl = document.getElementById('lokasi');
@@ -1265,7 +1265,7 @@ async function initApp(lat, lon) {
     if (debugInterval) clearInterval(debugInterval);
 
     // ============================================================
-    // TIMER 1: Komputasi Berat & Auto-Debug (Setiap 10 Detik)
+    // TIMER 1: Komputasi Berat & Auto-Debug (setiap 10 Detik)
     // ============================================================
     debugInterval = setInterval(() => {
         if (currentLat && currentLon) {
@@ -1278,7 +1278,7 @@ async function initApp(lat, lon) {
     }, 10000); 
 
     // ============================================================
-    // TIMER 2: UI & Visual (Setiap 1 Detik)
+    // TIMER 2: UI & Visual (setiap 1 Detik)
     // ============================================================
     setInterval(() => {
         if (typeof renderUI === 'function') renderUI(); 
@@ -1287,7 +1287,7 @@ async function initApp(lat, lon) {
     }, 1000);
 
     // ============================================================
-    // TIMER 3: Kalender (Setiap 2 Detik)
+    // TIMER 3: Kalender (setiap 2 Detik)
     // ============================================================
     setInterval(() => {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
@@ -1400,6 +1400,7 @@ function hitungHilal(lat, lon, customTime = null) {
   }
 }
 
+// === HIJRI INSIGHT ===
 function getHijriInsight(data, maghrib, now) {
   // SINKRONISASI DATA ASLI (Mencegah Glitch Negatif)
   const altAsli = Number(data.alt) || 0;
@@ -1726,7 +1727,7 @@ async function getMagneticDeclination(lat, lon){
 
   try {
 
-    // coba API (kalau ada key di masa depan)
+    // Ambil API
     const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=${lat}&lon1=${lon}&resultFormat=json`;
 
     const res = await fetch(url);
@@ -2248,7 +2249,7 @@ function startMaghribWatcher() {
 
         // Jalankan jika sudah Maghrib dan belum diproses hari ini
         if (jamSekarangDesimal >= maghrib.decimal && lastTriggeredDate !== todayId) {
-            console.log(`%c 🌇 Maghrib Tiba: ${now.toLocaleTimeString()} `, 'background: #d35400; color: white; font-weight: bold;');
+            console.log(`%c 🌇 Maghrib telah tiba: ${now.toLocaleTimeString()} `, 'background: #d35400; color: white; font-weight: bold;');
             
             lastTriggeredDate = todayId; // Kunci agar tidak berulang
             requestHijriUpdate(); // Panggil fungsi eksekusi
@@ -2256,7 +2257,7 @@ function startMaghribWatcher() {
     }, 1000); 
 }
 
-// === MINTA UPDATE HIJRI (TANPA DUPLIKASI) ===
+// === MINTA UPDATE HIJRI ===
 function requestHijriUpdate() {
     const now = new Date();
     // Buat kunci unik berdasarkan tanggal
@@ -2443,7 +2444,7 @@ function showNotif(judul, pesan) {
             navigator.serviceWorker.ready.then(registration => {
                 registration.showNotification(judul, {
                     body: pesan,
-                    icon: "/assets/icon-192.png", // pastikan path icon benar
+                    icon: "/assets/icon-192.png",
                     badge: "/assets/icon-192.png",
                     vibrate: [200, 100, 200]
                 });
@@ -2483,14 +2484,14 @@ function hitungVisibilitasOdeh(alt, elo){
   return "Tidak mungkin";
 }
 
-// === ATMOSFER ===
+// === KOREKSI ATMOSFER ===
 function koreksiAtmosfer(alt){
   if(alt <= 0) return 0;
   const airmass = 1 / Math.sin(alt * rad);
   return 0.25 * airmass;
 }
 
-// === CUACA ===
+// === AMBIL CUACA ===
 async function getWeather(lat, lon){
   try{
     const res = await fetch(
@@ -2524,7 +2525,7 @@ function hitungVisibilityScore(alt, elo, age){
   return Math.round(Math.max(0, Math.min(100, score)));
 }
 
-// === LOGGING ===
+// === LOGGING RUKYAT ===
 function simpanRukyat(data){
   let logs = JSON.parse(localStorage.getItem("rukyatLogs") || "[]");
 
@@ -2703,7 +2704,7 @@ let statusHilal = "-";
 function getHijriHybrid(lat, lon, customDate = null) {
     const now = customDate ? new Date(customDate) : new Date();
     
-    // 1. Ambil data hisab (Sekarang sudah ringan)
+    // 1. Ambil data hisab
     const hisab = getHijriAstronomical(lat, lon, now);
     
     // 2. Gunakan Cache Ijtima
@@ -2873,6 +2874,7 @@ function logHijriAudit(data, mode) {
     }
 }
 
+// === DEBUG HILAL ===
 function debugHilal() {
     if (typeof currentLat === "undefined" || currentLat === null) {
         console.warn("⏳ [Debug] Menunggu data lokasi/GPS...");
@@ -2949,6 +2951,7 @@ function debugHilal() {
     }
 }
 
+// === CHECK AUDIT ===
 window.checkAudit = function() {
     const data = JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]");
     if (data.length === 0) {
@@ -2959,6 +2962,7 @@ window.checkAudit = function() {
     }
 };
 
+// === STOP DEBUG ===
 window.stopDebug = function() {
     if (debugInterval) {
         clearInterval(debugInterval);
@@ -2966,9 +2970,7 @@ window.stopDebug = function() {
     }
 };
 
-// ===================
-// 🚀 EKSEKUSI UTAMA
-// ===================
+// === EKSEKUSI UTAMA ===
 window.addEventListener('DOMContentLoaded', () => {
     getLocation();
 });
