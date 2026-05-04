@@ -1304,7 +1304,6 @@ async function initApp(lat, lon) {
 function hitungHilal(lat, lon, customTime = null) {
   const statusEl = document.getElementById('status');
   const prediksiEl = document.getElementById('prediksi');
-  const insightTextEl = document.getElementById('insight');
 
   try {
     const now = customTime ? new Date(customTime) : new Date();
@@ -1342,7 +1341,7 @@ function hitungHilal(lat, lon, customTime = null) {
     const sebelumMaghrib = jamNow < maghrib;
     const imkan = (alt >= 3 && elo >= 6.4);
 
-    // KOREKSI LOGIKA UFUK (Untuk Status Utama)
+    // KOREKSI LOGIKA UFUK
     const posisiUfukUtama = alt >= 0 ? "di atas ufuk" : "di bawah ufuk";
     const aksiCakrawala = alt >= 0 ? "Hilal sudah berada di atas cakrawala." : "Menunggu hilal terbit melewati garis cakrawala.";
     const tinggiTampilanUtama = alt >= 0 ? alt.toFixed(2) : Math.abs(alt).toFixed(2);
@@ -1390,10 +1389,9 @@ function hitungHilal(lat, lon, customTime = null) {
     }
     set("statusIjtima", now >= ijtima ? "Siklus Baru Dimulai" : "Menunggu Ijtima");
 
-    if (insightTextEl && typeof getHijriInsight === 'function') {
-        insightTextEl.innerHTML = getHijriInsight(data, { decimal: maghrib }, now, age);
-    }
-
+    // ⛔ PERBAIKAN: HAPUS BARIS INI UNTUK MENGHENTIKAN GLITCH
+    // JANGAN PERBOLEHKAN hitungHilal() menulis ke elemen 'insight'
+    
     return data;
   } catch (err) {
     console.error("Critical Render Error:", err);
