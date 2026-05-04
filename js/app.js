@@ -630,6 +630,61 @@ function drawSkyBackground(){
 
 }
 
+// === GAMBAR AZIMUTH ===
+function drawAzimuthGrid() {
+  if (typeof canvas === 'undefined' || typeof ctx === 'undefined') return;
+
+  // Definisikan daftar mata angin, sudut azimuth-nya, dan warna garis
+  const points = [
+    { label: "U", azi: 0, color: "rgba(239, 68, 68, 0.7)" },       // Merah untuk Utara
+    { label: "TL", azi: 45, color: "rgba(156, 163, 175, 0.4)" },
+    { label: "T", azi: 90, color: "rgba(156, 163, 175, 0.6)" },
+    { label: "TG", azi: 135, color: "rgba(156, 163, 175, 0.4)" },
+    { label: "S", azi: 180, color: "rgba(59, 130, 246, 0.7)" },     // Biru untuk Selatan
+    { label: "BD", azi: 225, color: "rgba(156, 163, 175, 0.4)" },
+    { label: "B", azi: 270, color: "rgba(234, 179, 8, 0.7)" },      // Kuning untuk Barat (arah Hilal)
+    { label: "BL", azi: 315, color: "rgba(156, 163, 175, 0.4)" }
+  ];
+
+  ctx.save();
+
+  points.forEach(point => {
+    // Ambil posisi X menggunakan fungsi altAzToXY bawaan pada altitude 0 (horizon)
+    const posUfuk = typeof altAzToXY === 'function' ? altAzToXY(0, point.azi) : null;
+    
+    if (posUfuk) {
+      const x = posUfuk.x;
+
+      // === GAMBAR GARIS GRID VERTIKAL ===
+      ctx.beginPath();
+      ctx.strokeStyle = point.color;
+      ctx.lineWidth = (point.label === "B" || point.label === "U") ? 1.5 : 1; 
+      
+      // Efek garis putus-putus
+      ctx.setLineDash([4, 4]); 
+      ctx.moveTo(x, 0);                 // Dari langit paling atas (Zenit)
+      ctx.lineTo(x, canvas.height);     // Sampai ke dasar canvas
+      ctx.stroke();
+
+      // === GAMBAR TEKS LABEL MATA ANGIN ===
+      ctx.setLineDash([]); // Matikan efek putus-putus untuk teks
+      ctx.fillStyle = point.color;
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+
+      // Tulis teks label di atas garis dasar canvas
+      ctx.fillText(point.label, x, canvas.height - 6);
+      
+      // Tuliskan juga angka derajat azimuth di atas teks label
+      ctx.font = "9px sans-serif";
+      ctx.fillText(`${point.azi}°`, x, canvas.height - 20);
+    }
+  });
+
+  ctx.restore();
+}
+
 // === POSISI PLANET ===
 function getPlanetPosition(name, date){
 
@@ -1134,23 +1189,27 @@ function getAutoSpeed(){
 
 // === LOOP PLANETARIUM ===
 function loopPlanetarium(){
-
   if(!running) return;
-
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if(currentLat && currentLon){
-
     // === HITUNG SEKALI SAJA DI SINI ===
     sunCache = hitungMatahari(currentLat, currentLon);
     moonCache = hitungHilalCore(currentLat, currentLon);
-
+    
     // === AGAR TETAP KOMPATIBEL ===
     sun = sunCache;
     moon = moonCache;
   }
 
-  drawSkyBackground();
+  // 1. Gambar latar langit terlebih dahulu
+  drawSkyBackground(); 
+  
+  // 2. SISIPKAN GRID MATA ANGIN DI SINI (Di belakang objek utama)
+  drawAzimuthGrid();
+
+  // 3. Lanjutkan merender elemen lainnya
   drawGrid();
   drawHorizon();
   drawStars();
