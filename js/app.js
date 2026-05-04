@@ -1889,33 +1889,30 @@ function getCountdownMaghrib(now, maghrib){
 
 // === RENDER UI ====
 function renderUI() {
-    // 1. Pastikan koordinat tersedia (gunakan satu sumber kebenaran)
-    // Jika currentLat kosong, jangan render dulu agar tidak terjadi glitch angka lompat
     if (!currentLat || !currentLon) {
         document.getElementById('insight').innerHTML = "⏳ Menunggu koordinat GPS...";
         return;
     }
 
-    // 2. Cek data Hilal (sudah dihitung oleh interval utama belum?)
     if (!hilalDataFull || typeof hilalDataFull.age === 'undefined') {
         document.getElementById('insight').innerHTML = "⏳ Mengkalkulasi data astronomi...";
         return;
     }
 
+    // PERBAIKAN: Bekukan waktu detik dan milidetik ke angka 0
+    // Ini mengunci perhitungan agar desimalnya tidak terus berubah setiap detik
     const now = new Date();
+    const clampedTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), 0, 0);
 
     try {
-        // 3. Ambil data Maghrib (hanya panggil jika fungsinya ada)
         const maghribData = typeof hitungMaghrib === 'function' ? hitungMaghrib(currentLat, currentLon) : { decimal: 18 };
         const maghrib = maghribData.decimal;
 
-        // 4. Update UI Insight (kirim hilalDataFull yang sudah matang)
-        // Pastikan Anda sudah mengupdate fungsi getHijriInsight seperti saran sebelumnya
-        const insightHTML = getHijriInsight(hilalDataFull, maghrib, now);
+        // Gunakan clampedTime agar teks insight benar-benar stabil
+        const insightHTML = getHijriInsight(hilalDataFull, maghrib, clampedTime);
         const insightElement = document.getElementById('insight');
         if (insightElement) insightElement.innerHTML = insightHTML;
 
-        // 5. Update Elemen Penunjang lainnya
         const countdownStr = typeof getCountdownMaghrib === 'function' ? getCountdownMaghrib(now, maghrib) : "--:--";
         const countdownElement = document.getElementById('countdownMaghrib');
         if (countdownElement) countdownElement.innerText = countdownStr;
