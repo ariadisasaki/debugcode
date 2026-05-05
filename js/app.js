@@ -634,51 +634,55 @@ function drawSkyBackground(){
 function drawAzimuthGrid() {
   if (typeof canvas === 'undefined' || typeof ctx === 'undefined') return;
 
-  // Definisikan daftar mata angin, sudut azimuth-nya, dan warna garis
   const points = [
-    { label: "U", azi: 0, color: "rgba(239, 68, 68, 0.7)" },       // Merah untuk Utara
-    { label: "TL", azi: 45, color: "rgba(156, 163, 175, 0.4)" },
-    { label: "T", azi: 90, color: "rgba(156, 163, 175, 0.6)" },
-    { label: "TG", azi: 135, color: "rgba(156, 163, 175, 0.4)" },
-    { label: "S", azi: 180, color: "rgba(59, 130, 246, 0.7)" },     // Biru untuk Selatan
-    { label: "BD", azi: 225, color: "rgba(156, 163, 175, 0.4)" },
-    { label: "B", azi: 270, color: "rgba(234, 179, 8, 0.7)" },      // Kuning untuk Barat (arah Hilal)
-    { label: "BL", azi: 315, color: "rgba(156, 163, 175, 0.4)" }
+    { label: "U", azi: 0 },
+    { label: "TL", azi: 45 },
+    { label: "T", azi: 90 },
+    { label: "TG", azi: 135 },
+    { label: "S", azi: 180 },
+    { label: "BD", azi: 225 },
+    { label: "B", azi: 270 },
+    { label: "BL", azi: 315 }
   ];
+
+  // === LOGIKA WARNA ADAPTIF ===
+  const isDaytime = (typeof sunCache !== 'undefined' && sunCache.alt > 0);
+  const themeColor = isDaytime ? "rgba(0, 0, 0, 0.6)" : "rgba(255, 255, 255, 0.6)";
+  const tickColor = isDaytime ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.3)";
 
   ctx.save();
 
   points.forEach(point => {
-    // Ambil posisi X menggunakan fungsi altAzToXY bawaan pada altitude 0 (horizon)
     const posUfuk = typeof altAzToXY === 'function' ? altAzToXY(0, point.azi) : null;
     
     if (posUfuk) {
       const x = posUfuk.x;
 
-      // === GAMBAR GARIS GRID VERTIKAL ===
+      // === BAGIAN BAWAAN (BOTTOM) ===
+      // Tick Kecil bawah
       ctx.beginPath();
-      ctx.strokeStyle = point.color;
-      ctx.lineWidth = (point.label === "B" || point.label === "U") ? 1.5 : 1; 
-      
-      // Efek garis putus-putus
-      ctx.setLineDash([4, 4]); 
-      ctx.moveTo(x, 0);                 // Dari langit paling atas (Zenit)
-      ctx.lineTo(x, canvas.height);     // Sampai ke dasar canvas
+      ctx.strokeStyle = tickColor;
+      ctx.lineWidth = 1;
+      ctx.moveTo(x, canvas.height);
+      ctx.lineTo(x, canvas.height - 5);
       ctx.stroke();
 
-      // === GAMBAR TEKS LABEL MATA ANGIN ===
-      ctx.setLineDash([]); // Matikan efek putus-putus untuk teks
-      ctx.fillStyle = point.color;
-      ctx.font = "bold 12px sans-serif";
+      // Label bawah (Huruf + Derajat)
+      ctx.fillStyle = themeColor;
       ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-
-      // Tulis teks label di atas garis dasar canvas
-      ctx.fillText(point.label, x, canvas.height - 6);
-      
-      // Tuliskan juga angka derajat azimuth di atas teks label
       ctx.font = "9px sans-serif";
-      ctx.fillText(`${point.azi}°`, x, canvas.height - 20);
+      ctx.fillText(`${point.label} ${point.azi}°`, x, canvas.height - 8);
+
+      // === BAGIAN ATAS (TOP) ===
+      // Tick Kecil atas
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 5);
+      ctx.stroke();
+
+      // Label atas (Hanya Huruf)
+      ctx.textBaseline = "top";
+      ctx.fillText(point.label, x, 8);
     }
   });
 
@@ -1402,7 +1406,7 @@ function hitungHilal(lat, lon, customTime = null) {
 
     // KOREKSI LOGIKA UFUK
     const posisiUfukUtama = alt >= 0 ? "di atas ufuk" : "di bawah ufuk";
-    const aksiCakrawala = alt >= 0 ? "Hilal sudah berada di atas cakrawala." : "Menunggu hilal terbit melewati garis cakrawala.";
+    const aksiCakrawala = alt >= 0 ? "Hilal berada di atas cakrawala." : "Menunggu hilal terbit melewati garis cakrawala.";
     const tinggiTampilanUtama = alt >= 0 ? alt.toFixed(2) : Math.abs(alt).toFixed(2);
 
     if (alt < 0) {
@@ -1520,7 +1524,7 @@ function getHijriInsight(data, maghrib, now) {
 
   // 4. REVISI SINKRONISASI UFUK: Angka minus (-) harus tetap ditampilkan minus agar tidak membohongi pembaca
   const posisiUfuk = altAsli >= 0 ? "di atas ufuk" : "di bawah ufuk";
-  const statusCakrawala = altAsli >= 0 ? "Kondisi hilal sudah di atas cakrawala." : "Hilal masih berada di bawah garis cakrawala.";
+  const statusCakrawala = altAsli >= 0 ? "Kondisi hilal di atas cakrawala." : "Hilal berada di bawah garis cakrawala.";
   
   // PERBAIKAN UTAMA: Jangan gunakan Math.abs agar nilai minus (-16°) tidak berubah menjadi positif (16°)
   const tinggiTampilan = altAsli.toFixed(2);
