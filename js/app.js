@@ -1475,12 +1475,19 @@ function hitungHilal(lat, lon, customTime = null) {
 
 // === HIJRI INSIGHT ===
 function getHijriInsight(data, maghrib, now) {
-  // 1. SINKRONISASI DATA ASLI (Gunakan Number secara aman)
-  const altAsli = typeof data?.alt === 'number' ? data.alt : 0;
-  const azi = typeof data?.azi === 'number' ? data.azi : 0;
-  const elo = typeof data?.elo === 'number' ? data.elo : 0;
-  const age = typeof data?.age === 'number' ? data.age : 0;
-  const illumination = typeof data?.illumination === 'number' ? data.illumination : 0;
+  // 1. SINKRONISASI TOTAL: Ambil data langsung dari teks yang tampil di UI
+  // Kita gunakan parseFloat untuk mengambil angkanya saja dari teks seperti " -29.00°"
+  const altText = document.getElementById("alt")?.innerText || "0";
+  const aziText = document.getElementById("azi")?.innerText || "0";
+  const eloText = document.getElementById("elo")?.innerText || "0";
+  const ageText = document.getElementById("age")?.innerText || "0";
+  const illumText = document.getElementById("illum")?.innerText || "0";
+
+  const altAsli = parseFloat(altText);
+  const azi = parseFloat(aziText);
+  const elo = parseFloat(eloText);
+  const age = parseFloat(ageText);
+  const illumination = parseFloat(illumText);
   
   // 2. Kunci perhitungan posisi Matahari secara aman
   const sun = typeof hitungMatahari === 'function' 
@@ -1497,11 +1504,12 @@ function getHijriInsight(data, maghrib, now) {
   }
 
   const getArah = (az) => {
+    // Pembagian 8 arah mata angin agar sinkron dengan Azimuth Grid
     const sektor = ["Utara", "Timur Laut", "Timur", "Tenggara", "Selatan", "Barat Daya", "Barat", "Barat Laut"];
     return sektor[Math.round(az / 45) % 8];
   };
 
-  // 3. REVISI LOGIKA WAKTU AGAR STABIL (Tidak melompat setiap detik)
+  // 3. LOGIKA WAKTU
   const isSoreSiaga = jamSekarang >= (maghribDec - 1) && jamSekarang < (maghribDec + 0.5);
   const isMalam = jamSekarang >= (maghribDec + 0.5) || jamSekarang < 4;
 
@@ -1512,7 +1520,6 @@ function getHijriInsight(data, maghrib, now) {
   } else {
     const referensiWaktu = isSoreSiaga ? "terbenam" : "saat ini";
     
-    // Hitung perputaran terpendek (Kanan / Kiri) secara matematis stabil
     let selisihAzi = azi - sun.azi;
     if (selisihAzi > 180) selisihAzi -= 360;
     if (selisihAzi < -180) selisihAzi += 360;
@@ -1522,12 +1529,12 @@ function getHijriInsight(data, maghrib, now) {
     teksOrientasi = `Gunakan posisi Matahari <b>${referensiWaktu}</b> di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.`;
   }
 
-  // 4. REVISI SINKRONISASI UFUK: Angka minus (-) harus tetap ditampilkan minus agar tidak membohongi pembaca
+  // 4. SINKRONISASI UFUK (Menampilkan angka apa adanya dari UI)
   const posisiUfuk = altAsli >= 0 ? "di atas ufuk" : "di bawah ufuk";
   const statusCakrawala = altAsli >= 0 ? "Kondisi hilal di atas cakrawala." : "Hilal berada di bawah garis cakrawala.";
   
-  // PERBAIKAN UTAMA: Jangan gunakan Math.abs agar nilai minus (-16°) tidak berubah menjadi positif (16°)
-  const tinggiTampilan = altAsli.toFixed(2);
+  // Gunakan teks asli dari UI agar desimalnya sama persis
+  const tinggiTampilan = altText.replace("°", ""); 
 
   const formatWaktu = (decimalHour) => {
     const hours = Math.floor(decimalHour);
