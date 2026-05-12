@@ -390,6 +390,35 @@ window.onload = () => {
   }, { once:true });
 };
 
+/**
+ * FUNGSI 1: KOREKSI PARALLAX (Topocentric Correction)
+ * Menyesuaikan posisi bulan dari pusat bumi ke mata pengamat.
+ */
+function koreksiParallax(altGeocentric) {
+  const rad = Math.PI / 180;
+  // 0.944 adalah nilai rata-rata pergeseran sudut akibat jarak Bumi-Bulan.
+  // Inilah yang akan memangkas selisih 0.55° - 0.60° tadi.
+  const HP = 0.944; 
+  const koreksi = HP * Math.cos(altGeocentric * rad);
+  return altGeocentric - koreksi;
+}
+
+/**
+ * FUNGSI 2: KOREKSI REFRAKSI (Atmospheric Correction)
+ * Menyesuaikan pembiasan cahaya saat melewati atmosfer.
+ */
+function koreksiRefraction(altTopocentric) {
+  const rad = Math.PI / 180;
+  // Refraksi tidak dihitung jika bulan sudah jauh di bawah ufuk.
+  if (altTopocentric < -2) return altTopocentric;
+
+  // Rumus Bennett untuk menghitung pembiasan dalam menit busur.
+  const R = 1.02 / Math.tan((altTopocentric + 10.3 / (altTopocentric + 5.11)) * rad);
+  
+  // Konversi dari menit busur ke derajat (1/60).
+  return altTopocentric + (R / 60);
+}
+
 // === GENERATE GALAXY ===
 function generateGalaxy(){
 
@@ -746,81 +775,85 @@ function getPlanetPosition(name, date){
   return { ra, dec };
 }
 
-// === GAMBAR BULAN ===
-function drawMoon(){
+// === GAMBAR BULAN DINAMIS BERDASARKAN FASE ===
+function drawMoon() {
+    let moonData = moonCache;
+    if (!moonData || moonData.alt < -90) return;
 
-  let moonData = moonCache;
-  if(!moonData || moonData.alt < -90) return;
+    let pos = altAzToXY(moonData.alt, moonData.azi);
+    if (!pos) return;
 
-  let pos = altAzToXY(moonData.alt, moonData.azi);
-  if(!pos) return;
+    let sun = sunCache;
+    let vf = getVisibilityFactor(sun.alt);
 
-  let sun = sunCache;
+    // Ambil Illumination (0.0 sampai 1.0)
+    // Jika tidak ada data, default ke 0.5 (setengah)
+    let illumination = moonData.illumination ?? 0.5;
 
-  // === VISIBILITY SYSTEM ===
-  let vf = getVisibilityFactor(sun.alt);
+    // Tentukan arah fase (apakah sabit kanan atau kiri)
+    // Jika moonData.phase tidak ada, kita asumsikan sabit standar
+    let phaseAngle = moonData.phase ?? 180; 
 
-  // === FASE BULAN (0 = GELAP, 1 = PURNAMA)
-  let phase = moonData.illumination ?? 0.5;
-
-  // === FINAL KECERAHAN ===
-  // moon tetap terlihat siang tapi lebih redup
-  let alpha = (0.2 + 0.8 * phase) * vf;
-
-  // === TAMBAHAN RULE REALISTIS ===
-  if(sun.alt > 0){
-    alpha *= 0.25; // siang → redup tapi masih ada
-  } 
-  else if(sun.alt > -6){
-    alpha *= 0.6;  // senja → agak jelas
-  }
-
-  // === GAMBAR BENTUK BULAN ===
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
-
-  ctx.fillStyle = `rgba(255, 255, 210, ${alpha})`;
-  ctx.fill();
-
-  // === GLOW LEMBUAT ===
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(255, 255, 200, ${alpha * 0.15})`;
-  ctx.fill();
-
-  // === LABEL BULAN ===
-  if(alpha > 0.15){
-
-    ctx.font = "12px Arial";
-
-    // === BAYANGAN HANYA MALAM/SENJA ===
-    if(sun.alt <= 0){
-      ctx.shadowColor = "rgba(0,0,0,0.5)";
-      ctx.shadowBlur = 3;
-    } else {
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = "transparent";
+    // === SISTEM VISIBILITAS & KECERAHAN ===
+    let alpha = (0.2 + 0.8 * illumination) * vf;
+    if (sun.alt > 0) {
+        alpha *= 0.25; // Siang redup
+    } else if (sun.alt > -6) {
+        alpha *= 0.6;  // Senja agak jelas
     }
 
-    let labelColor;
+    const radius = 8; // Ukuran bulan di canvas
 
-    if(sun.alt > 0){
-      labelColor = `rgba(0,0,0,${alpha})`; // siang
-    } 
-    else if(sun.alt > -6){
-      labelColor = `rgba(180,180,180,${alpha})`; // senja
-    } 
-    else {
-      labelColor = `rgba(255,255,255,${alpha})`; // malam
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    
+    // Putar bulan sedikit agar kemiringannya realistis (opsional)
+    // ctx.rotate(parallacticAngle); 
+
+    // 1. GAMBAR BAGIAN GELAP (Sisi bulan yang tidak kena matahari)
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(50, 50, 50, ${alpha * 0.3})`; // Abu-abu gelap transparan
+    ctx.fill();
+
+    // 2. GAMBAR BAGIAN TERANG (FASE BULAN)
+    ctx.beginPath();
+    // Gambar setengah lingkaran dasar
+    // Jika phaseAngle > 180 (Bulan susut), kita gambar dari kiri ke kanan
+    // Jika phaseAngle < 180 (Bulan muda), kita gambar dari kanan ke kiri
+    let isWaning = phaseAngle > 180;
+
+    ctx.arc(0, 0, radius, Math.PI / 2, (3 * Math.PI) / 2, !isWaning);
+
+    // Gambar lengkungan "Terminator" (Garis batas terang-gelap)
+    // Lebar lengkungan ditentukan oleh cosinus dari fase
+    let sweep = Math.cos(illumination * Math.PI);
+    
+    // Ellipse untuk menciptakan efek sabit (crescent) atau cembung (gibbous)
+    ctx.ellipse(0, 0, radius * Math.abs(Math.cos(illumination * Math.PI * 2)), radius, 0, (3 * Math.PI) / 2, Math.PI / 2, isWaning);
+
+    ctx.fillStyle = `rgba(255, 255, 210, ${alpha})`;
+    ctx.fill();
+
+    // 3. GLOW LEMBUT (Hanya muncul jika bulan terang)
+    if (illumination > 0.1) {
+        ctx.beginPath();
+        ctx.arc(0, 0, radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 200, ${alpha * 0.15})`;
+        ctx.fill();
     }
 
-    ctx.fillStyle = labelColor;
-    drawLabel("Bulan", pos.x, pos.y, labelColor);
+    ctx.restore();
 
-    // reset shadow (WAJIB)
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = "transparent";
-  }
+    // === LABEL BULAN ===
+    if (alpha > 0.15) {
+        let labelColor;
+        if (sun.alt > 0) labelColor = `rgba(0,0,0,${alpha})`;
+        else if (sun.alt > -6) labelColor = `rgba(180,180,180,${alpha})`;
+        else labelColor = `rgba(255,255,255,${alpha})`;
+
+        drawLabel("Bulan", pos.x, pos.y + 15, labelColor);
+    }
 }
 
 // === GAMBAR AWAN ===
@@ -1320,7 +1353,7 @@ async function initApp(lat, lon) {
         if (typeof startMaghribWatcher === 'function') startMaghribWatcher(lat, lon);
     } catch (e) { console.warn("Pendukung gagal."); }
 
-    // B. Hitungan Pertama
+    // B. Hitungan Pertama (Saat aplikasi baru dibuka)
     if (typeof refreshIjtimaData === 'function' && !CACHED_IJTIMA) refreshIjtimaData();
     hilalDataFull = hitungHilal(lat, lon);
 
@@ -1328,25 +1361,30 @@ async function initApp(lat, lon) {
     if (debugInterval) clearInterval(debugInterval);
 
     // ============================================================
-    // TIMER 1: Komputasi Berat & Auto-Debug (setiap 10 Detik)
+    // TIMER 1: Monitoring & Debug (setiap 10 Detik)
     // ============================================================
     debugInterval = setInterval(() => {
         if (currentLat && currentLon) {
-            hilalDataFull = hitungHilal(currentLat, currentLon);
-            if (typeof updateSunCard === 'function') updateSunCard();
-            
-            // Tampilkan debug monitor ke Console log secara berkala
+            // REVISI: Perintah hilalDataFull dihapus dari sini karena sudah ada di Timer 2
+            // Kita biarkan ini hanya untuk fungsi log/debug saja
             debugHilal(); 
         }
     }, 10000); 
 
     // ============================================================
-    // TIMER 2: UI & Visual (setiap 1 Detik)
+    // TIMER 2: Jantung Utama - Update Data & UI (setiap 1 Detik)
     // ============================================================
     setInterval(() => {
-        if (typeof renderUI === 'function') renderUI(); 
+      if (currentLat && currentLon) {
+        // 1. Hitung ulang posisi benda langit setiap detik agar LIVE
+        hilalDataFull = hitungHilal(currentLat, currentLon); 
+        
+        // 2. Langsung update kartu-kartu di layar
+        if (typeof renderUI === 'function') renderUI();           // Update Data Hilal
+        if (typeof updateSunCard === 'function') updateSunCard(); // Update Data Matahari
         if (typeof updatePrediksiCard === 'function') updatePrediksiCard();
         if (typeof updateHilalAR === 'function') updateHilalAR();
+      }
     }, 1000);
 
     // ============================================================
@@ -1356,8 +1394,8 @@ async function initApp(lat, lon) {
         if (typeof updateHijriDisplay === 'function') updateHijriDisplay();
     }, 2000);
 
-    // Eksekusi tampilan awal secara instan
-    setTimeout(() => { if (typeof updateSunCard === 'function') updateSunCard(); }, 0);
+    // Eksekusi tampilan awal secara instan tanpa menunggu interval
+    if (typeof updateSunCard === 'function') updateSunCard();
     debugHilal(); 
 }
 
@@ -1473,16 +1511,23 @@ function hitungHilal(lat, lon, customTime = null) {
   }
 }
 
-// === HIJRI INSIGHT ===
+// === HIJRI INSIGHT FINAL REVISI ===
 function getHijriInsight(data, maghrib, now) {
-  // 1. SINKRONISASI DATA ASLI (Gunakan Number secara aman)
-  const altAsli = typeof data?.alt === 'number' ? data.alt : 0;
-  const azi = typeof data?.azi === 'number' ? data.azi : 0;
-  const elo = typeof data?.elo === 'number' ? data.elo : 0;
-  const age = typeof data?.age === 'number' ? data.age : 0;
-  const illumination = typeof data?.illumination === 'number' ? data.illumination : 0;
+  // 1. SINKRONISASI DATA: Ambil nilai langsung dari elemen kartu data hilal
+  const altText = document.getElementById("alt")?.innerText || "0";
+  const aziText = document.getElementById("azi")?.innerText || "0";
+  const eloText = document.getElementById("elo")?.innerText || "0";
+  const ageText = document.getElementById("age")?.innerText || "0";
+  const illumText = document.getElementById("illum")?.innerText || "0";
+
+  // Konversi ke angka untuk pemrosesan logika
+  const altAsli = parseFloat(altText);
+  const azi = parseFloat(aziText);
+  const elo = parseFloat(eloText);
+  const age = parseFloat(ageText);
+  const illumination = parseFloat(illumText);
   
-  // 2. Kunci perhitungan posisi Matahari secara aman
+  // 2. Kunci perhitungan posisi Matahari & Waktu
   const sun = typeof hitungMatahari === 'function' 
       ? hitungMatahari(currentLat, currentLon, now) 
       : { azi: 270, alt: 0 };
@@ -1501,35 +1546,42 @@ function getHijriInsight(data, maghrib, now) {
     return sektor[Math.round(az / 45) % 8];
   };
 
-  // 3. REVISI LOGIKA WAKTU AGAR STABIL (Tidak melompat setiap detik)
+  // 3. LOGIKA ORIENTASI LAPANGAN
   const isSoreSiaga = jamSekarang >= (maghribDec - 1) && jamSekarang < (maghribDec + 0.5);
   const isMalam = jamSekarang >= (maghribDec + 0.5) || jamSekarang < 4;
 
   let teksOrientasi = "";
-
-  if (isMalam) {
-    teksOrientasi = `Gunakan kompas atau alat navigasi Anda. Arahkan pandangan langsung ke arah <b>${getArah(azi)}</b> (Azimuth <b>${azi.toFixed(1)}°</b>). Di titik itulah posisi hilal berada saat ini secara horizontal.`;
+  if (isMalam || altAsli < 0) {
+    teksOrientasi = `Gunakan kompas atau alat navigasi Anda. Arahkan pandangan langsung ke arah <b>${getArah(azi)}</b> (Azimuth <b>${azi.toFixed(1)}°</b>). Di titik itulah posisi hilal berada secara horizontal.`;
   } else {
     const referensiWaktu = isSoreSiaga ? "terbenam" : "saat ini";
-    
-    // Hitung perputaran terpendek (Kanan / Kiri) secara matematis stabil
     let selisihAzi = azi - sun.azi;
     if (selisihAzi > 180) selisihAzi -= 360;
     if (selisihAzi < -180) selisihAzi += 360;
-
     const posisiHorisontal = selisihAzi >= 0 ? "sebelah kanan" : "sebelah kiri";
 
     teksOrientasi = `Gunakan posisi Matahari <b>${referensiWaktu}</b> di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.`;
   }
 
-  // 4. REVISI SINKRONISASI UFUK: Angka minus (-) harus tetap ditampilkan minus agar tidak membohongi pembaca
+  // 4. POSISI TERHADAP UFUK
   const posisiUfuk = altAsli >= 0 ? "di atas ufuk" : "di bawah ufuk";
   const statusCakrawala = altAsli >= 0 ? "Kondisi hilal di atas cakrawala." : "Hilal berada di bawah garis cakrawala.";
-  
-  // PERBAIKAN UTAMA: Jangan gunakan Math.abs agar nilai minus (-16°) tidak berubah menjadi positif (16°)
-  const tinggiTampilan = altAsli.toFixed(2);
+  const tinggiTampilan = altText.replace("°", "");
 
-  const formatWaktu = (decimalHour) => {
+  // 5. REVISI LOGIKA WAKTU KRITIS (SINKRON DENGAN ALTITUDE)
+  let teksWaktuKritis = "";
+  if (altAsli < -0.5) { 
+    // Jika hilal sudah terbenam (altitude minus)
+    teksWaktuKritis = `<b style="color:#f87171">Waktu Habis:</b> Hilal sudah terbenam di bawah ufuk. Pengamatan visual tidak mungkin dilakukan lagi untuk malam ini.`;
+  } else if (jamSekarang < maghribDec) {
+    // Jika masih siang/sore sebelum maghrib
+    teksWaktuKritis = `Lakukan kalibrasi alat sekarang. Pengamatan visual dimulai saat Matahari terbenam (estimasi pukul <b>${formatWaktu(maghribDec)}</b>).`;
+  } else {
+    // Jika sudah maghrib DAN hilal masih di atas ufuk
+    teksWaktuKritis = `<b style="color:#4ade80">Waktu Emas:</b> Matahari telah terbenam. Optimalkan pencarian sekarang sebelum hilal ikut terbenam ke bawah ufuk.`;
+  }
+
+  function formatWaktu(decimalHour) {
     const hours = Math.floor(decimalHour);
     const minutes = Math.round((decimalHour - hours) * 60);
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -1540,9 +1592,9 @@ function getHijriInsight(data, maghrib, now) {
 <br><br>
 📐 <b>POSISI TEKNIS TERHADAP UFUK:</b><br>Saat ini, hilal berada pada ketinggian <b>${tinggiTampilan}° ${posisiUfuk}</b>. ${statusCakrawala} Jarak sudut pemisah (Elongasi) dari Matahari tercatat sebesar <b>${elo.toFixed(1)}°</b>.
 <br><br>
-🔆 <b>KONDISI FISIK & UMUR HILAL:</b><br>Hilal telah berusia <b>${age.toFixed(1)} jam</b> dengan ketebalan cahaya (Iluminasi) sebesar <b>${illumination.toFixed(2)}%</b>. Semakin besar angka ini, semakin mudah sabit hilal dibedakan dari cahaya latar langit senja.
+🔆 <b>KONDISI FISIK & UMUR HILAL:</b><br>Hilal telah berusia <b>${age.toFixed(1)} jam</b> dengan ketebalan cahaya (Iluminasi) sebesar <b>${illumination.toFixed(2)}%</b>.
 <br><br>
-⏱️ <b>WAKTU KRITIS PENGAMATAN:</b><br>${jamSekarang < maghribDec ? `Lakukan kalibrasi alat sekarang. Pengamatan visual dimulai saat Maghrib tiba (estimasi pukul <b>${formatWaktu(maghribDec)}</b>).` : `<b>Waktu Emas:</b> Matahari telah terbenam. Optimalkan pencarian sebelum hilal ikut terbenam ke bawah ufuk.`}
+⏱️ <b>WAKTU KRITIS PENGAMATAN:</b><br>${teksWaktuKritis}
 <br><br>
 📢 <b>HASIL ANALISIS KRITERIA (MABIMS):</b><br>Syarat Minimal: Tinggi 3° & Elongasi 6.4°<br>${(altAsli >= 3 && elo >= 6.4) ? `<b style="color:#4ade80">Lolos Kriteria: Potensi hilal terlihat (Imkan Rukyat) secara astronomis sangat besar.</b>` : `<b style="color:#f87171">Belum Lolos Kriteria: Secara teknis posisi hilal masih terlalu rendah atau terlalu dekat dengan matahari.</b>`}
 `;
