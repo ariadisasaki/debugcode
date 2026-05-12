@@ -775,7 +775,7 @@ function getPlanetPosition(name, date){
   return { ra, dec };
 }
 
-// === GAMBAR BULAN DINAMIS BERDASARKAN FASE ===
+// === GAMBAR BULAN DINAMIS ===
 function drawMoon() {
     let moonData = moonCache;
     if (!moonData || moonData.alt < -90) return;
@@ -786,56 +786,56 @@ function drawMoon() {
     let sun = sunCache;
     let vf = getVisibilityFactor(sun.alt);
 
-    // Ambil Illumination (0.0 sampai 1.0)
-    // Jika tidak ada data, default ke 0.5 (setengah)
+    // Ambil data pencahayaan (0.0 - 1.0)
     let illumination = moonData.illumination ?? 0.5;
-
-    // Tentukan arah fase (apakah sabit kanan atau kiri)
-    // Jika moonData.phase tidak ada, kita asumsikan sabit standar
     let phaseAngle = moonData.phase ?? 180; 
 
-    // === SISTEM VISIBILITAS & KECERAHAN ===
+    // === SISTEM VISIBILITAS ===
     let alpha = (0.2 + 0.8 * illumination) * vf;
-    if (sun.alt > 0) {
-        alpha *= 0.25; // Siang redup
-    } else if (sun.alt > -6) {
-        alpha *= 0.6;  // Senja agak jelas
-    }
+    if (sun.alt > 0) alpha *= 0.25; 
+    else if (sun.alt > -6) alpha *= 0.6;
 
-    const radius = 8; // Ukuran bulan di canvas
+    const radius = 8; 
 
     ctx.save();
+    
+    // --- 1. MENGGAMBAR LABEL DI ATAS OBJEK ---
+    if (alpha > 0.15) {
+        let labelColor;
+        if (sun.alt > 0) labelColor = `rgba(0,0,0,${alpha})`;
+        else if (sun.alt > -6) labelColor = `rgba(180,180,180,${alpha})`;
+        else labelColor = `rgba(255,255,255,${alpha})`;
+
+        ctx.font = "bold 12px Arial";
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = "center"; // Membuat teks center secara horizontal
+        ctx.textBaseline = "bottom"; // Memastikan batas bawah teks ada di atas koordinat y
+        
+        // Menggambar label "Bulan" tepat 12px di atas radius bulan
+        ctx.fillText("Bulan", pos.x, pos.y - radius - 4);
+    }
+
+    // --- 2. MENGGAMBAR FISIK BULAN ---
     ctx.translate(pos.x, pos.y);
     
-    // Putar bulan sedikit agar kemiringannya realistis (opsional)
-    // ctx.rotate(parallacticAngle); 
-
-    // 1. GAMBAR BAGIAN GELAP (Sisi bulan yang tidak kena matahari)
+    // Bagian Gelap (Latar belakang piringan bulan)
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(50, 50, 50, ${alpha * 0.3})`; // Abu-abu gelap transparan
+    ctx.fillStyle = `rgba(50, 50, 50, ${alpha * 0.3})`;
     ctx.fill();
 
-    // 2. GAMBAR BAGIAN TERANG (FASE BULAN)
+    // Bagian Terang (Fase Dinamis)
     ctx.beginPath();
-    // Gambar setengah lingkaran dasar
-    // Jika phaseAngle > 180 (Bulan susut), kita gambar dari kiri ke kanan
-    // Jika phaseAngle < 180 (Bulan muda), kita gambar dari kanan ke kiri
     let isWaning = phaseAngle > 180;
-
     ctx.arc(0, 0, radius, Math.PI / 2, (3 * Math.PI) / 2, !isWaning);
-
-    // Gambar lengkungan "Terminator" (Garis batas terang-gelap)
-    // Lebar lengkungan ditentukan oleh cosinus dari fase
-    let sweep = Math.cos(illumination * Math.PI);
     
-    // Ellipse untuk menciptakan efek sabit (crescent) atau cembung (gibbous)
-    ctx.ellipse(0, 0, radius * Math.abs(Math.cos(illumination * Math.PI * 2)), radius, 0, (3 * Math.PI) / 2, Math.PI / 2, isWaning);
+    // Efek sabit menggunakan ellipse
+    ctx.ellipse(0, 0, radius * Math.abs(Math.cos(illumination * Math.PI)), radius, 0, (3 * Math.PI) / 2, Math.PI / 2, isWaning);
 
     ctx.fillStyle = `rgba(255, 255, 210, ${alpha})`;
     ctx.fill();
 
-    // 3. GLOW LEMBUT (Hanya muncul jika bulan terang)
+    // Glow Lembut
     if (illumination > 0.1) {
         ctx.beginPath();
         ctx.arc(0, 0, radius + 4, 0, Math.PI * 2);
@@ -844,16 +844,6 @@ function drawMoon() {
     }
 
     ctx.restore();
-
-    // === LABEL BULAN ===
-    if (alpha > 0.15) {
-        let labelColor;
-        if (sun.alt > 0) labelColor = `rgba(0,0,0,${alpha})`;
-        else if (sun.alt > -6) labelColor = `rgba(180,180,180,${alpha})`;
-        else labelColor = `rgba(255,255,255,${alpha})`;
-
-        drawLabel("Bulan", pos.x, pos.y + 15, labelColor);
-    }
 }
 
 // === GAMBAR AWAN ===
