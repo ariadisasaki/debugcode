@@ -2812,27 +2812,54 @@ function nextMonth(current){
 
 // === HIJRI HISAB ===
 function getHijriAstronomical(lat, lon, customDate = null) { 
-    const now = customDate ? new Date(customDate) : new Date();
-    
-    // GUNAKAN CACHE
+    const now = customDate ? new Date(customDate) : new Date(); 
     const ijtima = CACHED_IJTIMA; 
-
-    const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate());
-
-    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000);
-    const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18;
-    const jamNow = now.getHours() + now.getMinutes() / 60;
     
-    let d = diffDays;
-    if (jamNow >= maghrib) d += 1;
+    // Reset jam ke 00:00:00 untuk perbandingan tanggal murni
+    const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate()); 
+    const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate()); 
+    
+    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000); 
+    const maghrib = hitungMaghrib(lat, lon, now)?.decimal ?? 18; 
+    const jamNow = now.getHours() + now.getMinutes() / 60; 
+    
+    let d = diffDays; 
+    if (jamNow >= maghrib) d += 1; 
 
-    const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
-    const cycle = Math.floor(ageTotal / 29.530588853);
-    let m = ((11 - 1 + cycle) % 12) + 1;
-    let y = 1447 + Math.floor((11 - 1 + cycle) / 12);
+    // === PERBAIKAN LOGIKA: KUNCI TRANSISI HARI KALENDER ===
+    let baseMonth = 11; // Default: Zulkaidah
+    let y = 1447;
 
-    return { d: Math.max(1, d), m, y };
+    // Transisi bulan BARU AKAN AKTIF secara astronomis jika:
+    // 1. Hari masehi saat ini sudah melewati hari ijtima (Besok/Minggu dst)
+    // 2. ATAU jika hari ini adalah hari ijtima, tetapi waktu sudah MELEWATI MAGHRIB HARI BERIKUTNYA.
+    if (tglSekarang > tglIjtima) {
+        baseMonth = 12; // Maju ke Zulhijjah (Hanya berlaku hari Minggu besok dan seterusnya)
+        if (d <= 0) d = 1; 
+    } else {
+        // Jika masih di hari yang sama dengan ijtima (Sabtu malam ini)
+        // Kita paksa kalender mempertahankan akhir bulan Zulkaidah
+        baseMonth = 11; 
+        
+        // Perhitungan tanggal mundur dari hari H-29/30
+        if (d <= 0) {
+            d = 30 + d; 
+        }
+        
+        // Pengaman ekstra: Jika setelah maghrib di hari sabtu malam ini, 
+        // pastikan tanggal berada di batas akhir bulan lama (30 Zulkaidah)
+        if (jamNow >= maghrib && d < 29) {
+            d = 30;
+        }
+    }
+
+    let m = baseMonth;
+    if (m > 12) {
+        m = 1;
+        y += 1;
+    }
+
+    return { d: Math.max(1, d), m, y }; 
 }
 
 // === HIJRI HYBRID ===
