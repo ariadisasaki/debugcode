@@ -775,75 +775,81 @@ function getPlanetPosition(name, date){
   return { ra, dec };
 }
 
-// === GAMBAR BULAN DINAMIS ===
-function drawMoon() {
-    let moonData = moonCache;
-    if (!moonData || moonData.alt < -90) return;
+// === GAMBAR BULAN ===
+function drawMoon(){
 
-    let pos = altAzToXY(moonData.alt, moonData.azi);
-    if (!pos) return;
+  let moonData = moonCache;
+  if(!moonData || moonData.alt < -90) return;
 
-    let sun = sunCache;
-    let vf = getVisibilityFactor(sun.alt);
+  let pos = altAzToXY(moonData.alt, moonData.azi);
+  if(!pos) return;
 
-    // Ambil data pencahayaan (0.0 - 1.0)
-    let illumination = moonData.illumination ?? 0.5;
-    let phaseAngle = moonData.phase ?? 180; 
+  let sun = sunCache;
 
-    // === SISTEM VISIBILITAS ===
-    let alpha = (0.2 + 0.8 * illumination) * vf;
-    if (sun.alt > 0) alpha *= 0.25; 
-    else if (sun.alt > -6) alpha *= 0.6;
+  // === VISIBILITY SYSTEM ===
+  let vf = getVisibilityFactor(sun.alt);
 
-    const radius = 8; 
+  // === FASE BULAN (0 = GELAP, 1 = PURNAMA)
+  let phase = moonData.illumination ?? 0.5;
 
-    ctx.save();
-    
-    // --- 1. MENGGAMBAR LABEL DI ATAS OBJEK ---
-    if (alpha > 0.15) {
-        let labelColor;
-        if (sun.alt > 0) labelColor = `rgba(0,0,0,${alpha})`;
-        else if (sun.alt > -6) labelColor = `rgba(180,180,180,${alpha})`;
-        else labelColor = `rgba(255,255,255,${alpha})`;
+  // === FINAL KECERAHAN ===
+  // moon tetap terlihat siang tapi lebih redup
+  let alpha = (0.2 + 0.8 * phase) * vf;
 
-        ctx.font = "bold 12px Arial";
-        ctx.fillStyle = labelColor;
-        ctx.textAlign = "center"; // Membuat teks center secara horizontal
-        ctx.textBaseline = "bottom"; // Memastikan batas bawah teks ada di atas koordinat y
-        
-        // Menggambar label "Bulan" tepat 12px di atas radius bulan
-        ctx.fillText("Bulan", pos.x, pos.y - radius - 4);
+  // === TAMBAHAN RULE REALISTIS ===
+  if(sun.alt > 0){
+    alpha *= 0.25; // siang → redup tapi masih ada
+  } 
+  else if(sun.alt > -6){
+    alpha *= 0.6;  // senja → agak jelas
+  }
+
+  // === GAMBAR BENTUK BULAN ===
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+
+  ctx.fillStyle = `rgba(255, 255, 210, ${alpha})`;
+  ctx.fill();
+
+  // === GLOW LEMBUAT ===
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255, 255, 200, ${alpha * 0.15})`;
+  ctx.fill();
+
+  // === LABEL BULAN ===
+  if(alpha > 0.15){
+
+    ctx.font = "12px Arial";
+
+    // === BAYANGAN HANYA MALAM/SENJA ===
+    if(sun.alt <= 0){
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 3;
+    } else {
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
     }
 
-    // --- 2. MENGGAMBAR FISIK BULAN ---
-    ctx.translate(pos.x, pos.y);
-    
-    // Bagian Gelap (Latar belakang piringan bulan)
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(50, 50, 50, ${alpha * 0.3})`;
-    ctx.fill();
+    let labelColor;
 
-    // Bagian Terang (Fase Dinamis)
-    ctx.beginPath();
-    let isWaning = phaseAngle > 180;
-    ctx.arc(0, 0, radius, Math.PI / 2, (3 * Math.PI) / 2, !isWaning);
-    
-    // Efek sabit menggunakan ellipse
-    ctx.ellipse(0, 0, radius * Math.abs(Math.cos(illumination * Math.PI)), radius, 0, (3 * Math.PI) / 2, Math.PI / 2, isWaning);
-
-    ctx.fillStyle = `rgba(255, 255, 210, ${alpha})`;
-    ctx.fill();
-
-    // Glow Lembut
-    if (illumination > 0.1) {
-        ctx.beginPath();
-        ctx.arc(0, 0, radius + 4, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 200, ${alpha * 0.15})`;
-        ctx.fill();
+    if(sun.alt > 0){
+      labelColor = `rgba(0,0,0,${alpha})`; // siang
+    } 
+    else if(sun.alt > -6){
+      labelColor = `rgba(180,180,180,${alpha})`; // senja
+    } 
+    else {
+      labelColor = `rgba(255,255,255,${alpha})`; // malam
     }
 
-    ctx.restore();
+    ctx.fillStyle = labelColor;
+    drawLabel("Bulan", pos.x, pos.y, labelColor);
+
+    // reset shadow (WAJIB)
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = "transparent";
+  }
 }
 
 // === GAMBAR AWAN ===
@@ -1392,113 +1398,125 @@ async function initApp(lat, lon) {
 // =================================
 // LOGIKA LAPORAN TEKNIS ASTRONOMI
 // =================================
-function hitungHilal(lat, lon, customTime = null) {
-  const statusEl = document.getElementById('status');
-  const prediksiEl = document.getElementById('prediksi');
-
-  try {
-    const now = customTime ? new Date(customTime) : new Date();
-    const ijtima = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : new Date(); 
-
-    const dataHisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(lat, lon) : {d:0};
-    const dataHybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(lat, lon) : {d:0};
-    const data = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, now) : {};
+function hitungHilal(lat, lon, customTime = null) { 
+    const statusEl = document.getElementById('status'); 
+    const prediksiEl = document.getElementById('prediksi'); 
     
-    // Variabel Pendukung Asli
-    const alt = Number(data.alt) || 0;
-    const azi = Number(data.azi) || 0;
-    const elo = Number(data.elo) || 0;
-    const illumination = Number(data.illumination) || 0;
-    const age = (now.getTime() - ijtima.getTime()) / 3600000;
-    const hariHisab = dataHisab.d || 0;
-    const hariHybrid = dataHybrid.d || 0;
-
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.innerText = val;
-    };
-
-    set("alt", alt.toFixed(2) + "°");
-    set("azi", azi.toFixed(2) + "°");
-    set("elo", elo.toFixed(2) + "°");
-    set("age", age.toFixed(1) + " jam");
-    set("illum", illumination.toFixed(2) + "%");
-
-    if (typeof hitungVisibilitasYallop === 'function') set("yallop", hitungVisibilitasYallop(alt, elo));
-    if (typeof hitungVisibilitasOdeh === 'function') set("odeh", hitungVisibilitasOdeh(alt, elo));
-
-    const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18.0) : 18.0;
-    const jamNow = now.getHours() + now.getMinutes() / 60;
-    const sebelumMaghrib = jamNow < maghrib;
-    const imkan = (alt >= 3 && elo >= 6.4);
-
-    // KOREKSI LOGIKA UFUK
-    const posisiUfukUtama = alt >= 0 ? "di atas ufuk" : "di bawah ufuk";
-    const aksiCakrawala = alt >= 0 ? "Hilal berada di atas cakrawala." : "Menunggu hilal terbit melewati garis cakrawala.";
-    const tinggiTampilanUtama = alt >= 0 ? alt.toFixed(2) : Math.abs(alt).toFixed(2);
-
-    if (alt < 0) {
-      if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#f87171">NON-OBSERVABLE</span>`;
-      if (prediksiEl) prediksiEl.innerText = `Posisi hilal saat ini ${tinggiTampilanUtama}° ${posisiUfukUtama}. ${aksiCakrawala}`;
-    } 
-    else if (sebelumMaghrib) {
-      if (hariHisab < 29) {
-        if (statusEl) statusEl.innerText = `Fase Konvensional (H-${hariHisab})`;
-        if (prediksiEl) prediksiEl.innerText = `Hilal berada pada ketinggian ${alt.toFixed(1)}°. Fase hilal berjalan normal, belum memasuki jendela waktu rukyat.`;
-      } else {
-        if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT (H-29)</span>`;
-        const selisihAlt = (3 - alt).toFixed(1);
-        const pesanPrediksi = imkan 
-          ? `Parameter MABIMS terpenuhi. Siapkan observasi pada sektor ${azi.toFixed(1)}° (Azimuth) saat matahari terbenam.` 
-          : `Tinggi saat ini ${alt.toFixed(1)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`;
-        if (prediksiEl) prediksiEl.innerText = pesanPrediksi;
-      }
-    } 
-    else {
-      if (hariHybrid === 29 || hariHybrid === 30 || hariHybrid === 1) {
-        if (statusEl) {
-          statusEl.innerHTML = imkan 
-            ? `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` 
-            : `STATUS: <span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`;
-        }
+    try { 
+        const now = customTime ? new Date(customTime) : new Date(); 
+        const ijtima = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : new Date(); 
         
-        if (prediksiEl) {
-          prediksiEl.innerText = imkan 
-            ? `Hasil: Hilal berada di posisi ideal (${alt.toFixed(1)}°). Secara astronomis, kriteria awal bulan telah divalidasi.` 
-            : `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari.`;
-        }
-      } 
-      else {
-        if (statusEl) statusEl.innerText = `Laporan Malam ke-${hariHisab} Hijriah`;
+        // Ambil data kedua mode
+        const dataHisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(lat, lon) : {d:0}; 
+        const dataHybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(lat, lon) : {d:0}; 
         
-        // === KOREKSI SINKRONISASI MATA ANGIN (8 ARAH) ===
-        let arahBulan = "Utara";
-        const a = azi;
+        const data = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, now) : {}; 
 
-        if (a >= 22.5 && a < 67.5)   arahBulan = "Timur Laut";
-        else if (a >= 67.5 && a < 112.5)  arahBulan = "Timur";
-        else if (a >= 112.5 && a < 157.5) arahBulan = "Tenggara";
-        else if (a >= 157.5 && a < 202.5) arahBulan = "Selatan";
-        else if (a >= 202.5 && a < 247.5) arahBulan = "Barat Daya";
-        else if (a >= 247.5 && a < 292.5) arahBulan = "Barat";
-        else if (a >= 292.5 && a < 337.5) arahBulan = "Barat Laut";
-        else { arahBulan = "Utara"; }
+        // Variabel Pendukung Asli 
+        const alt = Number(data.alt) || 0; 
+        const azi = Number(data.azi) || 0; 
+        const elo = Number(data.elo) || 0; 
+        const illumination = Number(data.illumination) || 0; 
+        const age = (now.getTime() - ijtima.getTime()) / 3600000; 
+        
+        const hariHisab = dataHisab.d || 0; 
+        const hariHybrid = dataHybrid.d || 0;
 
-        if (prediksiEl) {
-          prediksiEl.innerText = `Hilal terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`;
+        // =================
+        // LOGIKA KOMBINASI
+        // =================
+        let hariAcuan = hariHisab;
+
+        if (hariHisab === 29 && hariHybrid === 28) {
+            hariAcuan = hariHybrid; 
         }
-      }
-    }
 
-    if (typeof hitungVisibilityScore === 'function') {
-      set("visibility", hitungVisibilityScore(alt, elo, age) + "%");
-    }
-    set("statusIjtima", now >= ijtima ? "Siklus Baru Dimulai" : "Menunggu Ijtima");
+        const set = (id, val) => { 
+            const el = document.getElementById(id); 
+            if (el) el.innerText = val; 
+        }; 
 
-    return data;
-  } catch (err) {
-    console.error("Critical Render Error:", err);
-  }
+        set("alt", alt.toFixed(2) + "°"); 
+        set("azi", azi.toFixed(2) + "°"); 
+        set("elo", elo.toFixed(2) + "°"); 
+        set("age", age.toFixed(1) + " jam"); 
+        set("illum", illumination.toFixed(2) + "%"); 
+
+        if (typeof hitungVisibilitasYallop === 'function') set("yallop", hitungVisibilitasYallop(alt, elo)); 
+        if (typeof hitungVisibilitasOdeh === 'function') set("odeh", hitungVisibilitasOdeh(alt, elo)); 
+
+        const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18.0) : 18.0; 
+        const jamNow = now.getHours() + now.getMinutes() / 60; 
+        const sebelumMaghrib = jamNow < maghrib; 
+        const imkan = (alt >= 3 && elo >= 6.4); 
+
+        // KOREKSI LOGIKA UFUK 
+        const posisiUfukUtama = alt >= 0 ? "di atas ufuk" : "di bawah ufuk"; 
+        const aksiCakrawala = alt >= 0 ? "Hilal berada di atas cakrawala." : "Menunggu hilal terbit melewati garis cakrawala."; 
+        const tinggiTampilanUtama = alt >= 0 ? alt.toFixed(2) : Math.abs(alt).toFixed(2); 
+
+        // 1. KONDISI JIKA HILAL DI BAWAH UFUK
+        if (alt < 0) { 
+            if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#f87171">NON-OBSERVABLE</span>`; 
+            if (prediksiEl) prediksiEl.innerText = `Posisi hilal saat ini ${tinggiTampilanUtama}° ${posisiUfukUtama}. ${aksiCakrawala}`; 
+        } 
+        
+        // 2. KONDISI SORE HARI (SEBELUM MAGHRIB)
+        else if (sebelumMaghrib) { 
+            if (hariAcuan < 29) { 
+                if (statusEl) statusEl.innerText = `Fase Konvensional (H-${hariAcuan})`; 
+                if (prediksiEl) prediksiEl.innerText = `Hilal berada pada ketinggian ${alt.toFixed(1)}°. Fase hilal berjalan normal, belum memasuki jendela waktu rukyat.`; 
+            } else { 
+                if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT (H-${hariAcuan})</span>`; 
+                const selisihAlt = (3 - alt).toFixed(1); 
+                const pesanPrediksi = imkan ? 
+                    `Parameter MABIMS terpenuhi. Siapkan observasi pada sektor ${azi.toFixed(1)}° (Azimuth) saat matahari terbenam.` : 
+                    `Tinggi saat ini ${alt.toFixed(1)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`; 
+                if (prediksiEl) prediksiEl.innerText = pesanPrediksi; 
+            } 
+        } 
+        
+        // 3. KONDISI MALAM HARI (SETELAH MAGHRIB)
+        else { 
+            if (hariAcuan === 29 || hariAcuan === 30 || hariAcuan === 1) { 
+                if (statusEl) { 
+                    statusEl.innerHTML = imkan ? 
+                        `STATUS: <span style="color:#4ade80">IMKAN RUKYAT (POSITIF)</span>` : 
+                        `STATUS: <span style="color:#f87171">NON-IMKAN (ISTIKMAL)</span>`; 
+                } 
+                if (prediksiEl) { 
+                    prediksiEl.innerText = imkan ? 
+                        `Hasil: Hilal berada di posisi ideal (${alt.toFixed(1)}°). Secara astronomis, kriteria awal bulan telah divalidasi.` : 
+                        `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari (Istikmal).`; 
+                } 
+            } else { 
+                if (statusEl) statusEl.innerText = `Laporan Malam ke-${hariAcuan} Hijriah`; 
+                
+                let arahBulan = "Utara"; 
+                const a = azi; 
+                if (a >= 22.5 && a < 67.5) arahBulan = "Timur Laut"; 
+                else if (a >= 67.5 && a < 112.5) arahBulan = "Timur"; 
+                else if (a >= 112.5 && a < 157.5) arahBulan = "Tenggara"; 
+                else if (a >= 157.5 && a < 202.5) arahBulan = "Selatan"; 
+                else if (a >= 202.5 && a < 247.5) arahBulan = "Barat Daya"; 
+                else if (a >= 247.5 && a < 292.5) arahBulan = "Barat"; 
+                else if (a >= 292.5 && a < 337.5) arahBulan = "Barat Laut"; 
+
+                if (prediksiEl) { 
+                    prediksiEl.innerText = `Hilal terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`; 
+                } 
+            } 
+        } 
+
+        if (typeof hitungVisibilityScore === 'function') { 
+            set("visibility", hitungVisibilityScore(alt, elo, age) + "%"); 
+        } 
+        set("statusIjtima", now >= ijtima ? "Siklus Baru Dimulai" : "Menunggu Ijtima"); 
+        
+        return data; 
+    } catch (err) { 
+        console.error("Critical Render Error:", err); 
+    } 
 }
 
 // === HIJRI INSIGHT FINAL REVISI ===
