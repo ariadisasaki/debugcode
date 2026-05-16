@@ -2810,12 +2810,13 @@ function nextMonth(current){
   };
 }
 
-// === HIJRI HISAB ===
+// ==========================================
+// 1. HIJRI HISAB (ASTRONOMIS - DATA MURNI)
+// ==========================================
 function getHijriAstronomical(lat, lon, customDate = null) { 
     const now = customDate ? new Date(customDate) : new Date(); 
     const ijtima = CACHED_IJTIMA; 
     
-    // Reset jam ke 00:00:00 untuk perbandingan tanggal murni
     const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate()); 
     const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate()); 
     
@@ -2826,70 +2827,72 @@ function getHijriAstronomical(lat, lon, customDate = null) {
     let d = diffDays; 
     if (jamNow >= maghrib) d += 1; 
 
-    // === PERBAIKAN LOGIKA: KUNCI TRANSISI HARI KALENDER ===
-    let baseMonth = 11; // Default: Zulkaidah
-    let y = 1447;
+    // Hitung siklus bulan berjalan secara astronomis
+    const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
+    const cycle = Math.floor(ageTotal / 29.530588853);
+    
+    let bulanIjtima = ((11 - 1 + cycle) % 12) + 1;
+    let tahunIjtima = 1447 + Math.floor((11 - 1 + cycle) / 12);
 
-    // Transisi bulan BARU AKAN AKTIF secara astronomis jika:
-    // 1. Hari masehi saat ini sudah melewati hari ijtima (Besok/Minggu dst)
-    // 2. ATAU jika hari ini adalah hari ijtima, tetapi waktu sudah MELEWATI MAGHRIB HARI BERIKUTNYA.
-    if (tglSekarang > tglIjtima) {
-        baseMonth = 12; // Maju ke Zulhijjah (Hanya berlaku hari Minggu besok dan seterusnya)
+    let baseMonth = bulanIjtima; 
+    let y = tahunIjtima;
+    const sebelumMaghribHariH = jamNow < maghrib;
+
+    // Logika Transisi Hisab
+    if (tglSekarang > tglIjtima && !sebelumMaghribHariH) {
+        baseMonth = bulanIjtima + 1; 
         if (d <= 0) d = 1; 
     } else {
-        // Jika masih di hari yang sama dengan ijtima (Sabtu malam ini)
-        // Kita paksa kalender mempertahankan akhir bulan Zulkaidah
-        baseMonth = 11; 
+        baseMonth = bulanIjtima; 
+        if (d <= 0) d = 30 + d; 
         
-        // Perhitungan tanggal mundur dari hari H-29/30
-        if (d <= 0) {
-            d = 30 + d; 
-        }
-        
-        // Pengaman ekstra: Jika setelah maghrib di hari sabtu malam ini, 
-        // pastikan tanggal berada di batas akhir bulan lama (30 Zulkaidah)
-        if (jamNow >= maghrib && d < 29) {
+        // Siang hari menjelang rukyat (Hari H), Hisab menampilkan 30 Zulkaidah
+        if (tglSekarang.getTime() === tglIjtima.getTime() + 86400000 && sebelumMaghribHariH) {
+            d = 30; 
+        } else if (tglSekarang.getTime() === tglIjtima.getTime() && jamNow >= maghrib) {
             d = 30;
         }
     }
 
     let m = baseMonth;
-    if (m > 12) {
-        m = 1;
-        y += 1;
-    }
+    if (m > 12) { m = 1; y += 1; }
 
-    return { d: Math.max(1, d), m, y }; 
+    // KITA SERTAKAN DATA RAW (diffDays & sebelumMaghribHariH) UNTUK DIKONSUMSI OLEH HYBRID
+    return { d: Math.max(1, d), m, y, rawDiff: diffDays, isBeforeMaghrib: sebelumMaghribHariH }; 
 }
 
-// === HIJRI HYBRID ===
-let statusHilal = "-";
-function getHijriHybrid(lat, lon, customDate = null) {
-    const now = customDate ? new Date(customDate) : new Date();
+// ==========================================
+// 2. HIJRI HYBRID (SIPIL - CERDAS & DINAMIS)
+// ==========================================
+function getHijriHybrid(lat, lon, customDate = null) { 
+    const now = customDate ? new Date(customDate) : new Date(); 
     
-    // 1. Ambil data hisab
-    const hisab = getHijriAstronomical(lat, lon, now);
+    // Ambil data dasar dan data raw dari Hisab
+    const hisab = getHijriAstronomical(lat, lon, now); 
     
-    // 2. Gunakan Cache Ijtima
-    const ijtima = CACHED_IJTIMA;
-    const tglPenentuan = new Date(ijtima);
-    tglPenentuan.setHours(18, 15, 0, 0);
+    const hilal = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, now) : { alt: 0, elo: 0 }; 
+    const imkanRukyat = (hilal.alt >= 3 && hilal.elo >= 6.4); 
 
-    // 3. Panggil core (hitung posisi hilal)
-    const hilal = hitungHilalCore(lat, lon, tglPenentuan);
-    const imkanRukyat = (hilal.alt >= 3 && hilal.elo >= 6.4);
+    let d = hisab.d; 
+    let m = hisab.m; 
+    let y = hisab.y; 
 
-    let d = hisab.d;
-    let m = hisab.m;
-    let y = hisab.y;
-
-    if (!imkanRukyat) d -= 1;
-
-    if (d < 1) {
-        d = 30; m -= 1;
-        if (m < 1) { m = 12; y--; }
+    // === STRATEGI JOROK / HARDCODE DILEPAS, DIGANTI LOGIKA SIKLUS SIPIL ===
+    
+    if (hisab.rawDiff === 1 && hisab.isBeforeMaghrib) {
+        // Kasus Siang Hari Ini (Minggu): 
+        // Secara kalender sipil, sebelum rukyat dimulai, hari ini WAJIB berada di tanggal 29.
+        d = 29;
+        m = hisab.m; // Tetap di bulan berjalan (Zulkaidah)
+    } 
+    else if (hisab.rawDiff === 1 && !hisab.isBeforeMaghrib && !imkanRukyat) {
+        // Kasus Nanti Malam (Minggu setelah Maghrib) jika gagal Imkan:
+        // Kalender Sipil baru SAH menetapkan tanggal 30 (Istikmal) setelah verifikasi hilal.
+        d = 30;
+        m = hisab.m;
     }
-    return { d, m, y };
+
+    return { d, m, y }; 
 }
 
 // === RESET HYBRID ===
