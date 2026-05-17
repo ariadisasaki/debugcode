@@ -1581,11 +1581,14 @@ function hitungHilal(lat, lon, customTime = null) {
     
     try { 
         const now = customTime ? new Date(customTime) : new Date(); 
-        const ijtima = (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA : new Date(); 
+        
+        // KOREKSI UTAMA: Panggil fungsi getLastIjtima() Meeus murni yang baru
+        // Ini akan mengambil waktu konjungsi subuh tadi secara akurat
+        const ijtima = typeof getLastIjtima === 'function' ? getLastIjtima() : new Date(); 
         
         // Ambil data kedua mode
-        const dataHisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(lat, lon) : {d:0}; 
-        const dataHybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(lat, lon) : {d:0}; 
+        const dataHisab = typeof getHijriAstronomical === 'function' ? getHijriAstronomical(lat, lon, now) : {d:0}; 
+        const dataHybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(lat, lon, now) : {d:0}; 
         
         const data = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, now) : {}; 
         
@@ -1594,7 +1597,10 @@ function hitungHilal(lat, lon, customTime = null) {
         const azi = Number(data.azi) || 0; 
         const elo = Number(data.elo) || 0; 
         const illumination = Number(data.illumination) || 0; 
-        const age = (now.getTime() - ijtima.getTime()) / 3600000; 
+        
+        // Hitung umur bulan dalam satuan JAM secara live dan presisi
+        let age = (now.getTime() - ijtima.getTime()) / 3600000; 
+        if (age < 0) age = 0; // Pengaman jika ada fluktuasi milidetik deviasi waktu
         
         const hariHisab = dataHisab.d || 0; 
         const hariHybrid = dataHybrid.d || 0;
