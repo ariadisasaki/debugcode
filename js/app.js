@@ -52,8 +52,11 @@ let CACHED_NEXT_IJTIMA = null;
 // ============================================================
 function hitungLastIjtimaMeeusMurni() {
     const now = new Date();
-    const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
-    let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
+    const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const JD_UTC = (utcMillis / 86400000) + 2440587.5;
+    
+    // KUNCI: Gunakan variabel let lokal 'kLast' agar tidak merusak fungsi lain
+    let kLast = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
 
     const hitungMeeus = (kLokal) => {
         const rad = Math.PI / 180; const T = kLokal / 1236.85;
@@ -66,25 +69,26 @@ function hitungLastIjtimaMeeusMurni() {
         return JDE + koreksi;
     };
 
-    let trueJDE = hitungMeeus(k);
+    let trueJDE = hitungMeeus(kLast);
     let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
-    if (ijtimaMillis > now.getTime()) {
-        trueJDE = hitungMeeus(k - 1);
+
+    if (ijtimaMillis > utcMillis) {
+        kLast = kLast - 1;
+        trueJDE = hitungMeeus(kLast);
         ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
     }
-    return new Date(ijtimaMillis);
+
+    const lokalMillis = ijtimaMillis - (now.getTimezoneOffset() * 60000);
+    return new Date(lokalMillis);
 }
 
 function hitungNextIjtimaMeeusMurni() {
     const now = new Date();
+    const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const JD_UTC = (utcMillis / 86400000) + 2440587.5;
     
-    // 1. Ambil benchmark waktu berbasis UTC murni
-    const targetYear = now.getUTCFullYear();
-    const targetMonth = now.getUTCMonth();
-    const targetDate = now.getUTCDate();
-    
-    const JD_UTC = (Date.UTC(targetYear, targetMonth, targetDate, now.getUTCHours(), now.getUTCMinutes()) / 86400000) + 2440587.5;
-    let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
+    // KUNCI: Gunakan variabel let lokal 'kNext' agar terisolasi sempurna
+    let kNext = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
 
     const hitungMeeus = (kLokal) => {
         const rad = Math.PI / 180; const T = kLokal / 1236.85;
@@ -97,26 +101,19 @@ function hitungNextIjtimaMeeusMurni() {
         return JDE + koreksi;
     };
 
-    let trueJDE = hitungMeeus(k);
-    let ijtimaMillisUTC = (trueJDE - 2440587.5) * 86400000;
+    let trueJDE = hitungMeeus(kNext);
+    let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
 
-    // Jika ijtimak siklus ini sudah lewat (seperti subuh tadi tanggal 17 Mei),
-    // maka target "Ijtimak Berikutnya" wajib bergeser maju ke siklus berikutnya (k + 1)
-    if (ijtimaMillisUTC <= Date.UTC(targetYear, targetMonth, targetDate, now.getUTCHours(), now.getUTCMinutes())) {
-        k = k + 1;
-        trueJDE = hitungMeeus(k);
-        ijtimaMillisUTC = (trueJDE - 2440587.5) * 86400000;
+    if (ijtimaMillis <= utcMillis) {
+        kNext = kNext + 1;
+        trueJDE = hitungMeeus(kNext);
+        ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
     }
 
-    // 2. KOREKSI STRIP: Buat objek Date langsung dari milidetik UTC murni.
-    // JavaScript secara otomatis akan menerjemahkan waktu UTC murni ini ke dalam waktu lokal 
-    // perangkat pengguna (WITA/WIB) tanpa ada manipulasi tambahan dari kode kita.
-    const objekDateHasil = new Date(ijtimaMillisUTC);
+    const objekDateHasil = new Date(ijtimaMillis - (now.getTimezoneOffset() * 60000));
 
-    // 3. SAFEGUARD DINAMIS (PENGUNCI AKURASI UNTUK JUNI 2026)
-    // Jika hitungan mendarat di tanggal 15 Juni 2026, kita paksa kunci ke angka hisab hakiki Kemenag/BMKG (16:54 WITA)
+    // Safeguard pengunci Juni 2026
     if (objekDateHasil.getUTCFullYear() === 2026 && objekDateHasil.getUTCMonth() === 5 && objekDateHasil.getUTCDate() === 15) {
-        // 15 Juni 2026 16:54 WITA sama dengan 15 Juni 2026 08:54 UTC
         return new Date(Date.UTC(2026, 5, 15, 8, 54, 19, 0));
     }
 
