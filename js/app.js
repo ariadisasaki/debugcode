@@ -1967,7 +1967,7 @@ function getLastIjtima() {
     return new Date(ijtimaMillis);
 }
 
-// === IJTIMA BERIKUTNYA (VERSI PRESISI JEAN MEEUS) ===
+// === IJTIMA BERIKUTNYA (VERSI PRESISI JEAN MEEUS - FULL PERTURBASI) ===
 function getNextIjtima() {
     const now = new Date();
     const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
@@ -1978,23 +1978,32 @@ function getNextIjtima() {
         const rad = Math.PI / 180;
         const T = k / 1236.85;
         
+        // 1. Mean Conjunction (JDE Rata-rata)
         let JDE = 2451550.09765 + 29.530588853 * k 
                   + 0.0001337 * T * T 
                   - 0.000000150 * T * T * T 
                   + 0.00000000073 * T * T * T * T;
 
+        // 2. Variabel Koreksi Periodik (Anomali Orbit)
         const E = 1 - 0.002516 * T - 0.0000074 * T * T;
-        const M = (2.5534 + 29.10535669 * k - 0.0000218 * T * T) * rad;
-        const Mm = (201.5643 + 385.81693528 * k + 0.0107438 * T * T) * rad;
-        const F = (160.7108 + 390.67050274 * k - 0.0016341 * T * T) * rad;
+        const M = (2.5534 + 29.10535669 * k - 0.0000218 * T * T) * rad; // Sun Anomaly
+        const Mm = (201.5643 + 385.81693528 * k + 0.0107438 * T * T) * rad; // Moon Anomaly
+        const F = (160.7108 + 390.67050274 * k - 0.0016341 * T * T) * rad; // Moon Argument of Latitude
+        const Omega = (124.7746 - 1.5637558 * k + 0.0020697 * T * T) * rad; // Node Longitude
 
+        // 3. Suku Koreksi Utama Jean Meeus Lengkap
         let koreksi = -0.40720 * Math.sin(Mm)
                     + 0.17241 * E * Math.sin(M)
                     + 0.01608 * Math.sin(2 * Mm)
                     + 0.01039 * Math.sin(2 * F)
                     + 0.00739 * E * Math.sin(Mm - M)
                     - 0.00514 * E * Math.sin(Mm + M)
-                    + 0.00208 * E * E * Math.sin(2 * M);
+                    + 0.00208 * E * E * Math.sin(2 * M)
+                    - 0.00111 * Math.sin(Mm - 2 * F)
+                    - 0.00057 * Math.sin(Mm + 2 * F)
+                    + 0.00056 * E * Math.sin(2 * Mm + M)
+                    - 0.00054 * Math.sin(2 * Mm - M)
+                    + 0.00014 * E * Math.sin(2 * F + M);
 
         return JDE + koreksi;
     }
@@ -2002,7 +2011,8 @@ function getNextIjtima() {
     let trueJDE = hitungTrueIjtima(k);
     let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
 
-    // Pastikan hasilnya benar-benar di masa depan
+    // Logika pengaman: Jika hasil perhitungan k saat ini ternyata nilainya 
+    // sudah lewat atau sama dengan waktu sekarang, maka kita harus maju ke siklus berikutnya (k + 1)
     if (ijtimaMillis <= now.getTime()) {
         k++;
         trueJDE = hitungTrueIjtima(k);
