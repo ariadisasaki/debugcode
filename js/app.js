@@ -1422,9 +1422,9 @@ function hitungHilal(lat, lon, customTime = null) {
         const hariHisab = dataHisab.d || 0; 
         const hariHybrid = dataHybrid.d || 0;
 
-        // ============================================================
-        // LOGIKA KOMBINASI PILIHAN (MANDAT USER)
-        // ============================================================
+        // =========================
+        // LOGIKA KOMBINASI PILIHAN
+        // =========================
         let hariAcuan = hariHisab; // Default hari biasa menggunakan Hisab (1-28)
 
         // Jika Hybrid mendeteksi fase kritis akhir bulan (29 atau 30),
@@ -1432,7 +1432,7 @@ function hitungHilal(lat, lon, customTime = null) {
         if (hariHybrid === 29 || hariHybrid === 30) {
             hariAcuan = hariHybrid;
         }
-        // ============================================================
+        // =========================
 
         const set = (id, val) => { 
             const el = document.getElementById(id); 
@@ -1468,14 +1468,14 @@ function hitungHilal(lat, lon, customTime = null) {
         else if (sebelumMaghrib) { 
             if (hariAcuan < 29) { 
                 if (statusEl) statusEl.innerText = `Fase Konvensional (H-${hariAcuan})`; 
-                if (prediksiEl) prediksiEl.innerText = `Hilal berada pada ketinggian ${alt.toFixed(1)}°. Fase hilal berjalan normal, belum memasuki jendela waktu rukyat.`; 
+                if (prediksiEl) prediksiEl.innerText = `Hilal berada pada ketinggian ${alt.toFixed(2)}°. Fase hilal berjalan normal, belum memasuki jendela waktu rukyat.`; 
             } else { 
                 // Tampilan otomatis rapi menjadi H-29 mengikuti Hybrid siang ini
                 if (statusEl) statusEl.innerHTML = `STATUS: <span style="color:#fbbf24">PERSIAPAN RUKYAT (H-${hariAcuan})</span>`; 
-                const selisihAlt = (3 - alt).toFixed(1); 
+                const selisihAlt = (3 - alt).toFixed(2); 
                 const pesanPrediksi = imkan ? 
-                    `Parameter MABIMS terpenuhi. Siapkan observasi pada sektor ${azi.toFixed(1)}° (Azimuth) saat matahari terbenam.` : 
-                    `Tinggi saat ini ${alt.toFixed(1)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`; 
+                    `Parameter MABIMS terpenuhi. Siapkan observasi pada azimuth ${azi.toFixed(2)}° saat matahari terbenam.` : 
+                    `Tinggi hilal saat ini ${alt.toFixed(2)}°. Butuh tambahan ${selisihAlt}° lagi untuk mencapai batas minimal visibilitas MABIMS.`; 
                 if (prediksiEl) prediksiEl.innerText = pesanPrediksi; 
             } 
         } 
@@ -1490,8 +1490,8 @@ function hitungHilal(lat, lon, customTime = null) {
                 } 
                 if (prediksiEl) { 
                     prediksiEl.innerText = imkan ? 
-                        `Hasil: Hilal berada di posisi ideal (${alt.toFixed(1)}°). Secara astronomis, kriteria awal bulan telah divalidasi.` : 
-                        `Hasil: Tinggi hilal ${alt.toFixed(1)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari (Istikmal).`; 
+                        `Hasil: Hilal berada di posisi ideal (${alt.toFixed(2)}°). Secara astronomis, kriteria awal bulan telah divalidasi.` : 
+                        `Hasil: Tinggi hilal ${alt.toFixed(2)}° tidak memadai. Siklus bulan ini secara teknis digenapkan menjadi 30 hari (Istikmal).`; 
                 } 
             } else { 
                 if (statusEl) statusEl.innerText = `Laporan Malam ke-${hariAcuan} Hijriah`; 
@@ -1507,7 +1507,7 @@ function hitungHilal(lat, lon, customTime = null) {
                 else if (a >= 292.5 && a < 337.5) arahBulan = "Barat Laut"; 
 
                 if (prediksiEl) { 
-                    prediksiEl.innerText = `Hilal terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(1)}%. Kondisi langit mendukung untuk identifikasi fase.`; 
+                    prediksiEl.innerText = `Hilal terpantau di arah ${arahBulan} dengan iluminasi ${illumination.toFixed(2)}%. Kondisi langit mendukung untuk identifikasi fase.`; 
                 } 
             } 
         } 
@@ -1564,7 +1564,7 @@ function getHijriInsight(data, maghrib, now) {
 
   let teksOrientasi = "";
   if (isMalam || altAsli < 0) {
-    teksOrientasi = `Gunakan kompas atau alat navigasi Anda. Arahkan pandangan langsung ke arah <b>${getArah(azi)}</b> (Azimuth <b>${azi.toFixed(1)}°</b>). Di titik itulah posisi hilal berada secara horizontal.`;
+    teksOrientasi = `Gunakan kompas atau alat navigasi Anda. Arahkan pandangan langsung ke arah <b>${getArah(azi)}</b> (Azimuth <b>${azi.toFixed(2)}°</b>). Di titik itulah posisi hilal berada secara horizontal.`;
   } else {
     const referensiWaktu = isSoreSiaga ? "terbenam" : "saat ini";
     let selisihAzi = azi - sun.azi;
@@ -1572,7 +1572,7 @@ function getHijriInsight(data, maghrib, now) {
     if (selisihAzi < -180) selisihAzi += 360;
     const posisiHorisontal = selisihAzi >= 0 ? "sebelah kanan" : "sebelah kiri";
 
-    teksOrientasi = `Gunakan posisi Matahari <b>${referensiWaktu}</b> di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(1)}°</b>. Di titik itulah posisi hilal berada secara horizontal.`;
+    teksOrientasi = `Gunakan posisi Matahari <b>${referensiWaktu}</b> di arah <b>${getArah(sun.azi)}</b> sebagai titik nol. Geser pandangan Anda ke <b>${posisiHorisontal}</b> sejauh <b>${Math.abs(selisihAzi).toFixed(2)}°</b>. Di titik itulah posisi hilal berada secara horizontal.`;
   }
 
   // 4. POSISI TERHADAP UFUK
@@ -1602,7 +1602,7 @@ function getHijriInsight(data, maghrib, now) {
   return `
 🧭 <b>INSTRUKSI ORIENTASI LAPANGAN:</b><br>${teksOrientasi}
 <br><br>
-📐 <b>POSISI TEKNIS TERHADAP UFUK:</b><br>Saat ini, hilal berada pada ketinggian <b>${tinggiTampilan}° ${posisiUfuk}</b>. ${statusCakrawala} Jarak sudut pemisah (Elongasi) dari Matahari tercatat sebesar <b>${elo.toFixed(1)}°</b>.
+📐 <b>POSISI TEKNIS TERHADAP UFUK:</b><br>Saat ini, hilal berada pada ketinggian <b>${tinggiTampilan}° ${posisiUfuk}</b>. ${statusCakrawala} Jarak sudut pemisah (Elongasi) dari Matahari tercatat sebesar <b>${elo.toFixed(2)}°</b>.
 <br><br>
 🔆 <b>KONDISI FISIK & UMUR HILAL:</b><br>Hilal telah berusia <b>${age.toFixed(1)} jam</b> dengan ketebalan cahaya (Iluminasi) sebesar <b>${illumination.toFixed(2)}%</b>.
 <br><br>
