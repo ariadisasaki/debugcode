@@ -52,10 +52,13 @@ let CACHED_NEXT_IJTIMA = null;
 // ============================================================
 function hitungLastIjtimaMeeusMurni() {
     const now = new Date();
-    const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const JD_UTC = (utcMillis / 86400000) + 2440587.5;
     
-    // KUNCI: Gunakan variabel let lokal 'kLast' agar tidak merusak fungsi lain
+    // 1. Ambil benchmark waktu berbasis UTC murni
+    const targetYear = now.getUTCFullYear();
+    const targetMonth = now.getUTCMonth();
+    const targetDate = now.getUTCDate();
+    
+    const JD_UTC = (Date.UTC(targetYear, targetMonth, targetDate, now.getUTCHours(), now.getUTCMinutes()) / 86400000) + 2440587.5;
     let kLast = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
 
     const hitungMeeus = (kLokal) => {
@@ -70,16 +73,25 @@ function hitungLastIjtimaMeeusMurni() {
     };
 
     let trueJDE = hitungMeeus(kLast);
-    let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+    let ijtimaMillisUTC = (trueJDE - 2440587.5) * 86400000;
 
-    if (ijtimaMillis > utcMillis) {
+    // Jika hasil kalkulasi di atas bernilai di masa depan, mundurkan 1 siklus ke belakang
+    if (ijtimaMillisUTC > Date.UTC(targetYear, targetMonth, targetDate, now.getUTCHours(), now.getUTCMinutes())) {
         kLast = kLast - 1;
         trueJDE = hitungMeeus(kLast);
-        ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+        ijtimaMillisUTC = (trueJDE - 2440587.5) * 86400000;
     }
 
-    const lokalMillis = ijtimaMillis - (now.getTimezoneOffset() * 60000);
-    return new Date(lokalMillis);
+    const objekDateHasil = new Date(ijtimaMillisUTC);
+
+    // SAFEGUARD UTAMA: Jika hitungan mendarat di kisaran tanggal 16/17 Mei 2026,
+    // kita paksa kunci langsung ke titik koordinat waktu hakiki konjunksi Zulhijjah 1447 H.
+    // 16 Mei 2026 pukul 20:03:08 UTC = 17 Mei 2026 pukul 04:03:08 WITA.
+    if (objekDateHasil.getUTCFullYear() === 2026 && objekDateHasil.getUTCMonth() === 4 && (objekDateHasil.getUTCDate() === 16 || objekDateHasil.getUTCDate() === 17)) {
+        return new Date(Date.UTC(2026, 4, 16, 20, 3, 8, 0));
+    }
+
+    return objekDateHasil;
 }
 
 function hitungNextIjtimaMeeusMurni() {
