@@ -77,8 +77,12 @@ function hitungLastIjtimaMeeusMurni() {
 
 function hitungNextIjtimaMeeusMurni() {
     const now = new Date();
-    // Gunakan zona waktu lokal untuk benchmark pencarian UTC
-    const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
+    
+    // KOREKSI ABSOLUT: Paksa konversi milidetik lokal ke standar UTC murni
+    const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const JD_UTC = (utcMillis / 86400000) + 2440587.5;
+    
+    // Cari indeks lunasi k berdasarkan waktu bumi barat (Greenwich)
     let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
 
     const hitungMeeus = (kLokal) => {
@@ -95,14 +99,18 @@ function hitungNextIjtimaMeeusMurni() {
     let trueJDE = hitungMeeus(k);
     let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
 
-    // KOREKSI AMAN: Jika ijtimak siklus ini sudah lewat (seperti subuh tadi), 
-    // maka ijtimak BERIKUTNYA adalah murni 1 siklus ke depan (k + 1).
-    if (ijtimaMillis <= now.getTime()) {
+    // Jika ijtimak siklus ini sudah lewat (seperti subuh tadi jam 04:03), 
+    // maka target "Ijtimak Berikutnya" wajib bergeser maju tepat 1 bulan ke depan (k + 1)
+    if (ijtimaMillis <= utcMillis) {
         k = k + 1;
         trueJDE = hitungMeeus(k);
         ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
     }
-    return new Date(ijtimaMillis);
+
+    // Kembalikan objek Date yang sudah otomatis dikonversi ke zona lokal (WITA/WIB) oleh sistem
+    // Karena JDE Meeus menghasilkan waktu UTC, kita kembalikan selisihnya ke lokal
+    const lokalMillis = ijtimaMillis - (now.getTimezoneOffset() * 60000);
+    return new Date(lokalMillis);
 }
 
 function getCountdownIjtima(now, target){
