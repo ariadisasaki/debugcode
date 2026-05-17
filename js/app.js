@@ -1369,7 +1369,7 @@ async function initApp(lat, lon) {
     } catch (e) { console.warn("Pendukung gagal."); }
 
     // B. Hitungan Pertama (Saat aplikasi baru dibuka)
-    if (typeof refreshIjtimaData === 'function' && !CACHED_IJTIMA) refreshIjtimaData();
+    if (typeof refreshIjtimaData === 'function' && !CACHED_LAST_IJTIMA) refreshIjtimaData();
     hilalDataFull = hitungHilal(lat, lon);
 
     // Bersihkan interval debug lama jika ada
