@@ -3120,6 +3120,10 @@ function debugHilal() {
         const hybrid = typeof getHijriHybrid === 'function' ? getHijriHybrid(currentLat, currentLon) : {d:0,m:1,y:0};
         const bulanIndo = ["","Muharram","Safar","Rabiul Awal","Rabiul Akhir","Jumadil Awal","Jumadil Akhir","Rajab","Syaban","Ramadhan","Syawal","Zulkaidah","Zulhijjah"];
 
+        // AMBIL DATA DARI FUNGSI PROXY BARU
+        const ijtimaLast = typeof getLastIjtima === 'function' ? getLastIjtima() : null;
+        const ijtimaNext = typeof getNextIjtima === 'function' ? getNextIjtima() : null;
+
         let keputusanFinal = "BELUM DILAKUKAN RUKYAT";
         let kWarna = "background: #7f8c8d; color: white;";
         const jamSekarang = now.getHours() + (now.getMinutes() / 60);
@@ -3143,7 +3147,8 @@ function debugHilal() {
 
         console.group("⚙️ System Health");
         console.table({
-            "Ijtima Cache": (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? "✅ Loaded" : "❌ MISSING",
+            // Diubah agar mendeteksi keberadaan fungsi generator ijtima baru
+            "Ijtima Engine": (ijtimaLast && ijtimaNext) ? "✅ Connected (Meeus)" : "❌ DISCONNECTED",
             "Hilal Data": (moon && moon.alt !== 0) ? "✅ Active" : "⚠️ Still Zero/Loading",
             "GPS Status": locationInitialized ? "✅ Locked" : "⏳ Searching",
             "Memory Logs": JSON.parse(localStorage.getItem("hijriAuditLogs") || "[]").length + " entries"
@@ -3165,8 +3170,10 @@ function debugHilal() {
             "Mode Aktif": typeof modeHijri !== 'undefined' && modeHijri ? "HISAB (Astronomi)" : "HYBRID (MABIMS)",
             "Output Hisab": `${hisab.d} ${bulanIndo[hisab.m] || ''} ${hisab.y}`,
             "Output Hybrid": `${hybrid.d} ${bulanIndo[hybrid.m] || ''} ${hybrid.y}`,
-            "Ijtima Terakhir": (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? CACHED_IJTIMA.toLocaleString('id-ID') : "N/A",
-            "Jarak ke Ijtima": (typeof CACHED_IJTIMA !== 'undefined' && CACHED_IJTIMA) ? ((now - CACHED_IJTIMA) / (1000 * 3600 * 24)).toFixed(2) + " hari" : "N/A",
+            // Menampilkan waktu asli lokalisasi dari objek Date hasil perhitungan Meeus murni
+            "Ijtima Terakhir": ijtimaLast ? ijtimaLast.toLocaleString('id-ID') : "N/A",
+            "Ijtima Berikutnya": ijtimaNext ? ijtimaNext.toLocaleString('id-ID') : "N/A",
+            "Jarak ke Ijtima": ijtimaNext ? ((ijtimaNext - now) / (1000 * 3600 * 24)).toFixed(2) + " hari lagi" : "N/A",
         });
         console.groupEnd();
 
