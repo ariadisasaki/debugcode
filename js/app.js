@@ -38,35 +38,172 @@ let hijriState = {
   locked: false
 };
 
-// ==========================================
+// ============================================================
 // AREA 1: VARIABEL GLOBAL & KONSTANTA APLIKASI
-// ==========================================
+// ============================================================
 const SYNODIC_MONTH = 29.530588;
 const DAY_MS = 86400000;
 
-// Tempelkan kode cache baru Anda di sini:
 let CACHED_LAST_IJTIMA = null;
 let CACHED_NEXT_IJTIMA = null;
 
+// ============================================================
+// AREA 1.5: FUNGSI INTI MEKANIKA FALAK (WAJIB DI SINI AGAR BISA DIPANGGIL STARTUP)
+// ============================================================
+function hitungLastIjtimaMeeusMurni() {
+    const now = new Date();
+    const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
+    let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
+
+    const hitungMeeus = (kLokal) => {
+        const rad = Math.PI / 180; const T = kLokal / 1236.85;
+        let JDE = 2451550.09765 + 29.530588853 * kLokal + 0.0001337 * T * T - 0.000000150 * T * T * T + 0.00000000073 * T * T * T * T;
+        const E = 1 - 0.002516 * T - 0.0000074 * T * T;
+        const M = (2.5534 + 29.10535669 * kLokal - 0.0000218 * T * T) * rad; 
+        const Mm = (201.5643 + 385.81693528 * kLokal + 0.0107438 * T * T) * rad; 
+        const F = (160.7108 + 390.67050274 * kLokal - 0.0016341 * T * T) * rad; 
+        let koreksi = -0.40720 * Math.sin(Mm) + 0.17241 * E * Math.sin(M) + 0.01608 * Math.sin(2 * Mm) + 0.01039 * Math.sin(2 * F) + 0.00739 * E * Math.sin(Mm - M) - 0.00514 * E * Math.sin(Mm + M) + 0.00208 * E * E * Math.sin(2 * M) - 0.00111 * Math.sin(Mm - 2 * F) - 0.00057 * Math.sin(Mm + 2 * F) + 0.00056 * E * Math.sin(2 * Mm + M) - 0.00054 * Math.sin(2 * Mm - M) + 0.00014 * E * Math.sin(2 * F + M);
+        return JDE + koreksi;
+    };
+
+    let trueJDE = hitungMeeus(k);
+    let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+    if (ijtimaMillis > now.getTime()) {
+        trueJDE = hitungMeeus(k - 1);
+        ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+    }
+    return new Date(ijtimaMillis);
+}
+
+function hitungNextIjtimaMeeusMurni() {
+    const now = new Date();
+    const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
+    let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
+
+    const hitungMeeus = (kLokal) => {
+        const rad = Math.PI / 180; const T = kLokal / 1236.85;
+        let JDE = 2451550.09765 + 29.530588853 * kLokal + 0.0001337 * T * T - 0.000000150 * T * T * T + 0.00000000073 * T * T * T * T;
+        const E = 1 - 0.002516 * T - 0.0000074 * T * T;
+        const M = (2.5534 + 29.10535669 * kLokal - 0.0000218 * T * T) * rad; 
+        const Mm = (201.5643 + 385.81693528 * kLokal + 0.0107438 * T * T) * rad; 
+        const F = (160.7108 + 390.67050274 * kLokal - 0.0016341 * T * T) * rad; 
+        let koreksi = -0.40720 * Math.sin(Mm) + 0.17241 * E * Math.sin(M) + 0.01608 * Math.sin(2 * Mm) + 0.01039 * Math.sin(2 * F) + 0.00739 * E * Math.sin(Mm - M) - 0.00514 * E * Math.sin(Mm + M) + 0.00208 * E * E * Math.sin(2 * M) - 0.00111 * Math.sin(Mm - 2 * F) - 0.00057 * Math.sin(Mm + 2 * F) + 0.00056 * E * Math.sin(2 * Mm + M) - 0.00054 * Math.sin(2 * Mm - M) + 0.00014 * E * Math.sin(2 * F + M);
+        return JDE + koreksi;
+    };
+
+    let trueJDE = hitungMeeus(k);
+    let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+    if (ijtimaMillis <= now.getTime()) {
+        k++; trueJDE = hitungMeeus(k); ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+    }
+    return new Date(ijtimaMillis);
+}
+
+function getCountdownIjtima(now, target){
+  let diff = target - now;
+  if(diff <= 0) return "Sedang berlangsung / sudah lewat";
+  const jam = Math.floor(diff / 3600000);
+  const menit = Math.floor((diff % 3600000)/60000);
+  const detik = Math.floor((diff % 60000)/1000);
+  return `${jam} jam ${menit} menit ${detik} detik`;
+}
+
+// ============================================================
+// AREA 1.7: JALANKAN REFRESH DATA (STARTUP)
+// ============================================================
 function refreshIjtimaData() {
     CACHED_LAST_IJTIMA = hitungLastIjtimaMeeusMurni();
     CACHED_NEXT_IJTIMA = hitungNextIjtimaMeeusMurni();
 }
-
-// Eksekusi otomatis saat file pertama kali dimuat oleh browser
 refreshIjtimaData();
 
-
-// ==========================================
+// ============================================================
 // AREA 2: PROXY GATEWAY (PENGGANTI FUNGSI LAMA)
-// ==========================================
-// Pastikan tidak ada fungsi dengan nama yang sama di bawahnya lagi!
+// ============================================================
 function getLastIjtima() {
     return CACHED_LAST_IJTIMA || hitungLastIjtimaMeeusMurni();
 }
-
 function getNextIjtima() {
     return CACHED_NEXT_IJTIMA || hitungNextIjtimaMeeusMurni();
+}
+
+// ============================================================
+// AREA 3: LOGIKA HIJRI HISAB & HYBRID (SINKRON)
+// ============================================================
+function getHijriAstronomical(lat, lon, customDate = null) { 
+    const now = customDate ? new Date(customDate) : new Date(); 
+    const ijtima = getLastIjtima(); 
+    
+    const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate()); 
+    const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate()); 
+    
+    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000); 
+    const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18; 
+    const jamNow = now.getHours() + now.getMinutes() / 60; 
+    const sebelumMaghribHariH = jamNow < maghrib;
+    const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
+    const cycle = Math.floor(ageTotal / 29.530588853);
+    
+    let bulanIjtima = ((11 - 1 + cycle) % 12) + 1;
+    let tahunIjtima = 1447 + Math.floor((11 - 1 + cycle) / 12);
+    let d = diffDays;
+    let m = bulanIjtima;
+    let y = tahunIjtima;
+
+    if (tglSekarang.getTime() === tglIjtima.getTime()) {
+        if (sebelumMaghribHariH) {
+            d = 30; 
+        } else {
+            d = 1;  
+            m = bulanIjtima + 1;
+        }
+    } else if (tglSekarang > tglIjtima) {
+        m = bulanIjtima + 1;
+        if (sebelumMaghribHariH) {
+            d = diffDays;
+        } else {
+            d = diffDays + 1;
+        }
+    }
+    if (m > 12) { m = 1; y += 1; }
+    const isSameDayAsIjtima = tglSekarang.getTime() === tglIjtima.getTime();
+    return { 
+        d: Math.max(1, d), m, y, 
+        isHariHIjtima: isSameDayAsIjtima, 
+        isBeforeMaghrib: sebelumMaghribHariH 
+    }; 
+}
+
+function getHijriHybrid(lat, lon, customDate = null) { 
+    const now = customDate ? new Date(customDate) : new Date(); 
+    const hisab = getHijriAstronomical(lat, lon, now); 
+    const desimalMaghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18; 
+    
+    const waktuMaghribHariIni = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const jamMaghrib = Math.floor(desimalMaghrib);
+    const menitMaghrib = Math.floor((desimalMaghrib - jamMaghrib) * 60);
+    const detikMaghrib = Math.floor((((desimalMaghrib - jamMaghrib) * 60) - menitMaghrib) * 60);
+    waktuMaghribHariIni.setHours(jamMaghrib, menitMaghrib, detikMaghrib, 0);
+
+    const hilal = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, waktuMaghribHariIni) : { alt: 0, elo: 0 }; 
+    const imkanRukyat = (hilal.alt >= 3 && hilal.elo >= 6.4); 
+    let d = hisab.d; 
+    let m = hisab.m; 
+    let y = hisab.y; 
+
+    if (hisab.isHariHIjtima) {
+        if (hisab.isBeforeMaghrib) {
+            d = 29; 
+            m = hisab.m; 
+        } else {
+            if (!imkanRukyat) {
+                d = 30;
+                m = hisab.m - 1; 
+                if (m < 1) { m = 12; y -= 1; }
+            }
+        }
+    }
+    return { d, m, y }; 
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1932,102 +2069,6 @@ function formatTanggalIndonesia(date){
   return `${d} ${m} ${y} - Pkl. ${jam}:${menit}:${detik}`;
 }
 
-// === IJTIMA TERAKHIR (VERSI PRESISI JEAN MEEUS BAB 32) ===
-function getLastIjtima() {
-    const now = new Date();
-    // Gunakan UTC murni untuk pencarian indeks k
-    const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
-    
-    let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
-
-    function hitungTrueIjtima(k) {
-        const rad = Math.PI / 180;
-        const T = k / 1236.85;
-        
-        // 1. Mean Conjunction (JDE Rata-rata)
-        let JDE = 2451550.09765 + 29.530588853 * k 
-                  + 0.0001337 * T * T 
-                  - 0.000000150 * T * T * T 
-                  + 0.00000000073 * T * T * T * T;
-
-        // 2. Variabel Koreksi Periodik (Anomali Orbit)
-        const E = 1 - 0.002516 * T - 0.0000074 * T * T;
-        const M = (2.5534 + 29.10535669 * k - 0.0000218 * T * T) * rad; // Sun Anomaly
-        const Mm = (201.5643 + 385.81693528 * k + 0.0107438 * T * T) * rad; // Moon Anomaly
-        const F = (160.7108 + 390.67050274 * k - 0.0016341 * T * T) * rad; // Moon Argument of Latitude
-        const Omega = (124.7746 - 1.5637558 * k + 0.0020697 * T * T) * rad; // Node Longitude
-
-        // 3. Suku Koreksi Utama Jean Meeus (AA Bab 32)
-        let koreksi = -0.40720 * Math.sin(Mm)
-                    + 0.17241 * E * Math.sin(M)
-                    + 0.01608 * Math.sin(2 * Mm)
-                    + 0.01039 * Math.sin(2 * F)
-                    + 0.00739 * E * Math.sin(Mm - M)
-                    - 0.00514 * E * Math.sin(Mm + M)
-                    + 0.00208 * E * E * Math.sin(2 * M)
-                    - 0.00111 * Math.sin(Mm - 2 * F)
-                    - 0.00057 * Math.sin(Mm + 2 * F)
-                    + 0.00056 * E * Math.sin(2 * Mm + M)
-                    - 0.00054 * Math.sin(2 * Mm - M)
-                    + 0.00014 * E * Math.sin(2 * F + M);
-
-        return JDE + koreksi;
-    }
-
-    let trueJDE = hitungTrueIjtima(k);
-    let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
-
-    // Jika hasil k ini ternyata masih di masa depan, gunakan siklus sebelumnya (k-1)
-    if (ijtimaMillis > now.getTime()) {
-        trueJDE = hitungTrueIjtima(k - 1);
-        ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
-    }
-
-    return new Date(ijtimaMillis);
-}
-
-// === IJTIMA BERIKUTNYA (VERSI PRESISI REVISI TOTAL) ===
-function hitungNextIjtimaMeeusMurni() {
-    const now = new Date();
-    const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
-    let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
-
-    const hitungMeeus = (kLokal) => {
-        const rad = Math.PI / 180; const T = kLokal / 1236.85;
-        let JDE = 2451550.09765 + 29.530588853 * kLokal + 0.0001337 * T * T - 0.000000150 * T * T * T + 0.00000000073 * T * T * T * T;
-        const E = 1 - 0.002516 * T - 0.0000074 * T * T;
-        const M = (2.5534 + 29.10535669 * kLokal - 0.0000218 * T * T) * rad; 
-        const Mm = (201.5643 + 385.81693528 * kLokal + 0.0107438 * T * T) * rad; 
-        const F = (160.7108 + 390.67050274 * kLokal - 0.0016341 * T * T) * rad; 
-        let koreksi = -0.40720 * Math.sin(Mm) + 0.17241 * E * Math.sin(M) + 0.01608 * Math.sin(2 * Mm) + 0.01039 * Math.sin(2 * F) + 0.00739 * E * Math.sin(Mm - M) - 0.00514 * E * Math.sin(Mm + M) + 0.00208 * E * E * Math.sin(2 * M) - 0.00111 * Math.sin(Mm - 2 * F) - 0.00057 * Math.sin(Mm + 2 * F) + 0.00056 * E * Math.sin(2 * Mm + M) - 0.00054 * Math.sin(2 * Mm - M) + 0.00014 * E * Math.sin(2 * F + M);
-        return JDE + koreksi;
-    };
-
-    let trueJDE = hitungMeeus(k);
-    let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
-    if (ijtimaMillis <= now.getTime()) {
-        k++; trueJDE = hitungMeeus(k); ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
-    }
-    return new Date(ijtimaMillis);
-}
-
-function getNextIjtima() {
-    return hitungNextIjtimaMeeusMurni();
-}
-
-// === HITUNG MUNDUR IJTIMA ===
-function getCountdownIjtima(now, target){
-  let diff = target - now;
-
-  if(diff <= 0) return "Sedang berlangsung / sudah lewat";
-
-  const jam = Math.floor(diff / 3600000);
-  const menit = Math.floor((diff % 3600000)/60000);
-  const detik = Math.floor((diff % 60000)/1000);
-
-  return `${jam} jam ${menit} menit ${detik} detik`;
-}
-
 // === REFRACTION & PARALLAX ===
 function koreksiRefraction(alt){
   if(alt > -1){
@@ -2862,108 +2903,6 @@ function nextMonth(current){
     y,
     source: "hybrid"
   };
-}
-
-// ==========================================
-// 1. HIJRI HISAB (ASTRONOMIS - DATA MURNI)
-// ==========================================
-function getHijriAstronomical(lat, lon, customDate = null) { 
-    const now = customDate ? new Date(customDate) : new Date(); 
-    const ijtima = getLastIjtima(); 
-    
-    const tglSekarang = new Date(now.getFullYear(), now.getMonth(), now.getDate()); 
-    const tglIjtima = new Date(ijtima.getFullYear(), ijtima.getMonth(), ijtima.getDate()); 
-    
-    let diffDays = Math.round((tglSekarang - tglIjtima) / 86400000); 
-    const maghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18; 
-    const jamNow = now.getHours() + now.getMinutes() / 60; 
-    const sebelumMaghribHariH = jamNow < maghrib;
-
-    const ageTotal = (now.getTime() - ijtima.getTime()) / 86400000;
-    const cycle = Math.floor(ageTotal / 29.530588853);
-    
-    let bulanIjtima = ((11 - 1 + cycle) % 12) + 1;
-    let tahunIjtima = 1447 + Math.floor((11 - 1 + cycle) / 12);
-
-    let d = diffDays;
-    let m = bulanIjtima;
-    let y = tahunIjtima;
-
-    // LOGIKA TRANSISI TRUE ASTRONOMIS (PASCA-MAGHRIB HARI CONJUNCTION)
-    if (tglSekarang.getTime() === tglIjtima.getTime()) {
-        if (sebelumMaghribHariH) {
-            d = 30; // Sebelum maghrib di hari ijtimak, genapkan bulan lalu
-        } else {
-            d = 1;  // SETELAH MAGHRIB DI HARI IJTIMAK, MASUK TANGGAL 1 BARU
-            m = bulanIjtima + 1;
-        }
-    } else if (tglSekarang > tglIjtima) {
-        m = bulanIjtima + 1;
-        if (sebelumMaghribHariH) {
-            d = diffDays;
-        } else {
-            d = diffDays + 1;
-        }
-    }
-
-    if (m > 12) { m = 1; y += 1; }
-
-    const isSameDayAsIjtima = tglSekarang.getTime() === tglIjtima.getTime();
-
-    return { 
-        d: Math.max(1, d), m, y, 
-        isHariHIjtima: isSameDayAsIjtima, 
-        isBeforeMaghrib: sebelumMaghribHariH 
-    }; 
-}
-
-// ============================================================
-// ENGINE HYBRID SINKRON TOTAL (MENGUNCI EVALUASI DI JAM MAGHRIB)
-// ============================================================
-function getHijriHybrid(lat, lon, customDate = null) { 
-    const now = customDate ? new Date(customDate) : new Date(); 
-    
-    // 1. Ambil data dasar dari Hisab
-    const hisab = getHijriAstronomical(lat, lon, now); 
-    
-    // 2. Hitung waktu Maghrib hari ini secara presisi
-    const desimalMaghrib = typeof hitungMaghrib === 'function' ? (hitungMaghrib(lat, lon, now)?.decimal ?? 18) : 18; 
-    
-    // 3. REKAYASA WAKTU: Buat objek jam khusus tepat pada saat Maghrib sore tadi
-    const waktuMaghribHariIni = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const jamMaghrib = Math.floor(desimalMaghrib);
-    const menitMaghrib = Math.floor((desimalMaghrib - jamMaghrib) * 60);
-    const detikMaghrib = Math.floor((((desimalMaghrib - jamMaghrib) * 60) - menitMaghrib) * 60);
-    waktuMaghribHariIni.setHours(jamMaghrib, menitMaghrib, detikMaghrib, 0);
-
-    // 4. EVALUASI HILAL: Selalu gunakan waktu Maghrib, bukan waktu malam saat ini!
-    const hilal = typeof hitungHilalCore === 'function' ? hitungHilalCore(lat, lon, waktuMaghribHariIni) : { alt: 0, elo: 0 }; 
-    const imkanRukyat = (hilal.alt >= 3 && hilal.elo >= 6.4); 
-
-    let d = hisab.d; 
-    let m = hisab.m; 
-    let y = hisab.y; 
-
-    // 5. Logika Intervensi Lapangan Sipil
-    if (hisab.isHariHIjtima) {
-        if (hisab.isBeforeMaghrib) {
-            // Sore hari sebelum maghrib: Sipil/Hybrid wajib masih tanggal 29 Zulkaidah
-            d = 29; 
-            m = hisab.m; 
-        } else {
-            // PASCA-MAGHRIB HARI H:
-            // Karena kita mengunci evaluasi di jam Maghrib, imkanRukyat petang tadi (Lolos kriteria)
-            // akan selalu bernilai TRUE sepanjang malam ini.
-            if (!imkanRukyat) {
-                d = 30;
-                m = hisab.m - 1; 
-                if (m < 1) { m = 12; y -= 1; }
-            }
-            // JIKA IMKAN RUKYAT TRUE, AKAN REKAT SINKRON DENGAN HISAB (1 ZULHIJJAH)
-        }
-    }
-
-    return { d, m, y }; 
 }
 
 // === RESET HYBRID ===
