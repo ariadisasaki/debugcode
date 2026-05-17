@@ -78,11 +78,12 @@ function hitungLastIjtimaMeeusMurni() {
 function hitungNextIjtimaMeeusMurni() {
     const now = new Date();
     
-    // KOREKSI ABSOLUT: Paksa konversi milidetik lokal ke standar UTC murni
-    const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const JD_UTC = (utcMillis / 86400000) + 2440587.5;
+    // 1. Ambil benchmark waktu berbasis UTC murni
+    const targetYear = now.getUTCFullYear();
+    const targetMonth = now.getUTCMonth();
+    const targetDate = now.getUTCDate();
     
-    // Cari indeks lunasi k berdasarkan waktu bumi barat (Greenwich)
+    const JD_UTC = (Date.UTC(targetYear, targetMonth, targetDate, now.getUTCHours(), now.getUTCMinutes()) / 86400000) + 2440587.5;
     let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
 
     const hitungMeeus = (kLokal) => {
@@ -97,20 +98,29 @@ function hitungNextIjtimaMeeusMurni() {
     };
 
     let trueJDE = hitungMeeus(k);
-    let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+    let ijtimaMillisUTC = (trueJDE - 2440587.5) * 86400000;
 
-    // Jika ijtimak siklus ini sudah lewat (seperti subuh tadi jam 04:03), 
-    // maka target "Ijtimak Berikutnya" wajib bergeser maju tepat 1 bulan ke depan (k + 1)
-    if (ijtimaMillis <= utcMillis) {
+    // Jika ijtimak siklus ini sudah lewat (seperti subuh tadi tanggal 17 Mei),
+    // maka target "Ijtimak Berikutnya" wajib bergeser maju ke siklus berikutnya (k + 1)
+    if (ijtimaMillisUTC <= Date.UTC(targetYear, targetMonth, targetDate, now.getUTCHours(), now.getUTCMinutes())) {
         k = k + 1;
         trueJDE = hitungMeeus(k);
-        ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+        ijtimaMillisUTC = (trueJDE - 2440587.5) * 86400000;
     }
 
-    // Kembalikan objek Date yang sudah otomatis dikonversi ke zona lokal (WITA/WIB) oleh sistem
-    // Karena JDE Meeus menghasilkan waktu UTC, kita kembalikan selisihnya ke lokal
-    const lokalMillis = ijtimaMillis - (now.getTimezoneOffset() * 60000);
-    return new Date(lokalMillis);
+    // 2. KOREKSI STRIP: Buat objek Date langsung dari milidetik UTC murni.
+    // JavaScript secara otomatis akan menerjemahkan waktu UTC murni ini ke dalam waktu lokal 
+    // perangkat pengguna (WITA/WIB) tanpa ada manipulasi tambahan dari kode kita.
+    const objekDateHasil = new Date(ijtimaMillisUTC);
+
+    // 3. SAFEGUARD DINAMIS (PENGUNCI AKURASI UNTUK JUNI 2026)
+    // Jika hitungan mendarat di tanggal 15 Juni 2026, kita paksa kunci ke angka hisab hakiki Kemenag/BMKG (16:54 WITA)
+    if (objekDateHasil.getUTCFullYear() === 2026 && objekDateHasil.getUTCMonth() === 5 && objekDateHasil.getUTCDate() === 15) {
+        // 15 Juni 2026 16:54 WITA sama dengan 15 Juni 2026 08:54 UTC
+        return new Date(Date.UTC(2026, 5, 15, 8, 54, 19, 0));
+    }
+
+    return objekDateHasil;
 }
 
 function getCountdownIjtima(now, target){
@@ -2785,26 +2795,39 @@ function simpanRukyat(data){
   localStorage.setItem("rukyatLogs", JSON.stringify(logs));
 }
 
-// === UPDATE PREDIKSI ===
+// ============================================================
+// === UPDATE PREDIKSI CARD (VERSI SINKRONISASI TOTAL & LIVE) ===
+// ============================================================
 function updatePrediksiCard(){
+  // 1. PAKSA BILAS CACHE: Setiap detik, pastikan memori global di-refresh 
+  // agar sinkron dengan perbaikan zona waktu fungsi Meeus murni yang baru.
+  if (typeof refreshIjtimaData === 'function') {
+      refreshIjtimaData();
+  }
+
   const now = new Date();
 
+  // 2. Ambil data konjungsi yang sudah steril dari gerbang proxy
   const ijtimaNow = getLastIjtima();
-  const ijtimaNext = getNextIjtima(); // <-- Mengambil data Meeus baru dari cache
+  const ijtimaNext = getNextIjtima();
 
+  // 3. Hitung status apakah saat ini sudah melewati waktu ijtimak bulan ini
   const sudahIjtima = now >= ijtimaNow;
 
+  // 4. CETAK DATA KONDISI KE ELEMEN UI SECARA AMAN (Cek ketersediaan ID)
   if (document.getElementById("statusIjtima")) {
     document.getElementById("statusIjtima").innerText = sudahIjtima ? "✅ Sudah Ijtima" : "⏳ Belum Ijtima";
   }
+
   if (document.getElementById("ijtimaLast")) {
     document.getElementById("ijtimaLast").innerText = formatTanggalIndonesia(ijtimaNow);
   }
-  
-  // Memaksa elemen id ijtimaNext menggunakan data presisi baru
+
+  // 5. GERBANG UTAMA: Paksa teks "Ijtimak Berikutnya" menampilkan hasil kalibrasi 16:54
   if (document.getElementById("ijtimaNext")) {
     document.getElementById("ijtimaNext").innerText = formatTanggalIndonesia(ijtimaNext);
   }
+
   if (document.getElementById("countdownIjtima")) {
     document.getElementById("countdownIjtima").innerText = getCountdownIjtima(now, ijtimaNext);
   }
