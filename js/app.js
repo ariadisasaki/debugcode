@@ -77,6 +77,7 @@ function hitungLastIjtimaMeeusMurni() {
 
 function hitungNextIjtimaMeeusMurni() {
     const now = new Date();
+    // Gunakan zona waktu lokal untuk benchmark pencarian UTC
     const JD_UTC = (now.getTime() / 86400000) + 2440587.5;
     let k = Math.floor((JD_UTC - 2451550.09765) / 29.530588853);
 
@@ -93,8 +94,13 @@ function hitungNextIjtimaMeeusMurni() {
 
     let trueJDE = hitungMeeus(k);
     let ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+
+    // KOREKSI AMAN: Jika ijtimak siklus ini sudah lewat (seperti subuh tadi), 
+    // maka ijtimak BERIKUTNYA adalah murni 1 siklus ke depan (k + 1).
     if (ijtimaMillis <= now.getTime()) {
-        k++; trueJDE = hitungMeeus(k); ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
+        k = k + 1;
+        trueJDE = hitungMeeus(k);
+        ijtimaMillis = (trueJDE - 2440587.5) * 86400000;
     }
     return new Date(ijtimaMillis);
 }
@@ -2773,25 +2779,27 @@ function simpanRukyat(data){
 
 // === UPDATE PREDIKSI ===
 function updatePrediksiCard(){
-
   const now = new Date();
 
   const ijtimaNow = getLastIjtima();
-  const ijtimaNext = getNextIjtima();
+  const ijtimaNext = getNextIjtima(); // <-- Mengambil data Meeus baru dari cache
 
   const sudahIjtima = now >= ijtimaNow;
 
-  document.getElementById("statusIjtima").innerText =
-    sudahIjtima ? "✅ Sudah Ijtima" : "⏳ Belum Ijtima";
-
-  document.getElementById("ijtimaLast").innerText =
-    formatTanggalIndonesia(ijtimaNow);
-
-  document.getElementById("ijtimaNext").innerText =
-    formatTanggalIndonesia(ijtimaNext);
-
-  document.getElementById("countdownIjtima").innerText =
-    getCountdownIjtima(now, ijtimaNext);
+  if (document.getElementById("statusIjtima")) {
+    document.getElementById("statusIjtima").innerText = sudahIjtima ? "✅ Sudah Ijtima" : "⏳ Belum Ijtima";
+  }
+  if (document.getElementById("ijtimaLast")) {
+    document.getElementById("ijtimaLast").innerText = formatTanggalIndonesia(ijtimaNow);
+  }
+  
+  // Memaksa elemen id ijtimaNext menggunakan data presisi baru
+  if (document.getElementById("ijtimaNext")) {
+    document.getElementById("ijtimaNext").innerText = formatTanggalIndonesia(ijtimaNext);
+  }
+  if (document.getElementById("countdownIjtima")) {
+    document.getElementById("countdownIjtima").innerText = getCountdownIjtima(now, ijtimaNext);
+  }
 }
 
 // === TOMBOL HIJRI INFO ===
