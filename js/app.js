@@ -175,12 +175,19 @@ function getHijriAstronomical(lat, lon, customDate = null) {
     const jamNow = now.getHours() + now.getMinutes() / 60; 
     const sebelumMaghribHariH = jamNow < maghrib;
     
-    // KALIBRASI BENCHMARK: Gunakan titik epoch Hijriah komputer yang aman
-    const epochIjtimaSiklus = new Date(Date.UTC(2026, 4, 17, 4, 3)); // 17 Mei 2026 (Awal Zulhijjah 1447 H)
+    // KALIBRASI BENCHMARK SIKLUS (Menggunakan Janji Epoch 17 Mei 2026)
+    const epochIjtimaSiklus = new Date(Date.UTC(2026, 4, 17, 4, 3)); 
     const ageTotal = (ijtima.getTime() - epochIjtimaSiklus.getTime()) / 86400000;
-    const cycle = Math.round(ageTotal / 29.530588853);
+    let cycle = Math.round(ageTotal / 29.530588853);
     
-    // Kalibrasi Indeks Bulan: 12 mewakili Zulhijjah 1447 H sebagai jangkar dasar
+    // KOREKSI DARURAT SIKLUS: Jika hari H ijtima dan masih sebelum Maghrib, 
+    // mundurkan 1 cycle agar nama bulan tidak mencuri start ke bulan baru duluan.
+    const isSameDayAsIjtima = tglSekarang.getTime() === tglIjtima.getTime();
+    if (isSameDayAsIjtima && sebelumMaghribHariH) {
+        cycle = cycle - 1;
+    }
+    
+    // Indeks Dasar 12 mewakili Zulhijjah 1447 H
     let bulanIjtima = ((12 - 1 + cycle) % 12) + 1;
     let tahunIjtima = 1447 + Math.floor((12 - 1 + cycle) / 12);
     
@@ -188,29 +195,29 @@ function getHijriAstronomical(lat, lon, customDate = null) {
     let m = bulanIjtima;
     let y = tahunIjtima;
 
-    const isSameDayAsIjtima = tglSekarang.getTime() === tglIjtima.getTime();
-
     // LOGIKA PENENTUAN HARI H ASTRO
     if (isSameDayAsIjtima) {
         if (sebelumMaghribHariH) {
-            d = 29; // Sore ini sebelum Maghrib adalah akhir bulan berjalan (Zulhijjah tanggal 29)
+            d = 29; // Sore ini sebelum Maghrib mutlak akhir Zulhijjah (Tanggal 29)
+            m = bulanIjtima;
         } else {
-            d = 1;  // Setelah Maghrib masuk Tanggal 1 Bulan Baru
+            d = 1;  // Setelah Maghrib masuk Tanggal 1 Bulan Baru (Muharram)
             m = bulanIjtima + 1;
         }
     } else if (tglSekarang > tglIjtima) {
-        // Jika sudah hari-hari berikutnya setelah hari H ijtimak
         if (sebelumMaghribHariH) {
             d = diffDays;
-            m = bulanIjtima;
+            m = bulanIjtima + 1;
         } else {
             d = diffDays + 1;
-            m = bulanIjtima;
+            m = bulanIjtima + 1;
         }
-        m = m + 1; // Karena siklus baru sudah berjalan
     }
     
-    if (m > 12) { m = ((m - 1) % 12) + 1; y += 1; }
+    if (m > 12) { 
+        m = 1; 
+        y += 1; 
+    }
     
     return { 
         d: Math.max(1, d), m, y, 
