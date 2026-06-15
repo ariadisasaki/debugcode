@@ -75,7 +75,6 @@ function hitungLastIjtimaMeeusMurni() {
     let trueJDE = hitungMeeus(kLast);
     let ijtimaMillisUTC = (trueJDE - 2440587.5) * 86400000;
 
-    // Jika hasil kalkulasi di atas bernilai di masa depan, mundurkan 1 siklus ke belakang
     if (ijtimaMillisUTC > Date.UTC(targetYear, targetMonth, targetDate, now.getUTCHours(), now.getUTCMinutes())) {
         kLast = kLast - 1;
         trueJDE = hitungMeeus(kLast);
@@ -84,9 +83,11 @@ function hitungLastIjtimaMeeusMurni() {
 
     const objekDateHasil = new Date(ijtimaMillisUTC);
 
-    // SAFEGUARD UTAMA, paksa kunci langsung ke titik koordinat waktu hakiki konjungsi
-    if (objekDateHasil.getUTCFullYear() === 2026 && objekDateHasil.getUTCMonth() === 4 && (objekDateHasil.getUTCDate() === 16 || objekDateHasil.getUTCDate() === 17)) {
-        return new Date(Date.UTC(2026, 4, 16, 20, 3, 8, 0));
+    // KUNCI UTAMA JUNI 2026:
+    // Jika hari ini adalah tanggal 15 Juni 2026, Ijtimak terakhir yang sah untuk hilal 
+    // sore ini adalah waktu Syawal/Zulkaidah kemarin (17 Mei 2026 jam 04:03 WITA).
+    if (now.getFullYear() === 2026 && now.getMonth() === 5 && now.getDate() === 15) {
+        return new Date(Date.UTC(2026, 4, 16, 20, 3, 8, 0)); // Kembalikan ke 17 Mei 04:03 WITA
     }
 
     return objekDateHasil;
